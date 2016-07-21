@@ -54,7 +54,7 @@ Parsing HAL representations:
 
 ## Usage
 
-*Include edison-hateoas*:
+###1. Include edison-hal into your project:
  
 ```gradle
     dependencies {
@@ -63,7 +63,7 @@ Parsing HAL representations:
     }
 ```
  
-*Write a representation class for your REST API*
+###2. Provide a class for the representation of your REST API
 
 If your representation does not need additional attributes beside of
 the properties defined in application/hal+json, you can create a
@@ -83,8 +83,7 @@ HalRepresentations like this:
 
 ```
 
-Otherwise, you can derive a class from HalRepresentation to add special
-attributes:
+Otherwise, you can derive a class from HalRepresentation to add extra attributes:
 
 ```java
     public class MySpecialHalRepresentation extends HalRepresentation {
@@ -98,9 +97,9 @@ attributes:
 
 ```
 
-*Serializing HalRepresentations*
+###3. Serializing HalRepresentations
 
-To get the JSON document, you can use Jackson directly:
+To convert your representation class into a application/hal+json document, you can use Jackson's ObjectMapper directly:
 
 ```java
     final ObjectMapper mapper = new ObjectMapper();
@@ -108,9 +107,10 @@ To get the JSON document, you can use Jackson directly:
     final String json = mapper.writeValueAsString(representation);
 ```
 
-*Parsing application/hal+json*
+###4. Parsing application/hal+json documents
 
 A HAL document can be parsed using Jackson, too:
+
 ```java
     @Test public void shouldParseHal() {
         // given
@@ -144,7 +144,7 @@ A HAL document can be parsed using Jackson, too:
     }
 ```
 
-If you want to parse embedded resources into a extended HalRepresentation, you need to use the HalParser:
+If you want to parse embedded resources into a extended HalRepresentation, you need to use the *HalParser*:
 
 ```java
     @Test
@@ -160,17 +160,24 @@ If you want to parse embedded resources into a extended HalRepresentation, you n
                         "   }" +
                         "]}" +
                         "}";
+        
         // when
-        final SomeHalRepresentation result = parse(json).as(SomeHalRepresentation.class, withEmbedded("bar", TestHalRepresentation.class));
+        final SomeHalRepresentation result = HalParser
+                .parse(json)
+                .as(SomeHalRepresentation.class, withEmbedded("bar", TestHalRepresentation.class));
+        
         // then
-        final List<EmbeddedHalRepresentation> embeddedItems = result.getEmbedded().getItemsBy("bar", TestHalRepresentation.class);
+        final List<EmbeddedHalRepresentation> embeddedItems = result
+                .getEmbedded()
+                .getItemsBy("bar", TestHalRepresentation.class);
+        
         assertThat(embeddedItems, hasSize(1));
         assertThat(embeddedItems.get(0).getClass(), equalTo(TestHalRepresentation.class));
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 ```
 
-*Using HAL in Spring controllers*
+###5. Using HAL in Spring controllers
 
 Using Spring MVC, you can directly return HalRepresentations from you controller methods:
 
