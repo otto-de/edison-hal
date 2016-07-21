@@ -21,6 +21,21 @@ import static org.hamcrest.Matchers.is;
 public class HalParserTest {
 
     @Test
+    public void shouldParseSimpleHalDocumentsWithoutEmbeddedItems() throws IOException {
+        // given
+        final String json =
+                 "{" +
+                        "\"ignored\":\"some value\"," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}}" +
+                 "}";
+        // when
+        final HalRepresentation result = parse(json).as(HalRepresentation.class);
+        // then
+        final Links links = result.getLinks();
+        assertThat(links.getLinkBy("self").get(), is(self("http://example.org/test/foo")));
+    }
+
+    @Test
     public void shouldParseItemsWithSomePropertiesAndLinks() throws IOException {
         // given
         final String json =
