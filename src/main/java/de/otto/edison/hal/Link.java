@@ -7,7 +7,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 import static java.lang.Boolean.TRUE;
 
 /**
- * Created by guido on 05.07.16.
+ * @since 0.1.0
  */
 @JsonInclude(NON_ABSENT)
 public class Link {

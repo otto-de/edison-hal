@@ -22,7 +22,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Created by guido on 05.07.16.
+ * @since 0.1.0
  */
 @JsonSerialize(using = Links.LinksSerializer.class)
 @JsonDeserialize(using = Links.LinksDeserializer.class)

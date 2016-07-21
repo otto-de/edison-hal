@@ -43,6 +43,7 @@ Parsing HAL representations:
 * simple domain model to access links, embedded resources etc.
 
 ## Next Steps
+* Support for HalParser to support multiple different embedded items
 * Support for curies
 * Support for simple traversal of linked resources
 * Support for collection resources including paging

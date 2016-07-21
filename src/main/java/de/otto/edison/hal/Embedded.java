@@ -22,7 +22,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
 
 /**
- * Created by guido on 05.07.16.
+ * @since 0.1.0
  */
 @JsonSerialize(using = Embedded.EmbeddedSerializer.class)
 @JsonDeserialize(using = Embedded.EmbeddedDeserializer.class)

@@ -14,6 +14,7 @@ import static de.otto.edison.hal.Links.emptyLinks;
 /**
  *
  * @see <a href="http://stateless.co/hal_specification.html"></a>
+ * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
