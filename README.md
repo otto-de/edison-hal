@@ -193,3 +193,12 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
         return new TestHalRepresentation(getTheInputData());
     }
 ```
+
+## Version History
+
+###0.1.0 Initial Release
+
+* Full support for all link properties specified by https://tools.ietf.org/html/draft-kelly-json-hal-06
+* Full support for embedded resources.
+* Serialization and deserialization of HAL resources.
+
