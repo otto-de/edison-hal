@@ -1,4 +1,4 @@
-# edison-microservice:edison-hateoas
+# Edison HAL
 
 Library to read and create application/hal+json representations of 
 REST resources using Jackson.
