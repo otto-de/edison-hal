@@ -29,12 +29,7 @@ Currently, there are only few libraries supporting HAL and even
  
 Spring HATEOAS, for
  example, is lacking many link properties, such as title, name, type and
- others. Beside of this, including Spring HATEOAS into Spring Boot
- applications has some unwanted (at least to me) side-effects: 
- for example, an "Actuator" endpoint is automatically registered unter 
- /internal, so we would loose the possibility to provide an html 
- representation at this URI (it is a big WTF? to me, that Spring Boot 
- Actuator endpoints do not support content negotiation, btw).
+ others. 
  
 ## Features
 
