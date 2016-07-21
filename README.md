@@ -7,6 +7,10 @@ See https://tools.ietf.org/html/draft-kelly-json-hal-06 for details.
 
 ## Status
 
+[![Build Status](https://travis-ci.org/otto-de/edison-hal.svg)](https://travis-ci.org/otto-de/edison-hal) 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-service/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal)
+[![Dependency Status](https://www.versioneye.com/user/projects/55ba6f016537620017001905/badge.svg?style=flat)](https://www.versioneye.com/user/projects/55ba6f016537620017001905)
+
 BETA - work in progress.
 
 The current implementation is supporting HAL compliant links and
