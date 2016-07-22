@@ -49,7 +49,7 @@ Parsing HAL representations:
 * Support for collection resources including paging
 
 ## Usage
-
+ 
 ### 1. Include edison-hal into your project:
  
 ```gradle
@@ -189,6 +189,27 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
         return new TestHalRepresentation(getTheInputData());
     }
 ```
+
+## Building edison-hal
+
+If you want to build edison-hal for some reason, you might want to use
+ the included Gradle wrapper:
+ 
+ ```
+ bin/go build
+ ```
+ or
+```
+ bin/gradlew build
+ ```
+ 
+ An IntelliJ IDEA Workspace can be created using 
+ ```
+  bin/go idea
+```
+
+If you do not want to use the provided gradle wrapper, please make sure 
+that you are using an up-to-date version of Gradle (>= 2.12.0).
 
 ## Version History
 
