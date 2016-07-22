@@ -10,7 +10,7 @@ import static java.lang.Boolean.TRUE;
 /**
  * A link to a REST resource.
  *
- * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5"></a>
+ * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5">draft-kelly-json-hal-08#section-5</a>
  * @since 0.1.0
  */
 @JsonInclude(NON_ABSENT)
@@ -86,7 +86,7 @@ public class Link {
      * @param href href of the linked resource
      * @return Link
      *
-     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
      * @since 0.1.0
      */
     public static Link self(final String href) {
@@ -99,7 +99,7 @@ public class Link {
      * @param href the linked profile
      * @return Link
      *
-     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
      * @since 0.1.0
      */
     public static Link profile(final String href) {
@@ -112,7 +112,7 @@ public class Link {
      * @param href the linked item
      * @return Link
      *
-     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
      * @since 0.1.0
      */
     public static Link item(final String href) {
@@ -125,7 +125,7 @@ public class Link {
      * @param href the linked collection
      * @return Link
      *
-     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
      * @since 0.1.0
      */
     public static Link collection(final String href) {
@@ -139,7 +139,7 @@ public class Link {
      * @param href href of the linked resource
      * @return Link
      *
-     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
      * @since 0.1.0
      */
     public static Link link(final String rel, final String href) {
@@ -150,10 +150,10 @@ public class Link {
      * Create a templated link from a link-relation type and an URI template.
      *
      * @param rel registered link-relation type, or URI identifying a custom link-relation type.
-     * @param uriTemplate
+     * @param uriTemplate a valid URI template
      * @return Link
      *
-     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
      * @since 0.1.0
      */
     public static Link templated(final String rel, final String uriTemplate) {
@@ -201,17 +201,17 @@ public class Link {
 
     /**
      * Returns the href of the link.
-     *
+     * <p>
      * The "href" property is REQUIRED.
-     *
+     * <p>
      * Its value is either a URI [RFC3986] or a URI Template [RFC6570].
-     *
+     * <p>
      * If the value is a URI Template then the Link Object SHOULD have a
      * "templated" attribute whose value is true.
      *
      * @return href of the linked resource, or URI template, if the link is {@code templated}.
      *
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.2"></a>
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.1">draft-kelly-json-hal-08#section-5.1</a>
      * @since 0.2.0
      */
     @JsonIgnore
@@ -221,18 +221,18 @@ public class Link {
 
     /**
      * Returns true, if the link is templated, false otherwise.
-     *
+     * <p>
      * The "templated" property is OPTIONAL.
-     *
+     * <p>
      * Its value is boolean and SHOULD be true when the Link Object's "href"
      * property is a URI Template.
-     *
+     * <p>
      * Its value SHOULD be considered false if it is undefined or any other
      * value than true.
      *
      * @return boolean
      *
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.2"></a>
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.2">draft-kelly-json-hal-08#section-5.2</a>
      * @since 0.2.0
      */
     @JsonIgnore
@@ -242,15 +242,15 @@ public class Link {
 
     /**
      * Returns the type of the link, or an empty String if no type is specified.
-     *
+     * <p>
      * The "type" property is OPTIONAL.
-     *
+     * <p>
      * Its value is a string used as a hint to indicate the media type
      * expected when dereferencing the target resource.
      *
      * @return type
      *
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.3"></a>
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.3">draft-kelly-json-hal-08#section-5.3</a>
      * @since 0.2.0
      */
     @JsonIgnore
@@ -260,15 +260,15 @@ public class Link {
 
     /**
      * Returns the hreflang of the link, or an empty String if no hreflang is specified.
-     *
+     * <p>
      * The "hreflang" property is OPTIONAL.
-     *
+     * <p>
      * Its value is a string and is intended for indicating the language of
      * the target resource (as defined by [RFC5988]).
      *
      * @return hreflang or empty string
      *
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.8"></a>
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.8">draft-kelly-json-hal-08#section-5.8</a>
      * @since 0.2.0
      */
     @JsonIgnore
@@ -278,15 +278,15 @@ public class Link {
 
     /**
      * Returns the title of the link, or an empty String if no title is specified.
-     *
+     * <p>
      * The "title" property is OPTIONAL.
-     *
+     * <p>
      * Its value is a string and is intended for labelling the link with a
      * human-readable identifier (as defined by [RFC5988]).
      *
      * @return title or empty string
      *
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.7"></a>
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.7">draft-kelly-json-hal-08#section-5.7</a>
      * @since 0.2.0
      */
     @JsonIgnore
@@ -296,15 +296,15 @@ public class Link {
 
     /**
      * Returns the name of the link, or an empty String if no name is specified.
-     *
+     * <p>
      * The "name" property is OPTIONAL.
-     *
+     * <p>
      * Its value MAY be used as a secondary key for selecting Link Objects
      * which share the same relation type.
      *
      * @return name or empty string
      *
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.5"></a>
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.5">draft-kelly-json-hal-08#section-5.5</a>
      * @since 0.2.0
      */
     @JsonIgnore
@@ -314,13 +314,14 @@ public class Link {
 
     /**
      * Returns the profile of the link, or an empty String if no profile is specified.
-     *
+     * <p>
      * The "profile" property is OPTIONAL.
-     *
+     * <p>
      * Its value is a string which is a URI that hints about the profile of the target resource.
      *
      * @return profile or empty string
      *
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.6">draft-kelly-json-hal-08#section-5.6</a>
      * @since 0.2.0
      */
     @JsonIgnore
@@ -330,13 +331,13 @@ public class Link {
 
     /**
      * Returns the deprecation information, or an empty string, if the link is not deprecated.
-     *
+     * <p>
      * The "deprecation" property is OPTIONAL.
-     *
+     * <p>
      * Its presence indicates that the link is to be deprecated (i.e.
      * removed) at a future date.  Its value is a URL that SHOULD provide
      * further information about the deprecation.
-     *
+     * <p>
      * A client SHOULD provide some notification (for example, by logging a
      * warning message) whenever it traverses over a link that has this
      * property.  The notification SHOULD include the deprecation property's
@@ -345,7 +346,7 @@ public class Link {
      *
      * @return URL
      *
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.4"></a>
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.4">draft-kelly-json-hal-08#section-5.4</a>
      * @since 0.2.0
      */
     @JsonIgnore

@@ -72,6 +72,7 @@ public class HalRepresentation {
     /**
      * This method is used by the HalParser to parse embedded items as a concrete sub-class of HalRepresentation
      * and replace these embedded items.
+     *
      * @param rel the link-relation type of the embedded items that are replaced
      * @param embeddedValues the new values for the specified link-relation type
      *

@@ -23,7 +23,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.1"></a>
+ * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.1">draft-kelly-json-hal-08#section-4.1.1</a>
  * @since 0.1.0
  */
 @JsonSerialize(using = Links.LinksSerializer.class)

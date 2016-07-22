@@ -23,10 +23,10 @@ import static java.util.Collections.singletonMap;
 
 /**
  * The embedded items of a HalResource.
- *
+ * <p>
  * Provides access to embedded items by link-relation type.
- *
- * <code>
+ * <p>
+ * <pre><code>
  *     {
  *         "_embedded": {
  *             "item": [
@@ -46,9 +46,9 @@ import static java.util.Collections.singletonMap;
  *         }
  *
  *     }
- * </code>
+ * </code></pre>
  *
- * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.2"></a>
+ * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.2">draft-kelly-json-hal-08#section-4.1.2</a>
  * @since 0.1.0
  */
 @JsonSerialize(using = Embedded.EmbeddedSerializer.class)
@@ -117,7 +117,7 @@ public class Embedded {
 
     /**
      * Returns the embedded items by link-relation type.
-     *
+     * <p>
      * If no items with this type are embedded, an empty list is returned.
      *
      * @param rel the link-relation type
@@ -136,11 +136,11 @@ public class Embedded {
 
     /**
      * Returns the embedded items by link-relation type.
-     *
+     * <p>
      * This method can be used if the Java type of the embedded representations is known, for example because the
      * {@link HalParser} is used to map the items to a specific HalRepresentation:
-     *
-     * <code>
+     * <p>
+     * <pre><code>
      * final String json = ...
      *
      * final FooHalRepresentation foo = HalParser
@@ -150,7 +150,7 @@ public class Embedded {
      * final List&lt;BarHalRepresentation embeddedBars = foo
      *         .getEmbedded()
      *         .getItemsBy("bar", BarHalRepresentation.class);
-     * </code>
+     * </code></pre>
      *
      * @param rel the link-relation type
      * @param asType the expected class of the embedded items.
@@ -219,7 +219,7 @@ public class Embedded {
 
         /**
          * Creates an EmbeddedBuilder initialized from a copy of an Embedded instance.
-         *
+         * <p>
          * This is used to add / replace lists of HAL representations for a link-relation type.
          *
          * @param embedded the Embedded instance to be copied.
