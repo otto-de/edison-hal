@@ -26,7 +26,7 @@ import static java.util.Collections.singletonMap;
  *
  * Provides access to embedded items by link-relation type.
  *
- * <code><pre>
+ * <code>
  *     {
  *         "_embedded": {
  *             "item": [
@@ -46,9 +46,9 @@ import static java.util.Collections.singletonMap;
  *         }
  *
  *     }
- * </pre></code>
+ * </code>
  *
- * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.2></a>
+ * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.2"></a>
  * @since 0.1.0
  */
 @JsonSerialize(using = Embedded.EmbeddedSerializer.class)
@@ -140,17 +140,17 @@ public class Embedded {
      * This method can be used if the Java type of the embedded representations is known, for example because the
      * {@link HalParser} is used to map the items to a specific HalRepresentation:
      *
-     * <code><pre>
+     * <code>
      * final String json = ...
      *
      * final FooHalRepresentation foo = HalParser
      *         .parse(json)
      *         .as(FooHalRepresentation.class, withEmbedded("bar", BarHalRepresentation.class));
      *
-     * final List<BarHalRepresentation embeddedBars = foo
+     * final List&lt;BarHalRepresentation embeddedBars = foo
      *         .getEmbedded()
      *         .getItemsBy("bar", BarHalRepresentation.class);
-     * </pre></code>
+     * </code>
      *
      * @param rel the link-relation type
      * @param asType the expected class of the embedded items.

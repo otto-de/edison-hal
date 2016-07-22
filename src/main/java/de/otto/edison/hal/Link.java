@@ -9,7 +9,7 @@ import static java.lang.Boolean.TRUE;
 
 /**
  *
- * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5></a>
+ * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5"></a>
  * @since 0.1.0
  */
 @JsonInclude(NON_ABSENT)
@@ -103,6 +103,9 @@ public class Link {
 
     /**
      *
+     * @param href
+     * @return
+     *
      * @since 0.1.0
      */
     public static Link self(final String href) {
@@ -110,6 +113,9 @@ public class Link {
     }
 
     /**
+     *
+     * @param href
+     * @return
      *
      * @since 0.1.0
      */
@@ -119,6 +125,9 @@ public class Link {
 
     /**
      *
+     * @param href
+     * @return
+     *
      * @since 0.1.0
      */
     public static Link item(final String href) {
@@ -126,6 +135,9 @@ public class Link {
     }
 
     /**
+     *
+     * @param href
+     * @return
      *
      * @since 0.1.0
      */
@@ -135,6 +147,10 @@ public class Link {
 
     /**
      *
+     * @param rel
+     * @param href
+     * @return
+     *
      * @since 0.1.0
      */
     public static Link link(final String rel, final String href) {
@@ -143,6 +159,10 @@ public class Link {
 
     /**
      *
+     * @param rel
+     * @param uriTemplate
+     * @return
+     *
      * @since 0.1.0
      */
     public static Link templated(final String rel, final String uriTemplate) {
@@ -150,7 +170,13 @@ public class Link {
     }
 
     /**
+     * Create a Builder instance for templated links with mandatory link-relation type and uri template.
      *
+     * @param rel  the link-relation type of the link
+     * @param uriTemplate the URI template used to create the href of the linked resource
+     * @return a Builder for a templated link.
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc6570">URI Template</a>
      * @since 0.1.0
      */
     public static Builder templatedBuilder(final String rel, final String uriTemplate) {
@@ -158,6 +184,11 @@ public class Link {
     }
 
     /**
+     * Create a Builder instance with mandatory link-relation type and href
+     *
+     * @param rel  the link-relation type of the link
+     * @param href the href of the linked resource
+     * @return a Builder for a Link.
      *
      * @since 0.1.0
      */
@@ -180,7 +211,7 @@ public class Link {
     /**
      * Returns the href of the link.
      *
-     * @return href
+     * @return href of the linked resource, or URI template, if the link is {@code templated}.
      *
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.2"></a>
      * @since 0.2.0
@@ -334,6 +365,7 @@ public class Link {
     }
 
     /**
+     * A Builder used to build complex links.
      *
      * @since 0.1.0
      */
@@ -349,6 +381,10 @@ public class Link {
         private Boolean templated;
 
         /**
+         * Create a Builder instance with mandatory link-relation type and href
+         *
+         * @param rel  the link-relation type of the link
+         * @param href the href of the linked resource
          *
          * @since 0.1.0
          */
@@ -357,11 +393,23 @@ public class Link {
             this.href = href;
         }
 
+        /**
+         * Create a Builder instance with mandatory link-relation type and href
+         *
+         * @param rel  the link-relation type of the link
+         * @param href the href of the linked resource
+         *
+         * @since 0.1.0
+         */
         public static Builder linkBuilderFor(final String rel, final String href) {
             return new Builder(rel, href);
         }
 
         /**
+         * Set the media type of the linked resource
+         *
+         * @param type media type
+         * @return this
          *
          * @since 0.1.0
          */
@@ -380,6 +428,9 @@ public class Link {
         }
 
         /**
+         * Set the title attribute
+         * @param title the title of the linked resource.
+         * @return this
          *
          * @since 0.1.0
          */
@@ -389,6 +440,10 @@ public class Link {
         }
 
         /**
+         * Set the name attribute.
+         *
+         * @param name the name of the linked resource.
+         * @return this
          *
          * @since 0.1.0
          */
@@ -398,6 +453,10 @@ public class Link {
         }
 
         /**
+         * Set the profile attribute
+         *
+         * @param profile the profile of the representation
+         * @return this
          *
          * @since 0.1.0
          */
@@ -407,6 +466,9 @@ public class Link {
         }
 
         /**
+         * Set deprecation attribute to true.
+         *
+         * @return this
          *
          * @since 0.1.0
          */
@@ -416,6 +478,9 @@ public class Link {
         }
 
         /**
+         * Set templated attribute to true.
+         *
+         * @return this
          *
          * @since 0.1.0
          */
@@ -425,6 +490,9 @@ public class Link {
         }
 
         /**
+         * Builds the Link instance.
+         *
+         * @return Link
          *
          * @since 0.1.0
          */

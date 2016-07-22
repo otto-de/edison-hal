@@ -11,24 +11,24 @@ import java.util.List;
  * A parser used to parse application/hal+json representations of REST resources into Java objects.
  *
  * Simple HAL representations can be parsed using Jackson's ObjectMapper like this:
- * <code><pre>
+ * <code>
  *     new ObjectMapper().readValue(json.getBytes(), MyHalRepresentation.class)
- * </pre></code>
+ * </code>
  *
  * The same can be achieved by using a HalParser:
- * <code><pre>
+ * <code>
  * final MyHalRepresentation result = HalParser.parse(json).as(MyHalRepresentation.class);
- * </pre></code>
+ * </code>
  *
  * However, if the representation contains embedded items, Jackson is unable to determine the Java type of
  * the embedded items, because the HAL document itself does not contain type information. In this case, Jackson
  * needs some help to identify the concrete types of embedded items. Using the HalParser, this is accomplished
  * like this:
- * <code><pre>
+ * <code>
  * final FooHalRepresentation result = HalParser
  *         .parse(json)
  *         .as(FooHalRepresentation.class, withEmbedded("bar", BarHalRepresentation.class));
- * </pre></code>
+ * </code>
  *
  * @since 0.1.0
  */
@@ -88,7 +88,7 @@ public final class HalParser {
     }
 
     /**
-     * Specify the type that is used to parse & map the json.
+     * Specify the type that is used to parse and map the json.
      *
      * @param type the java type used to parse the JSON
      * @param <T> the type of the class, extending HalRepresentation

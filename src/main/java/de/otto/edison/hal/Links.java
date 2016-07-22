@@ -23,7 +23,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.1></a>
+ * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.1"></a>
  * @since 0.1.0
  */
 @JsonSerialize(using = Links.LinksSerializer.class)
@@ -42,6 +42,7 @@ public class Links {
 
     /**
      *
+     * @param links
      * @since 0.1.0
      */
     private Links(final Map<String, List<Link>> links) {
@@ -49,6 +50,7 @@ public class Links {
     }
 
     /**
+     * @return
      *
      * @since 0.1.0
      */
@@ -57,6 +59,10 @@ public class Links {
     }
 
     /**
+     *
+     * @param link
+     * @param more
+     * @return
      *
      * @since 0.1.0
      */
@@ -76,6 +82,9 @@ public class Links {
 
     /**
      *
+     * @param rel
+     * @return
+     *
      * @since 0.1.0
      */
     public Optional<Link> getLinkBy(final String rel) {
@@ -87,6 +96,9 @@ public class Links {
 
     /**
      *
+     * @param rel
+     * @return
+     *
      * @since 0.1.0
      */
     public List<Link> getLinksBy(final String rel) {
@@ -97,6 +109,8 @@ public class Links {
     }
 
     /**
+     *
+     * @return
      *
      * @since 0.1.0
      */
