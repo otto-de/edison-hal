@@ -9,7 +9,7 @@ See https://tools.ietf.org/html/draft-kelly-json-hal-06 for details.
 
 [![Build Status](https://travis-ci.org/otto-de/edison-hal.svg)](https://travis-ci.org/otto-de/edison-hal) 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal)
-[![Dependency Status](https://www.versioneye.com/user/projects/55ba6f016537620017001905/badge.svg?style=flat)](https://www.versioneye.com/user/projects/55ba6f016537620017001905)
+[![Dependency Status](https://www.versioneye.com/user/projects/5790e6b326c1a40035ecd1e8/badge.svg?style=flat)](https://www.versioneye.com/user/projects/5790e6b326c1a40035ecd1e8)
 
 BETA - work in progress.
 
