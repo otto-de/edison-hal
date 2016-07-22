@@ -95,7 +95,7 @@ public class HalRepresentationLinkingTest {
                                 .withTitle("Some Title")
                                 .withName("Foo")
                                 .withProfile("http://example.org/profiles/test-profile")
-                                .beeingDeprecated()
+                                .withDeprecation("http://example.org/deprecations/4711.html")
                                 .build(),
                         linkBuilder("foo", "/test/bar")
                                 .withType("application/hal+json")
@@ -103,15 +103,15 @@ public class HalRepresentationLinkingTest {
                                 .withTitle("Some Title")
                                 .withName("Foo")
                                 .withProfile("http://example.org/profiles/test-profile")
-                                .beeingDeprecated()
+                                .withDeprecation("http://example.org/deprecations/4711.html")
                                 .build()
         ));
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{" + "" +
-                "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"deprecation\":true,\"profile\":\"http://example.org/profiles/test-profile\"}," +
-                "\"foo\":{\"href\":\"/test/bar\",\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"deprecation\":true,\"profile\":\"http://example.org/profiles/test-profile\"}" +
+                "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"deprecation\":\"http://example.org/deprecations/4711.html\",\"profile\":\"http://example.org/profiles/test-profile\"}," +
+                "\"foo\":{\"href\":\"/test/bar\",\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"deprecation\":\"http://example.org/deprecations/4711.html\",\"profile\":\"http://example.org/profiles/test-profile\"}" +
                 "}}"));
     }
 

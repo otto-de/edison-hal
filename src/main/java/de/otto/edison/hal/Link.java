@@ -8,6 +8,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
 import static java.lang.Boolean.TRUE;
 
 /**
+ * A link to a REST resource.
  *
  * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5"></a>
  * @since 0.1.0
@@ -17,49 +18,26 @@ public class Link {
 
     @JsonIgnore
     private String rel;
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.1"></a>
-     */
     @JsonProperty
     private String href;
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.2"></a>
-     */
     @JsonProperty
     private Boolean templated;
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.3"></a>
-     */
     @JsonProperty
     private String type;
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.8"></a>
-     */
     @JsonProperty
     private String hreflang;
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.7"></a>
-     */
     @JsonProperty
     private String title;
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.5"></a>
-     */
     @JsonProperty
     private String name;
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.4"></a>
-     */
     @JsonProperty
-    private Boolean deprecation;
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.6"></a>
-     */
+    private String deprecation;
     @JsonProperty
     private String profile;
 
 
     /**
+     * Create a link having only rel and href.
      *
      * @since 0.1.0
      */
@@ -68,16 +46,17 @@ public class Link {
     }
 
     /**
+     * Create a link with all attributes.
      *
-     * @param rel
-     * @param href
-     * @param templated
-     * @param type
-     * @param hrefLang
-     * @param title
-     * @param name
-     * @param profile
-     * @param deprecation
+     * @param rel mandatory link-relation type
+     * @param href mandatory href or URI template
+     * @param templated optional boolean indicating whether or not the href is templated
+     * @param type optional media type
+     * @param hrefLang optional href language
+     * @param title optional human-readable title
+     * @param name optional name
+     * @param profile profile of the linked resource
+     * @param deprecation information about whether or not the link is deprecated
      *
      * @since 0.1.0
      */
@@ -89,7 +68,7 @@ public class Link {
                  final String title,
                  final String name,
                  final String profile,
-                 final Boolean deprecation) {
+                 final String deprecation) {
         this.rel = rel;
         this.href = href;
         this.templated = templated;
@@ -102,10 +81,12 @@ public class Link {
     }
 
     /**
+     * Create a 'self' link from a href.
      *
-     * @param href
-     * @return
+     * @param href href of the linked resource
+     * @return Link
      *
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
      * @since 0.1.0
      */
     public static Link self(final String href) {
@@ -113,10 +94,12 @@ public class Link {
     }
 
     /**
+     * Create a 'profile' link from a href
      *
-     * @param href
-     * @return
+     * @param href the linked profile
+     * @return Link
      *
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
      * @since 0.1.0
      */
     public static Link profile(final String href) {
@@ -124,10 +107,12 @@ public class Link {
     }
 
     /**
+     * Create a 'item' link from a href.
      *
-     * @param href
-     * @return
+     * @param href the linked item
+     * @return Link
      *
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
      * @since 0.1.0
      */
     public static Link item(final String href) {
@@ -135,10 +120,12 @@ public class Link {
     }
 
     /**
+     * Create a 'collection' link from a href
      *
-     * @param href
-     * @return
+     * @param href the linked collection
+     * @return Link
      *
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
      * @since 0.1.0
      */
     public static Link collection(final String href) {
@@ -146,11 +133,13 @@ public class Link {
     }
 
     /**
+     * Create a link from a link-relation type and href.
      *
-     * @param rel
-     * @param href
-     * @return
+     * @param rel registered link-relation type, or URI identifying a custom link-relation type.
+     * @param href href of the linked resource
+     * @return Link
      *
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
      * @since 0.1.0
      */
     public static Link link(final String rel, final String href) {
@@ -158,11 +147,13 @@ public class Link {
     }
 
     /**
+     * Create a templated link from a link-relation type and an URI template.
      *
-     * @param rel
+     * @param rel registered link-relation type, or URI identifying a custom link-relation type.
      * @param uriTemplate
-     * @return
+     * @return Link
      *
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml"></a>
      * @since 0.1.0
      */
     public static Link templated(final String rel, final String uriTemplate) {
@@ -211,6 +202,13 @@ public class Link {
     /**
      * Returns the href of the link.
      *
+     * The "href" property is REQUIRED.
+     *
+     * Its value is either a URI [RFC3986] or a URI Template [RFC6570].
+     *
+     * If the value is a URI Template then the Link Object SHOULD have a
+     * "templated" attribute whose value is true.
+     *
      * @return href of the linked resource, or URI template, if the link is {@code templated}.
      *
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.2"></a>
@@ -223,6 +221,14 @@ public class Link {
 
     /**
      * Returns true, if the link is templated, false otherwise.
+     *
+     * The "templated" property is OPTIONAL.
+     *
+     * Its value is boolean and SHOULD be true when the Link Object's "href"
+     * property is a URI Template.
+     *
+     * Its value SHOULD be considered false if it is undefined or any other
+     * value than true.
      *
      * @return boolean
      *
@@ -237,6 +243,11 @@ public class Link {
     /**
      * Returns the type of the link, or an empty String if no type is specified.
      *
+     * The "type" property is OPTIONAL.
+     *
+     * Its value is a string used as a hint to indicate the media type
+     * expected when dereferencing the target resource.
+     *
      * @return type
      *
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.3"></a>
@@ -249,6 +260,11 @@ public class Link {
 
     /**
      * Returns the hreflang of the link, or an empty String if no hreflang is specified.
+     *
+     * The "hreflang" property is OPTIONAL.
+     *
+     * Its value is a string and is intended for indicating the language of
+     * the target resource (as defined by [RFC5988]).
      *
      * @return hreflang or empty string
      *
@@ -263,6 +279,11 @@ public class Link {
     /**
      * Returns the title of the link, or an empty String if no title is specified.
      *
+     * The "title" property is OPTIONAL.
+     *
+     * Its value is a string and is intended for labelling the link with a
+     * human-readable identifier (as defined by [RFC5988]).
+     *
      * @return title or empty string
      *
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.7"></a>
@@ -275,6 +296,11 @@ public class Link {
 
     /**
      * Returns the name of the link, or an empty String if no name is specified.
+     *
+     * The "name" property is OPTIONAL.
+     *
+     * Its value MAY be used as a secondary key for selecting Link Objects
+     * which share the same relation type.
      *
      * @return name or empty string
      *
@@ -289,6 +315,10 @@ public class Link {
     /**
      * Returns the profile of the link, or an empty String if no profile is specified.
      *
+     * The "profile" property is OPTIONAL.
+     *
+     * Its value is a string which is a URI that hints about the profile of the target resource.
+     *
      * @return profile or empty string
      *
      * @since 0.2.0
@@ -299,18 +329,35 @@ public class Link {
     }
 
     /**
-     * Returns whether or not the link is deprecation.
+     * Returns the deprecation information, or an empty string, if the link is not deprecated.
      *
-     * @return boolean
+     * The "deprecation" property is OPTIONAL.
+     *
+     * Its presence indicates that the link is to be deprecated (i.e.
+     * removed) at a future date.  Its value is a URL that SHOULD provide
+     * further information about the deprecation.
+     *
+     * A client SHOULD provide some notification (for example, by logging a
+     * warning message) whenever it traverses over a link that has this
+     * property.  The notification SHOULD include the deprecation property's
+     * value so that a client manitainer can easily find information about
+     * the deprecation.
+     *
+     * @return URL
      *
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.4"></a>
      * @since 0.2.0
      */
     @JsonIgnore
-    public boolean getDeprecation() {
-        return deprecation != null ? deprecation : false;
+    public String getDeprecation() {
+        return deprecation != null ? deprecation : "";
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @since 0.1.0
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -330,6 +377,11 @@ public class Link {
 
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @since 0.1.0
+     */
     @Override
     public int hashCode() {
         int result = rel != null ? rel.hashCode() : 0;
@@ -377,7 +429,7 @@ public class Link {
         private String title;
         private String name;
         private String profile;
-        private Boolean deprecated;
+        private String deprecation;
         private Boolean templated;
 
         /**
@@ -466,14 +518,14 @@ public class Link {
         }
 
         /**
-         * Set deprecation attribute to true.
+         * Set deprecation attribute.
          *
          * @return this
          *
          * @since 0.1.0
          */
-        public Builder beeingDeprecated() {
-            this.deprecated = TRUE;
+        public Builder withDeprecation(final String deprecation) {
+            this.deprecation = deprecation;
             return this;
         }
 
@@ -497,7 +549,7 @@ public class Link {
          * @since 0.1.0
          */
         public Link build() {
-            return new Link(rel, href, templated, type, hrefLang, title, name, profile, deprecated);
+            return new Link(rel, href, templated, type, hrefLang, title, name, profile, deprecation);
         }
     }
 }

@@ -201,7 +201,7 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
 * Added getter methods to Link instead of public attributes to avoid
 NullPointerExceptions
 * Fixed generation + parsing of non-trivial links
-* Fixed name of 'deprecation' property in links
+* Fixed type and name of 'deprecation' property in links
 
 ### 0.1.0 
 

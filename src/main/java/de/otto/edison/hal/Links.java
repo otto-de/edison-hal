@@ -214,15 +214,12 @@ public class Links {
                     .withName((String) value.get("name"))
                     .withTitle((String) value.get("title"))
                     .withType((String) value.get("type"))
-                    .withProfile((String) value.get("profile"));
+                    .withProfile((String) value.get("profile"))
+                    .withDeprecation((String) value.get("deprecation"));
             if (TRUE.equals(value.get("templated"))) {
                 builder.beeingTemplated();
             }
-            if (TRUE.equals(value.get("deprecation"))) {
-                builder.beeingDeprecated();
-            }
-            return builder
-                    .build();
+            return builder.build();
         }
     }
 }

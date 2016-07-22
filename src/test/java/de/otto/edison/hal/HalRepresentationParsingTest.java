@@ -144,8 +144,8 @@ public class HalRepresentationParsingTest {
     public void shouldParseEvenMoreComplexLinks() throws IOException {
         // given
         final String json = "{\"_links\":{" + "" +
-                "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecation\":true}," +
-                "\"foo\":{\"href\":\"/test/bar\",\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecation\":false}" +
+                "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecation\":\"http://example.org/deprecations/4711.html\"}," +
+                "\"foo\":{\"href\":\"/test/bar\",\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\"}" +
                 "}}";
         // when
         Links links = parse(json).as(HalRepresentation.class).getLinks();
@@ -157,7 +157,7 @@ public class HalRepresentationParsingTest {
                         .withHrefLang("de-DE")
                         .withTitle("Some Title")
                         .withName("Foo")
-                        .beeingDeprecated()
+                        .withDeprecation("http://example.org/deprecations/4711.html")
                         .build()
         ));
         assertThat(links.getLinksBy("foo"), contains(
