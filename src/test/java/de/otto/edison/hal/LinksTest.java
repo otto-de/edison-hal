@@ -8,7 +8,6 @@ import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -27,8 +26,8 @@ public class LinksTest {
     public void shouldCreateLinks() {
         final Links links = linkingTo(self("http://example.org"));
         assertThat(links.getLinkBy("self").isPresent(), is(true));
-        assertThat(links.getLinkBy("self").get().rel, is("self"));
-        assertThat(links.getLinkBy("self").get().href, is("http://example.org"));
+        assertThat(links.getLinkBy("self").get().getRel(), is("self"));
+        assertThat(links.getLinkBy("self").get().getHref(), is("http://example.org"));
     }
 
     @Test
@@ -48,7 +47,7 @@ public class LinksTest {
                 item("http://example.org/items/44")
         );
         assertThat(links.getLinkBy("item").isPresent(), is(true));
-        assertThat(links.getLinkBy("item").get().href, is("http://example.org/items/42"));
+        assertThat(links.getLinkBy("item").get().getHref(), is("http://example.org/items/42"));
     }
 
     @Test
@@ -64,8 +63,8 @@ public class LinksTest {
                 item("http://example.org/items/44")
         );
         assertThat(links.getLinksBy("item"), hasSize(2));
-        assertThat(links.getLinksBy("item").get(0).href, is("http://example.org/items/42"));
-        assertThat(links.getLinksBy("item").get(1).href, is("http://example.org/items/44"));
+        assertThat(links.getLinksBy("item").get(0).getHref(), is("http://example.org/items/42"));
+        assertThat(links.getLinksBy("item").get(1).getHref(), is("http://example.org/items/44"));
     }
 
     @Test

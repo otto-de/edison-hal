@@ -8,10 +8,10 @@ import java.util.List;
 
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
-import static de.otto.edison.hal.Link.link;
-import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.Link.*;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -115,36 +115,60 @@ public class HalRepresentationParsingTest {
         assertThat(embeddedItems.get(0), is(instanceOf(EmbeddedHalRepresentation.class)));
     }
 
-    /*
     @Test
-    public void shouldParseMultipleLinksForSingleRel() throws JsonProcessingException {
+    public void shouldParseMultipleLinksForSingleRel() throws IOException {
         // given
         final String json = "{\"_links\":{\"test\":[{\"href\":\"http://example.org/test/foo\"},{\"href\":\"http://example.org/test/bar\"}]}}";
         // when
+        Links links = parse(json).as(HalRepresentation.class).getLinks();
         // then
-        fail("not yet implemented");
+        assertThat(links.getLinksBy("test"), contains(
+                link("test", "http://example.org/test/foo"),
+                link("test", "http://example.org/test/bar")
+        ));
     }
 
     @Test
-    public void shouldParseTemplatedLink() throws JsonProcessingException {
+    public void shouldParseTemplatedLink() throws IOException {
         // given
         final String json = "{\"_links\":{\"search\":{\"href\":\"/test{?bar}\",\"templated\":true}}}";
         // when
+        Links links = parse(json).as(HalRepresentation.class).getLinks();
         // then
-        fail("not yet implemented");
+        assertThat(links.getLinksBy("search"), contains(
+                templated("search", "/test{?bar}")
+        ));
     }
 
     @Test
-    public void shouldParseEvenMoreComplexLinks() throws JsonProcessingException {
+    public void shouldParseEvenMoreComplexLinks() throws IOException {
         // given
         final String json = "{\"_links\":{" + "" +
-                "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecated\":true}," +
-                "\"foo\":{\"href\":\"/test/bar\",\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecated\":true}" +
+                "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecation\":true}," +
+                "\"foo\":{\"href\":\"/test/bar\",\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecation\":false}" +
                 "}}";
         // when
+        Links links = parse(json).as(HalRepresentation.class).getLinks();
         // then
-        fail("not yet implemented");
+        assertThat(links.getLinksBy("search"), contains(
+                templatedBuilder("search", "/test{?bar}")
+                        .withType("application/hal+json")
+                        .withProfile("http://example.org/profiles/test-profile")
+                        .withHrefLang("de-DE")
+                        .withTitle("Some Title")
+                        .withName("Foo")
+                        .beeingDeprecated()
+                        .build()
+        ));
+        assertThat(links.getLinksBy("foo"), contains(
+                linkBuilder("foo", "/test/bar")
+                        .withType("application/hal+json")
+                        .withProfile("http://example.org/profiles/test-profile")
+                        .withHrefLang("de-DE")
+                        .withTitle("Some Title")
+                        .withName("Foo")
+                        .build()
+        ));
     }
-    */
 
 }

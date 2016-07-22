@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static de.otto.edison.hal.Link.linkBuilder;
+import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -22,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
+ * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.1></a>
  * @since 0.1.0
  */
 @JsonSerialize(using = Links.LinksSerializer.class)
@@ -32,30 +34,50 @@ public class Links {
 
     private final Map<String, List<Link>> links = new LinkedHashMap<>();
 
+    /**
+     *
+     * @since 0.1.0
+     */
     Links() {}
 
+    /**
+     *
+     * @since 0.1.0
+     */
     private Links(final Map<String, List<Link>> links) {
         this.links.putAll(links);
     }
 
+    /**
+     *
+     * @since 0.1.0
+     */
     public static Links emptyLinks() {
         return EMPTY_LINKS;
     }
 
+    /**
+     *
+     * @since 0.1.0
+     */
     public static Links linkingTo(final Link link, final Link... more) {
         final Map<String,List<Link>> allLinks = new LinkedHashMap<>();
-        allLinks.put(link.rel, new ArrayList<Link>(){{add(link);}});
+        allLinks.put(link.getRel(), new ArrayList<Link>(){{add(link);}});
         if (more != null) {
             stream(more).forEach(l -> {
-                if (!allLinks.containsKey(l.rel)) {
-                    allLinks.put(l.rel, new ArrayList<>());
+                if (!allLinks.containsKey(l.getRel())) {
+                    allLinks.put(l.getRel(), new ArrayList<>());
                 }
-                allLinks.get(l.rel).add(l);
+                allLinks.get(l.getRel()).add(l);
             });
         }
         return new Links(allLinks);
     }
 
+    /**
+     *
+     * @since 0.1.0
+     */
     public Optional<Link> getLinkBy(final String rel) {
         List<Link> links = this.links.get(rel);
         return links == null || links.isEmpty()
@@ -63,6 +85,10 @@ public class Links {
                 : Optional.of(links.get(0));
     }
 
+    /**
+     *
+     * @since 0.1.0
+     */
     public List<Link> getLinksBy(final String rel) {
         List<Link> links = this.links.get(rel);
         return links == null
@@ -70,6 +96,19 @@ public class Links {
                 : links;
     }
 
+    /**
+     *
+     * @since 0.1.0
+     */
+    public boolean isEmpty() {
+        return links.isEmpty();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 0.1.0
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -81,11 +120,21 @@ public class Links {
 
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @since 0.1.0
+     */
     @Override
     public int hashCode() {
         return links != null ? links.hashCode() : 0;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @since 0.1.0
+     */
     @Override
     public String toString() {
         return "Links{" +
@@ -93,10 +142,10 @@ public class Links {
                 '}';
     }
 
-    public boolean isEmpty() {
-        return links.isEmpty();
-    }
-
+    /**
+     *
+     * @since 0.1.0
+     */
     static class LinksSerializer extends JsonSerializer<Links> {
 
         @Override
@@ -119,6 +168,10 @@ public class Links {
         }
     }
 
+    /**
+     *
+     * @since 0.1.0
+     */
     static class LinksDeserializer extends JsonDeserializer<Links> {
 
         private static final TypeReference<Map<String, ?>> TYPE_REF_LINK_MAP = new TypeReference<Map<String, ?>>() {};
@@ -142,10 +195,19 @@ public class Links {
         }
 
         private Link asLink(final String rel, final Map value) {
-            return linkBuilder(rel, value.get("href").toString())
+            Link.Builder builder = linkBuilder(rel, value.get("href").toString())
                     .withHrefLang((String) value.get("hreflang"))
                     .withName((String) value.get("name"))
                     .withTitle((String) value.get("title"))
+                    .withType((String) value.get("type"))
+                    .withProfile((String) value.get("profile"));
+            if (TRUE.equals(value.get("templated"))) {
+                builder.beeingTemplated();
+            }
+            if (TRUE.equals(value.get("deprecation"))) {
+                builder.beeingDeprecated();
+            }
+            return builder
                     .build();
         }
     }

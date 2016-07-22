@@ -50,7 +50,7 @@ Parsing HAL representations:
 
 ## Usage
 
-###1. Include edison-hal into your project:
+### 1. Include edison-hal into your project:
  
 ```gradle
     dependencies {
@@ -59,7 +59,7 @@ Parsing HAL representations:
     }
 ```
  
-###2. Provide a class for the representation of your REST API
+### 2. Provide a class for the representation of your REST API
 
 If your representation does not need additional attributes beside of
 the properties defined in application/hal+json, you can create a
@@ -93,7 +93,7 @@ Otherwise, you can derive a class from HalRepresentation to add extra attributes
 
 ```
 
-###3. Serializing HalRepresentations
+### 3. Serializing HalRepresentations
 
 To convert your representation class into a application/hal+json document, you can use Jackson's ObjectMapper directly:
 
@@ -103,7 +103,7 @@ To convert your representation class into a application/hal+json document, you c
     final String json = mapper.writeValueAsString(representation);
 ```
 
-###4. Parsing application/hal+json documents
+### 4. Parsing application/hal+json documents
 
 A HAL document can be parsed using Jackson, too:
 
@@ -173,7 +173,7 @@ If you want to parse embedded resources into a extended HalRepresentation, you n
     }
 ```
 
-###5. Using HAL in Spring controllers
+### 5. Using HAL in Spring controllers
 
 Using Spring MVC, you can directly return HalRepresentations from you controller methods:
 
@@ -192,9 +192,21 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
 
 ## Version History
 
-###0.1.0 Initial Release
+### 0.2.0
+* Renamed Link.LinkBuilder to Link.Builder 
+* Renamed Embedded.EmbeddedItemsBuilder to Embedded.Builder 
+* Introduced factory methods for Embedded.Builder
+* Added method to remove link-relation types from Embedded.Builder
+* Added JavaDoc
+* Added getter methods to Link instead of public attributes to avoid
+NullPointerExceptions
+* Fixed generation + parsing of non-trivial links
+* Fixed name of 'deprecation' property in links
 
-* Full support for all link properties specified by https://tools.ietf.org/html/draft-kelly-json-hal-06
+### 0.1.0 
+
+* Initial Release
+* Full support for all link properties specified by https://tools.ietf.org/html/draft-kelly-json-hal-08
 * Full support for embedded resources.
 * Serialization and deserialization of HAL resources.
 

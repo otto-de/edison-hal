@@ -4,10 +4,10 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static de.otto.edison.hal.Embedded.*;
-import static de.otto.edison.hal.Embedded.EmbeddedItemsBuilder.copyOf;
+import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Embedded.embeddedBuilder;
+import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;

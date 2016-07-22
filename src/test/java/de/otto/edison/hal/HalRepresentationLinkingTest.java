@@ -89,7 +89,7 @@ public class HalRepresentationLinkingTest {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo(
-                        templatedBuilderBuilder("search", "/test{?bar}")
+                        templatedBuilder("search", "/test{?bar}")
                                 .withType("application/hal+json")
                                 .withHrefLang("de-DE")
                                 .withTitle("Some Title")
@@ -110,8 +110,8 @@ public class HalRepresentationLinkingTest {
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{" + "" +
-                "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecated\":true}," +
-                "\"foo\":{\"href\":\"/test/bar\",\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"profile\":\"http://example.org/profiles/test-profile\",\"deprecated\":true}" +
+                "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"deprecation\":true,\"profile\":\"http://example.org/profiles/test-profile\"}," +
+                "\"foo\":{\"href\":\"/test/bar\",\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"deprecation\":true,\"profile\":\"http://example.org/profiles/test-profile\"}" +
                 "}}"));
     }
 
