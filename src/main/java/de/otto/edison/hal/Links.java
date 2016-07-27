@@ -81,6 +81,29 @@ public class Links {
     }
 
     /**
+     * Creates a Links object from a list of links.
+     *
+     * @param links the list of links.
+     * @return Links
+     *
+     * @since 0.2.0
+     */
+    public static Links linkingTo(final List<Link> links) {
+        final Map<String,List<Link>> allLinks = new LinkedHashMap<>();
+        links.forEach(l -> {
+            if (!allLinks.containsKey(l.getRel())) {
+                allLinks.put(l.getRel(), new ArrayList<>());
+            }
+            allLinks.get(l.getRel()).add(l);
+        });
+        return new Links(allLinks);
+    }
+
+    public static Builder linksBuilder() {
+        return new Builder();
+    }
+
+    /**
      *
      * @param rel
      * @return
@@ -157,11 +180,68 @@ public class Links {
     }
 
     /**
+     * A linksBuilder used to build Links instances.
+     *
+     * @since 0.2.0
+     */
+    public static class Builder {
+        final Map<String,List<Link>> links = new LinkedHashMap<>();
+
+        /**
+         * Adds one or more Links.
+         *
+         * @param link a Link
+         * @param more more links
+         * @return this
+         */
+        public Builder with(final Link link, final Link... more) {
+            links.put(link.getRel(), new ArrayList<Link>() {{
+                add(link);
+            }});
+            if (more != null) {
+                stream(more).forEach(l -> {
+                    if (!links.containsKey(l.getRel())) {
+                        links.put(l.getRel(), new ArrayList<>());
+                    }
+                    links.get(l.getRel()).add(l);
+                });
+            }
+            return this;
+        }
+
+        /**
+         * Adds a list of links.
+         *
+         * @param links the list of links.
+         * @return this
+         *
+         * @since 0.2.0
+         */
+        public Builder with(final List<Link> links) {
+            links.forEach(l -> {
+                if (!this.links.containsKey(l.getRel())) {
+                    this.links.put(l.getRel(), new ArrayList<>());
+                }
+                this.links.get(l.getRel()).add(l);
+            });
+            return this;
+        }
+
+        /**
+         * Creates a Links instance from all added links.
+         *
+         * @return Links
+         */
+        public Links build() {
+            return new Links(links);
+        }
+    }
+
+    /**
      *
      * @since 0.1.0
      */
     static class LinksSerializer extends JsonSerializer<Links> {
-
         @Override
         @SuppressWarnings("unchecked")
         public void serialize(final Links value, final JsonGenerator gen, final SerializerProvider serializers) throws IOException, JsonProcessingException {
@@ -180,6 +260,7 @@ public class Links {
             }
             gen.writeEndObject();
         }
+
     }
 
     /**

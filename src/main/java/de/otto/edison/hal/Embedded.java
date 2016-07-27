@@ -105,7 +105,7 @@ public class Embedded {
     }
 
     /**
-     * Create a builder used to build Embedded instances with more than one link-relation type.
+     * Create a linksBuilder used to build Embedded instances with more than one link-relation type.
      *
      * @return EmbeddedBuilder
      *
@@ -145,7 +145,7 @@ public class Embedded {
      *
      * final FooHalRepresentation foo = HalParser
      *         .parse(json)
-     *         .as(FooHalRepresentation.class, withEmbedded("bar", BarHalRepresentation.class));
+     *         .as(FooHalRepresentation.class, with("bar", BarHalRepresentation.class));
      *
      * final List&lt;BarHalRepresentation embeddedBars = foo
      *         .getEmbedded()
@@ -242,9 +242,9 @@ public class Embedded {
          * @param embeddedRepresentations the embedded items
          * @return EmbeddedBuilder
          *
-         * @since 0.1.0
+         * @since 0.2.0
          */
-        public Builder withEmbedded(final String rel, final List<HalRepresentation> embeddedRepresentations) {
+        public Builder with(final String rel, final List<HalRepresentation> embeddedRepresentations) {
             _embedded.put(rel, embeddedRepresentations);
             return this;
         }
@@ -257,7 +257,7 @@ public class Embedded {
          *
          * @since 0.2.0
          */
-        public Builder withoutEmbedded(final String rel) {
+        public Builder without(final String rel) {
             _embedded.remove(rel);
             return this;
         }

@@ -7,6 +7,8 @@ import static de.otto.edison.hal.Link.item;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
+import static de.otto.edison.hal.Links.linksBuilder;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -38,6 +40,31 @@ public class LinksTest {
         );
         assertThat(links.getLinkBy("self").isPresent(), is(true));
         assertThat(links.getLinkBy("collection").isPresent(), is(true));
+    }
+
+    @Test
+    public void shouldCreateMultipleLinksFromList() {
+        final Links links = linkingTo(asList(
+                self("http://example.org/items"),
+                item("http://example.org/items/1"),
+                item("http://example.org/items/2")
+        ));
+        assertThat(links.getLinkBy("self").isPresent(), is(true));
+        assertThat(links.getLinkBy("item").isPresent(), is(true));
+        assertThat(links.getLinksBy("item"), hasSize(2));
+    }
+
+    @Test
+    public void shouldCreateMultipleLinksUsingBuilder() {
+        final Links links = linksBuilder()
+                .with(self("http://example.org/items"))
+                .with(asList(
+                        item("http://example.org/items/1"),
+                        item("http://example.org/items/2")))
+                .build();
+        assertThat(links.getLinkBy("self").isPresent(), is(true));
+        assertThat(links.getLinkBy("item").isPresent(), is(true));
+        assertThat(links.getLinksBy("item"), hasSize(2));
     }
 
     @Test

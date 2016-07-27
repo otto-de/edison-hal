@@ -79,7 +79,7 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     void withEmbedded(final String rel, final List<HalRepresentation> embeddedValues) {
-        this.embedded = copyOf(this.embedded).withEmbedded(rel, embeddedValues).build();
+        this.embedded = copyOf(this.embedded).with(rel, embeddedValues).build();
     }
 
     /**

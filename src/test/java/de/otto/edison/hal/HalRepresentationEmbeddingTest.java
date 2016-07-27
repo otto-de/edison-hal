@@ -82,11 +82,11 @@ public class HalRepresentationEmbeddingTest {
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo(self("http://example.org/test/bar")),
                 embeddedBuilder()
-                        .withEmbedded("foo", asList(
+                        .with("foo", asList(
                                 new HalRepresentation(linkingTo(self("http://example.org/test/foo/01"))),
                                 new HalRepresentation(linkingTo(self("http://example.org/test/foo/02")))
                         ))
-                        .withEmbedded("bar", asList(
+                        .with("bar", asList(
                                 new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
                                 new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))
                         )).build());

@@ -37,8 +37,8 @@ public class EmbeddedTest {
     @Test
     public void shouldCreateEmbeddedWithBuilder() {
         Embedded embedded = embeddedBuilder()
-                .withEmbedded("foo", singletonList(new HalRepresentation()))
-                .withEmbedded("bar", singletonList(new HalRepresentation()))
+                .with("foo", singletonList(new HalRepresentation()))
+                .with("bar", singletonList(new HalRepresentation()))
                 .build();
         assertThat(embedded.getItemsBy("foo"), hasSize(1));
         assertThat(embedded.getItemsBy("bar"), hasSize(1));
@@ -48,7 +48,7 @@ public class EmbeddedTest {
     @Test
     public void shouldAddRelToEmbeddedUsingBuilder() {
         Embedded embedded = copyOf(embedded("foo", singletonList(new HalRepresentation())))
-                .withEmbedded("bar", singletonList(new HalRepresentation())).build();
+                .with("bar", singletonList(new HalRepresentation())).build();
         assertThat(embedded.getItemsBy("foo"), hasSize(1));
         assertThat(embedded.getItemsBy("bar"), hasSize(1));
         assertThat(embedded.getItemsBy("foobar"), hasSize(0));

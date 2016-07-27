@@ -27,7 +27,7 @@ import java.util.List;
  * <pre><code>
  * final FooHalRepresentation result = HalParser
  *         .parse(json)
- *         .as(FooHalRepresentation.class, withEmbedded("bar", BarHalRepresentation.class));
+ *         .as(FooHalRepresentation.class, with("bar", BarHalRepresentation.class));
  * </code></pre>
  *
  * @since 0.1.0
