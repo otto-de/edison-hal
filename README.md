@@ -214,15 +214,31 @@ that you are using an up-to-date version of Gradle (>= 2.12.0).
 ## Version History
 
 ### 0.2.0
-* Renamed Link.LinkBuilder to Link.Builder 
-* Renamed Embedded.EmbeddedItemsBuilder to Embedded.Builder 
-* Introduced factory methods for Embedded.Builder
-* Added method to remove link-relation types from Embedded.Builder
-* Added JavaDoc
-* Added getter methods to Link instead of public attributes to avoid
-NullPointerExceptions
+
+
+*Bugfixes*
+
 * Fixed generation + parsing of non-trivial links
 * Fixed type and name of 'deprecation' property in links
+* Fixed rendering of empty embedded items
+* Fixed rendering of empty links
+
+*Breaking Changes*
+
+* Renamed Link.LinkBuilder to Link.Builder 
+* Renamed Embedded.EmbeddedItemsBuilder to Embedded.Builder 
+* Renamed Embedded.Builder.withEmbedded() to Embedded.Builder.with()
+* Renamed Embedded.Builder.withoutEmbedded() to Embedded.Builder.without()
+* Added getter methods to Link instead of public final attributes
+
+*New Features / API extensions*
+
+* Introduced factory methods for Embedded.Builder
+* Improved JavaDoc
+* Added Spring-Boot example aplication incl HAL Browser
+* Added Links.linkingTo(List<Link> links)
+* Added Links.Builder
+* Added Embedded.isEmpty()
 
 ### 0.1.0 
 

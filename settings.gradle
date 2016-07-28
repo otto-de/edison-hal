@@ -1,0 +1,2 @@
+include 'example-springboot'
+rootProject.name = 'edison-hal'
