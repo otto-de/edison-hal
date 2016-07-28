@@ -3,7 +3,7 @@
 Library to read and create application/hal+json representations of 
 REST resources using Jackson.
 
-See https://tools.ietf.org/html/draft-kelly-json-hal-06 for details.
+See https://tools.ietf.org/html/draft-kelly-json-hal-08 for details.
 
 ## Status
 
