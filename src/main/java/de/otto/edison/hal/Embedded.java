@@ -66,7 +66,8 @@ public class Embedded {
      * @since 0.1.0
      */
     Embedded() {
-        items =null;}
+        items =null;
+    }
 
     /**
      * Create an Embedded instance from a Map of nested items.
@@ -207,6 +208,15 @@ public class Embedded {
         return "Embedded{" +
                 "items=" + items +
                 '}';
+    }
+
+    /**
+     * @return true if there are no embedded items, false otherwise.
+     *
+     * @since 0.2.0
+     */
+    public boolean isEmpty() {
+        return items == null || items.isEmpty();
     }
 
     /**

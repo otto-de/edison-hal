@@ -20,6 +20,22 @@ import static org.hamcrest.Matchers.is;
 public class HalRepresentationEmbeddingTest {
 
     @Test
+    public void shouldNotRenderEmptyEmbedded() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(self("http://example.org/test/bar")),
+                Embedded.emptyEmbedded()) {public String total="4753€";};
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is(
+                "{" +
+                        "\"total\":\"4753€\"," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}" +
+                        "}"));
+    }
+
+    @Test
     public void shouldRenderEmbeddedResourcesWithProperties() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(

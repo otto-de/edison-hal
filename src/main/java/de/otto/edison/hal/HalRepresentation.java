@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Links.emptyLinks;
@@ -20,7 +21,7 @@ import static de.otto.edison.hal.Links.emptyLinks;
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(NON_NULL)
 public class HalRepresentation {
 
     @JsonProperty(value = "_links")
@@ -42,7 +43,7 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     public HalRepresentation(final Links links) {
-        this.links = links;
+        this.links = links.isEmpty() ? null : links;
         embedded = null;
     }
 
@@ -51,8 +52,8 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     public HalRepresentation(final Links links, final Embedded embedded) {
-        this.links = links;
-        this.embedded = embedded;
+        this(links);
+        this.embedded = embedded.isEmpty() ? null : embedded;
     }
 
     /**

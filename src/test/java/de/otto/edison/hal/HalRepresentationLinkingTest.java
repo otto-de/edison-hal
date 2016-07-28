@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testng.annotations.Test;
 
 import static de.otto.edison.hal.Link.*;
+import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -18,6 +19,20 @@ public class HalRepresentationLinkingTest {
     public void shouldRenderSimpleHalRepresentationWithoutLinks() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation() {
+            public final String first = "foo";
+            public final String second = "bar";
+        };
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{\"first\":\"foo\",\"second\":\"bar\"}"));
+
+    }
+
+    @Test
+    public void shouldNotRenderEmptyLinks() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(emptyLinks()) {
             public final String first = "foo";
             public final String second = "bar";
         };
