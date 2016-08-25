@@ -1,15 +1,18 @@
 package de.otto.edison.hal;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.testng.annotations.Test;
 
-import static de.otto.edison.hal.Link.collection;
-import static de.otto.edison.hal.Link.item;
-import static de.otto.edison.hal.Link.self;
+import java.util.List;
+
+import static de.otto.edison.hal.Link.*;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.Links.linksBuilder;
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -98,6 +101,47 @@ public class LinksTest {
     public void shouldGetEmptyListForUnknownRel() {
         final Links links = emptyLinks();
         assertThat(links.getLinksBy("item"), hasSize(0));
+    }
+
+    @Test
+    public void shouldGetCuriedLinksFromFullRel() throws JsonProcessingException {
+        final Links links = linkingTo(
+                curi("o", "http://spec.otto.de/rels/{rel}"),
+                link("o:product", "http://example.org/products/42"),
+                link("o:product", "http://example.org/products/44")
+        );
+        final List<String> productHrefs = links.getLinksBy("http://spec.otto.de/rels/product")
+                .stream()
+                .map(Link::getHref)
+                .collect(toList());
+        assertThat(productHrefs, contains("http://example.org/products/42","http://example.org/products/44"));
+    }
+
+    @Test
+    public void shouldGetCuriedLinksFromCuriedRel() throws JsonProcessingException {
+        final Links links = linkingTo(
+                curi("o", "http://spec.otto.de/rels/{rel}"),
+                link("o:product", "http://example.org/products/42"),
+                link("o:product", "http://example.org/products/44")
+        );
+        final List<String> productHrefs = links.getLinksBy("o:product")
+                .stream()
+                .map(Link::getHref)
+                .collect(toList());
+        assertThat(productHrefs, contains("http://example.org/products/42","http://example.org/products/44"));
+    }
+
+    @Test
+    public void shouldIgnoreMissingCuries() throws JsonProcessingException {
+        final Links links = linkingTo(
+                link("o:product", "http://example.org/products/42"),
+                link("o:product", "http://example.org/products/44")
+        );
+        final List<String> productHrefs = links.getLinksBy("o:product")
+                .stream()
+                .map(Link::getHref)
+                .collect(toList());
+        assertThat(productHrefs, contains("http://example.org/products/42","http://example.org/products/44"));
     }
 
 }

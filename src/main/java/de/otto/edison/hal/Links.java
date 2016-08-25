@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.util.*;
 
+import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.stream;
@@ -23,12 +24,15 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
+ * Representation of a number of HAL _links.
  * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.1">draft-kelly-json-hal-08#section-4.1.1</a>
  * @since 0.1.0
  */
 @JsonSerialize(using = Links.LinksSerializer.class)
 @JsonDeserialize(using = Links.LinksDeserializer.class)
 public class Links {
+
+    private static final String CURIES_REL = "curies";
 
     private static final Links EMPTY_LINKS = new Links();
 
@@ -46,7 +50,24 @@ public class Links {
      * @since 0.1.0
      */
     private Links(final Map<String, List<Link>> links) {
-        this.links.putAll(links);
+        final List<Link> curies = links.get(CURIES_REL);
+        if (curies == null || curies.isEmpty()) {
+            this.links.putAll(links);
+        } else {
+            this.links.put(CURIES_REL, curies);
+            curies.forEach(curi -> {
+                links.keySet().forEach(rel -> {
+                    if (!rel.equals(CURIES_REL)) {
+                        final CuriTemplate curiTemplate = curiTemplateFor(curi);
+                        if (curiTemplate.matches(rel)) {
+                            this.links.put(curiTemplate.curiedRelFrom(rel), links.get(rel));
+                        } else {
+                            this.links.put(rel, links.get(rel));
+                        }
+                    }
+                });
+            });
+        }
     }
 
     /**
@@ -104,31 +125,64 @@ public class Links {
     }
 
     /**
+     * Returns the first (if any) link having the specified link-relation type.
      *
-     * @param rel
-     * @return
+     * If CURIs are used to shorten custom link-relation types, it is possible to either use expanded link-relation types,
+     * or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
+     * requires that the name of the CURI is known by clients.
      *
+     * @param rel the link-relation type of the retrieved link.
+     * @return optional link
+     *
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
      * @since 0.1.0
      */
     public Optional<Link> getLinkBy(final String rel) {
-        List<Link> links = this.links.get(rel);
-        return links == null || links.isEmpty()
+        final List<Link> links = getLinksBy(rel);
+        return links.isEmpty()
                 ? Optional.empty()
                 : Optional.of(links.get(0));
     }
 
     /**
+     * Returns the list of links having the specified link-relation type.
      *
-     * @param rel
-     * @return
+     * If CURIs are used to shorten custom link-relation types, it is possible to either use expanded link-relation types,
+     * or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
+     * requires that the name of the CURI is known by clients.
      *
+     * @param rel the link-relation type of the retrieved link.
+     * @return list of matching link
+     *
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
      * @since 0.1.0
      */
     public List<Link> getLinksBy(final String rel) {
-        List<Link> links = this.links.get(rel);
-        return links == null
-                ? emptyList()
-                : links;
+        final List<Link> links = this.links.get(rel);
+
+        if (links == null || links.isEmpty()) {
+            return getCuriedLinks(rel);
+        } else {
+            return links;
+        }
+    }
+
+    private List<Link> getCuriedLinks(String rel) {
+        final List<Link> curies = getCuries();
+        for (final Link curi : curies) {
+            final CuriTemplate curiTemplate = curiTemplateFor(curi);
+            if (curiTemplate.matches(rel)) {
+                final String shortRel = curiTemplate.curiedRelFrom(rel);
+                return this.links.containsKey(shortRel) ? this.links.get(shortRel) : emptyList();
+            }
+        }
+        return emptyList();
+    }
+
+    private List<Link> getCuries() {
+        return this.links.containsKey(CURIES_REL)
+                ? this.links.get(CURIES_REL)
+                : emptyList();
     }
 
     /**

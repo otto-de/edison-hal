@@ -94,6 +94,42 @@ public class Link {
     }
 
     /**
+     * Create a 'curies' link (compact URI) with name and a URI template for the link-relation type.
+     * <p></p>
+     * Curies may be used for brevity for custom link-relation type URIs. Curiess are established within a HAL document
+     * via a set of Link Objects with the relation type "curies" on the root Resource Object.
+     * These links contain a URI template with the token 'rel', and are named via the "name" property.
+     * <p>
+     * <pre><code>
+     * {
+     *   "_links": {
+     *     "self": { "href": "/orders" },
+     *     "curies": [{
+     *       "name": "acme",
+     *       "href": "http://docs.acme.com/relations/{rel}",
+     *       "templated": true
+     *     }],
+     *     "acme:widgets": { "href": "/widgets" }
+     *   }
+     * }
+     * </code></pre>
+     *
+     * @param name the short name of the CURI
+     * @param relTemplate the template used to build link-relation types. Must contain a {rel} placeholder
+     * @return Link
+     *
+     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
+     * @since 0.3.0
+     */
+    public static Link curi(final String name, final String relTemplate) {
+        if (!relTemplate.contains("{rel}")) {
+            throw new IllegalArgumentException("Not a CURI template. Template is required to contain a {rel} placeholder");
+        }
+        return new Link("curies", relTemplate, true, null, null, null, name, null, null);
+    }
+
+    /**
      * Create a 'profile' link from a href
      *
      * @param href the linked profile

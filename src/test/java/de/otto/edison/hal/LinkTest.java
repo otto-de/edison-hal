@@ -1,5 +1,6 @@
 package de.otto.edison.hal;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.testng.annotations.Test;
 
 import static de.otto.edison.hal.Link.*;
@@ -84,4 +85,18 @@ public class LinkTest {
         assertThat(self.getType(), is("type"));
         assertThat(self.getProfile(), is("my-profile"));
     }
+
+    @Test
+    public void shouldBuildCuri() throws JsonProcessingException {
+        final Link link = Link.curi("t", "http://example.org/{rel}");
+        assertThat(link.getName(), is("t"));
+        assertThat(link.getRel(), is("curies"));
+        assertThat(link.isTemplated(), is(true));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void shouldFailToBuildCuriWithoutRelPlaceholder() throws JsonProcessingException {
+        Link.curi("t", "http://example.org/rel");
+    }
+
 }

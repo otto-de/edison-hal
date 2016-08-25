@@ -36,6 +36,7 @@ Spring HATEOAS, for
 Creating HAL representations:
 * Links with all specified attributes like rel, href, profile, type, name, title, etc. pp.
 * Embedded resources
+* CURIs in links and embedded resources
 * Generation of HAL representations using Jackson via annotated classes
 
 Parsing HAL representations:
@@ -43,8 +44,6 @@ Parsing HAL representations:
 * simple domain model to access links, embedded resources etc.
 
 ## Next Steps
-* Support for HalParser to support multiple different embedded items
-* Support for curies
 * Support for simple traversal of linked resources
 * Support for collection resources including paging
 
@@ -212,6 +211,14 @@ If you do not want to use the provided gradle wrapper, please make sure
 that you are using an up-to-date version of Gradle (>= 2.12.0).
 
 ## Version History
+
+### 0.3.0
+
+*New Features / API extensions*
+
+* Added factory method Link.curi() to build CURI links.
+* Support for curies in links and embedded resources.
+* Improved JavaDoc
 
 ### 0.2.0
 
