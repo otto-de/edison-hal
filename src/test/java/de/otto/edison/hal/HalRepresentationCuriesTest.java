@@ -9,7 +9,6 @@ import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.linkingTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.testng.Assert.fail;
 
 public class HalRepresentationCuriesTest {
 
@@ -56,16 +55,6 @@ public class HalRepresentationCuriesTest {
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},\"x:foo\":{\"href\":\"http://example.org/test\"}}}"));
-    }
-
-    @Test(enabled = false)
-    public void shouldReplaceEmbeddedFullRelWithCuri() throws JsonProcessingException {
-        fail("not yet implemented");
-    }
-
-    @Test(enabled = false)
-    public void shouldUseCuriesInEmbedded() throws JsonProcessingException {
-        fail("not yet implemented");
     }
 
 }

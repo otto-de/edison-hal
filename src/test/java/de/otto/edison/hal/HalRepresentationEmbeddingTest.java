@@ -6,7 +6,9 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Embedded.embeddedBuilder;
+import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.linkingTo;
@@ -126,5 +128,95 @@ public class HalRepresentationEmbeddingTest {
                         "}" +
                 "}"));
     }
+
+    @Test
+    public void shouldUseCuriesInEmbedded() throws JsonProcessingException {
+        // given
+        final List<HalRepresentation> items = asList(
+                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
+                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))
+        );
+        // when
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        curi("x", "http://example.org/rels/{rel}")),
+                embedded("x:orders", items)) {};
+        // then
+        assertThat(representation.getEmbedded().getItemsBy("x:orders"), is(items));
+    }
+
+    @Test
+    public void shouldUseCuriesByFullRelInEmbedded() throws JsonProcessingException {
+        // given
+        final List<HalRepresentation> items = asList(
+                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
+                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))
+        );
+        // when
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        curi("x", "http://example.org/rels/{rel}")),
+                embedded("x:orders", items)) {};
+        // then
+        assertThat(representation.getEmbedded().getItemsBy("http://example.org/rels/orders"), is(items));
+    }
+
+    @Test
+    public void shouldReplaceEmbeddedFullRelWithCuri() throws JsonProcessingException {
+        // given
+        final List<HalRepresentation> items = asList(
+                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
+                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))
+        );
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        self("http://example.org/test/bar"),
+                        curi("x", "http://example.org/rels/{rel}")),
+                embedded("http://example.org/rels/orders", items)) {};
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is(
+                "{" +
+                        "\"_links\":{\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
+                        "\"_embedded\":{\"x:orders\":[" +
+                        "{" +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                        "}," +
+                        "{" +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                        "}" +
+                        "]}" +
+                        "}"));
+    }
+
+    @Test(enabled = false)
+    public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinks() throws JsonProcessingException {
+        // given
+        final List<HalRepresentation> items = asList(
+                new HalRepresentation(linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/01"))),
+                new HalRepresentation(linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/02")))
+        );
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        curi("x", "http://example.org/rels/{rel}")),
+                embedded("http://example.org/rels/foo", items)) {};
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is(
+                "{" +
+                        "\"_links\":{\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
+                        "\"_embedded\":{\"x:foo\":[" +
+                        "{" +
+                        "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                        "}," +
+                        "{" +
+                        "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                        "}" +
+                        "]}" +
+                        "}"));
+    }
+
 
 }

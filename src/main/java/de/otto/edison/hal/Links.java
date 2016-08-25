@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
+import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.stream;
@@ -59,17 +60,15 @@ public class Links {
             this.links.putAll(links);
         } else {
             this.links.put(CURIES_REL, curies);
-            curies.forEach(curi -> {
-                links.keySet().forEach(rel -> {
-                    if (!rel.equals(CURIES_REL)) {
-                        final CuriTemplate curiTemplate = curiTemplateFor(curi);
-                        if (curiTemplate.matches(rel)) {
-                            this.links.put(curiTemplate.curiedRelFrom(rel), links.get(rel));
-                        } else {
-                            this.links.put(rel, links.get(rel));
-                        }
+            links.keySet().forEach(rel -> {
+                if (!rel.equals(CURIES_REL)) {
+                    final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
+                    if (curiTemplate.isPresent()) {
+                        this.links.put(curiTemplate.get().curiedRelFrom(rel), links.get(rel));
+                    } else {
+                        this.links.put(rel, links.get(rel));
                     }
-                });
+                }
             });
         }
     }

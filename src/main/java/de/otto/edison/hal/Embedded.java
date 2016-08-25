@@ -13,13 +13,16 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
+import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
+import static java.util.stream.Collectors.toList;
 
 /**
  * The embedded items of a HalResource.
@@ -59,6 +62,10 @@ public class Embedded {
      * The embedded items, mapped by link-relation type.
      */
     private final Map<String,List<HalRepresentation>> items;
+    /**
+     * The curies from the HAL _links section, if any.
+     */
+    private final List<Link> curies;
 
     /**
      * Used by Jackson to parse/create Embedded instances.
@@ -67,6 +74,7 @@ public class Embedded {
      */
     Embedded() {
         items =null;
+        curies = emptyList();
     }
 
     /**
@@ -78,6 +86,27 @@ public class Embedded {
      */
     private Embedded(final Map<String, List<HalRepresentation>> items) {
         this.items = items;
+        this.curies = emptyList();
+    }
+
+    /**
+     * Create an Embedded instance from a Map of nested items.
+     *
+     * @param items The embedded items, mapped by link-relation type
+     *
+     * @since 0.1.0
+     */
+    private Embedded(final Map<String, List<HalRepresentation>> items, final List<Link> curies) {
+        this.curies = curies;
+        this.items = new LinkedHashMap<>();
+        items.keySet().forEach(rel->{
+            Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
+            if (curiTemplate.isPresent()) {
+                this.items.put(curiTemplate.get().curiedRelFrom(rel), items.get(rel));
+            } else {
+                this.items.put(rel, items.get(rel));
+            }
+        });
     }
 
     /**
@@ -117,6 +146,21 @@ public class Embedded {
     }
 
     /**
+     * Returns an instance of Embedded that knows about the CURIs of the _links section of the HAL document.
+     * <p>
+     * Using this object, you can get the embedded items by full or compact URI of the link-relation type.
+     * <p>
+     * Typically you won't have to use this method directly. It is called by {@link HalRepresentation#getEmbedded()}.
+     *
+     * @param curies list of 'curies' Links.
+     *
+     * @return Embedded with support for curies.
+     */
+    public Embedded withCuries(final List<Link> curies) {
+        return new Embedded(items, curies);
+    }
+
+    /**
      * Returns the embedded items by link-relation type.
      * <p>
      * If no items with this type are embedded, an empty list is returned.
@@ -129,10 +173,27 @@ public class Embedded {
     @JsonIgnore
     public List<HalRepresentation> getItemsBy(final String rel) {
         if (items != null) {
-            return items.containsKey(rel) ? items.get(rel) : emptyList();
+            return items.containsKey(rel) ? items.get(rel) : getCuriedItems(rel);
         } else {
             return emptyList();
         }
+    }
+
+    /**
+     * Helper method used to retrieve Embedded items with support for CURIs.
+     *
+     * @param rel a curied or full link-relation type of the embedded items.
+     * @return List of matching items.
+     */
+    private List<HalRepresentation> getCuriedItems(final String rel) {
+        for (final Link curi : curies) {
+            final CuriTemplate curiTemplate = curiTemplateFor(curi);
+            if (curiTemplate.matches(rel)) {
+                final String shortRel = curiTemplate.curiedRelFrom(rel);
+                return items.containsKey(shortRel) ? items.get(shortRel) : emptyList();
+            }
+        }
+        return emptyList();
     }
 
     /**
@@ -163,13 +224,7 @@ public class Embedded {
      */
     @JsonIgnore
     public <E extends HalRepresentation> List<E> getItemsBy(final String rel, final Class<E> asType) {
-        if (items != null) {
-            List<E> representations = new ArrayList<>();
-            items.get(rel).forEach(i -> representations.add(asType.cast(i)));
-            return items.containsKey(rel) ? representations : emptyList();
-        } else {
-            return emptyList();
-        }
+        return getItemsBy(rel).stream().map(asType::cast).collect(toList());
     }
 
     /**

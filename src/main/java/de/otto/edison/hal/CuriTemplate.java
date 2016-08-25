@@ -1,5 +1,8 @@
 package de.otto.edison.hal;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * A utility class used to handle custom link-relation type URIs and CURI templates.
  *
@@ -40,6 +43,17 @@ public class CuriTemplate {
 
     public static CuriTemplate curiTemplateFor(final Link curi) {
         return new CuriTemplate(curi);
+    }
+
+    /**
+     * Returns a CuriTemplate that is {@link #matches matching} the rel parameter, or empty if no matching CURI is found.
+     *
+     * @param curies a List of curies Links
+     * @param rel the link-relation type to check against the curies
+     * @return optional CuriTemplate
+     */
+    public static Optional<CuriTemplate> matchingCuriTemplateFor(final List<Link> curies, final String rel) {
+        return curies.stream().map(CuriTemplate::curiTemplateFor).filter(t->t.matches(rel)).findAny();
     }
 
     /**

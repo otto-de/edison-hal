@@ -13,7 +13,7 @@ import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Links.emptyLinks;
 
 /**
- *
+ * Representation used to parse and create HAL+JSON documents from Java classes.
  *
  * @see <a href="http://stateless.co/hal_specification.html"></a>
  * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08"></a>
@@ -39,6 +39,7 @@ public class HalRepresentation {
     }
 
     /**
+     * Creates a HalRepresentation having {@link Links}
      *
      * @since 0.1.0
      */
@@ -48,15 +49,19 @@ public class HalRepresentation {
     }
 
     /**
+     * Creates a HalRepresentation with {@link Links} and {@link Embedded} objects.
+     *
+     * If the Links do contain CURIs, the link-relation types of the embedded objects are shortened.
      *
      * @since 0.1.0
      */
     public HalRepresentation(final Links links, final Embedded embedded) {
         this(links);
-        this.embedded = embedded.isEmpty() ? null : embedded;
+        this.embedded = embedded.isEmpty() ? null : embedded.withCuries(getLinks().getLinksBy("curies"));
     }
 
     /**
+     * Returns the Links of the HalRepresentation.
      *
      * @since 0.1.0
      */
@@ -65,9 +70,14 @@ public class HalRepresentation {
         return links != null ? links : emptyLinks();
     }
 
+    /**
+     * Returns the Embedded objects of the HalRepresentation.
+     *
+     * @return Embedded, possibly beeing {@link Embedded#isEmpty() empty}
+     */
     @JsonIgnore
     public Embedded getEmbedded() {
-        return embedded != null ? embedded : emptyEmbedded();
+        return embedded != null ? embedded.withCuries(getLinks().getLinksBy("curies")) : emptyEmbedded();
     }
 
     /**

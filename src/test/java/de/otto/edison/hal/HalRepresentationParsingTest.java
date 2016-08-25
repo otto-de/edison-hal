@@ -171,4 +171,41 @@ public class HalRepresentationParsingTest {
         ));
     }
 
+    @Test
+    public void shouldParseCuriedLinks() throws IOException {
+        // given
+        final String json = "{\"_links\":{" +
+                "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}," +
+                "\"x:foo\":{\"href\":\"http://example.org/test\"}," +
+                "\"x:bar\":{\"href\":\"http://example.org/test\"}}" +
+                "}" +
+                "}";
+        // when
+        Links links = parse(json).as(HalRepresentation.class).getLinks();
+        // then
+        assertThat(links.getLinksBy("http://example.org/rels/foo"), hasSize(1));
+    }
+
+    @Test(enabled = false)
+    public void shouldParseCuriedEmbeddeds() throws IOException {
+        // given
+        final String json = "{\"_links\":{" +
+                "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
+                "\"_embedded\":{\"x:foo\":[" +
+                "{" +
+                "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                "}," +
+                "{" +
+                "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                "}" +
+                "]}" +
+                "}" +
+                "}";
+        // when
+        Embedded embedded = parse(json).as(HalRepresentation.class).getEmbedded();
+        // then
+        final List<HalRepresentation> items = embedded.getItemsBy("http://example.org/rels/foo");
+        assertThat(items, hasSize(2));
+        assertThat(items.get(0).getLinks().getLinkBy("http://example.org/rels/bar").get().getHref(), is("http://example.org/test/bar/01"));
+    }
 }
