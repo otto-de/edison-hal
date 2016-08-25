@@ -25,6 +25,7 @@ import static java.util.stream.Collectors.toMap;
 
 /**
  * Representation of a number of HAL _links.
+ *
  * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.1">draft-kelly-json-hal-08#section-4.1.1</a>
  * @since 0.1.0
  */
@@ -45,8 +46,11 @@ public class Links {
     Links() {}
 
     /**
+     * Creates a Links object from a map containing rel->List<Link>.
      *
-     * @param links
+     * If the links contain curies, the link-relation types are shortened to the curied format name:key.
+     *
+     * @param links a map with link-relation types as key and the list of links as value.
      * @since 0.1.0
      */
     private Links(final Map<String, List<Link>> links) {
@@ -71,7 +75,9 @@ public class Links {
     }
 
     /**
-     * @return
+     * Factory method used to create an empty Links instance.
+     *
+     * @return empty Links
      *
      * @since 0.1.0
      */
@@ -80,10 +86,11 @@ public class Links {
     }
 
     /**
+     * Factory method used to build a Links instance from one or more {@link Link} objects.
      *
-     * @param link
-     * @param more
-     * @return
+     * @param link a Link
+     * @param more optionally more Links
+     * @return Links
      *
      * @since 0.1.0
      */
@@ -120,6 +127,11 @@ public class Links {
         return new Links(allLinks);
     }
 
+    /**
+     * Factory method used to build a Links.Builder.
+     *
+     * @return Links.Builder
+     */
     public static Builder linksBuilder() {
         return new Builder();
     }
@@ -167,6 +179,12 @@ public class Links {
         }
     }
 
+    /**
+     * Helper method used to retrieve Links with support for CURIs.
+     *
+     * @param rel a curied or full link-relation type.
+     * @return List of matching links.
+     */
     private List<Link> getCuriedLinks(String rel) {
         final List<Link> curies = getCuries();
         for (final Link curi : curies) {
@@ -179,6 +197,11 @@ public class Links {
         return emptyList();
     }
 
+    /**
+     * Helper method used to get the CURIs.
+     *
+     * @return List of CURI links, or empty list
+     */
     private List<Link> getCuries() {
         return this.links.containsKey(CURIES_REL)
                 ? this.links.get(CURIES_REL)
@@ -187,7 +210,7 @@ public class Links {
 
     /**
      *
-     * @return
+     * @return true if Links is empty, false otherwise.
      *
      * @since 0.1.0
      */
@@ -234,7 +257,7 @@ public class Links {
     }
 
     /**
-     * A linksBuilder used to build Links instances.
+     * A Builder used to build Links instances.
      *
      * @since 0.2.0
      */
@@ -292,10 +315,15 @@ public class Links {
     }
 
     /**
+     * A Jackson JsonSerializer for Links. Used to render the _links part of HAL+JSON documents.
      *
      * @since 0.1.0
      */
     static class LinksSerializer extends JsonSerializer<Links> {
+
+        /**
+         * {@inheritDoc}
+         */
         @Override
         @SuppressWarnings("unchecked")
         public void serialize(final Links value, final JsonGenerator gen, final SerializerProvider serializers) throws IOException, JsonProcessingException {
@@ -318,6 +346,7 @@ public class Links {
     }
 
     /**
+     * A Jackson JsonDeserializer for Links. Used to parse the _links part of HAL+JSON documents.
      *
      * @since 0.1.0
      */
@@ -325,6 +354,9 @@ public class Links {
 
         private static final TypeReference<Map<String, ?>> TYPE_REF_LINK_MAP = new TypeReference<Map<String, ?>>() {};
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public Links deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
             final Map<String,?> linksMap = p.readValueAs(TYPE_REF_LINK_MAP);
