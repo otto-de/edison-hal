@@ -132,6 +132,20 @@ public class LinksTest {
     }
 
     @Test
+    public void shouldReplaceFullRelsWithCuriedRels() throws JsonProcessingException {
+        final Links links = linkingTo(
+                curi("o", "http://spec.otto.de/rels/{rel}"),
+                link("http://spec.otto.de/rels/product", "http://example.org/products/42"),
+                link("http://spec.otto.de/rels/product", "http://example.org/products/44")
+        );
+        final List<String> productHrefs = links.getLinksBy("o:product")
+                .stream()
+                .map(Link::getHref)
+                .collect(toList());
+        assertThat(productHrefs, contains("http://example.org/products/42","http://example.org/products/44"));
+    }
+
+    @Test
     public void shouldIgnoreMissingCuries() throws JsonProcessingException {
         final Links links = linkingTo(
                 link("o:product", "http://example.org/products/42"),
