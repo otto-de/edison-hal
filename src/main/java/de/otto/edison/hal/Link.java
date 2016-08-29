@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
+import static de.otto.edison.hal.Link.Builder.linkBuilderFor;
 import static java.lang.Boolean.TRUE;
 
 /**
@@ -207,7 +208,7 @@ public class Link {
      * @since 0.1.0
      */
     public static Builder templatedBuilder(final String rel, final String uriTemplate) {
-        return Builder.linkBuilderFor(rel, uriTemplate).beeingTemplated();
+        return linkBuilderFor(rel, uriTemplate).beeingTemplated();
     }
 
     /**
@@ -220,7 +221,7 @@ public class Link {
      * @since 0.1.0
      */
     public static Builder linkBuilder(final String rel, final String href) {
-        return Builder.linkBuilderFor(rel, href);
+        return linkBuilderFor(rel, href);
     }
 
     /**

@@ -186,7 +186,7 @@ public class HalRepresentationParsingTest {
         assertThat(links.getLinksBy("http://example.org/rels/foo"), hasSize(1));
     }
 
-    @Test(enabled = false)
+    @Test
     public void shouldParseCuriedEmbeddeds() throws IOException {
         // given
         final String json = "{\"_links\":{" +

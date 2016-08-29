@@ -25,9 +25,9 @@ import static de.otto.edison.hal.Links.emptyLinks;
 public class HalRepresentation {
 
     @JsonProperty(value = "_links")
-    private Links links;
+    private volatile Links links;
     @JsonProperty(value = "_embedded")
-    private Embedded embedded;
+    private volatile Embedded embedded;
 
     /**
      *
@@ -90,7 +90,13 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     void withEmbedded(final String rel, final List<HalRepresentation> embeddedValues) {
-        this.embedded = copyOf(this.embedded).with(rel, embeddedValues).build();
+        embedded = copyOf(embedded).with(rel, embeddedValues).build();
+    }
+
+    void withParentCuries(final List<Link> curiesFromEmbedding) {
+        if (links != null) {
+            links.withParentCuries(curiesFromEmbedding);
+        }
     }
 
     /**

@@ -24,7 +24,7 @@ public class HalRepresentationCuriesTest {
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
-        assertThat(json, is("{\"_links\":{\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},\"x:foo\":{\"href\":\"http://example.org/test\"},\"x:bar\":{\"href\":\"http://example.org/test\"}}}"));
+        assertThat(json, is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}],\"x:foo\":{\"href\":\"http://example.org/test\"},\"x:bar\":{\"href\":\"http://example.org/test\"}}}"));
     }
 
     @Test
@@ -54,7 +54,7 @@ public class HalRepresentationCuriesTest {
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
-        assertThat(json, is("{\"_links\":{\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},\"x:foo\":{\"href\":\"http://example.org/test\"}}}"));
+        assertThat(json, is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}],\"x:foo\":{\"href\":\"http://example.org/test\"}}}"));
     }
 
 }

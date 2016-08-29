@@ -39,6 +39,11 @@ public class Links {
     private static final Links EMPTY_LINKS = new Links();
 
     private final Map<String, List<Link>> links = new LinkedHashMap<>();
+    /**
+     * Links in embedded items need to know about the CURIs of the embedding HalRepresentation, in order to resolve
+     * compact URIs.
+     */
+    private volatile List<Link> curiesFromEmbedding = emptyList();
 
     /**
      *
@@ -202,9 +207,11 @@ public class Links {
      * @return List of CURI links, or empty list
      */
     private List<Link> getCuries() {
-        return this.links.containsKey(CURIES_REL)
-                ? this.links.get(CURIES_REL)
-                : emptyList();
+        final List<Link> curies = new ArrayList<>(curiesFromEmbedding);
+        if (links.containsKey(CURIES_REL)) {
+            curies.addAll(links.get(CURIES_REL));
+        }
+        return curies;
     }
 
     /**
@@ -215,6 +222,25 @@ public class Links {
      */
     public boolean isEmpty() {
         return links.isEmpty();
+    }
+
+    void withParentCuries(final List<Link> curiesFromEmbedding) {
+        this.curiesFromEmbedding = curiesFromEmbedding;
+        if (this.links != null) {
+            final List<Link> curies = getCuries();
+            final Map<String, List<Link>> curiedLinks = new LinkedHashMap<>();
+            this.links.keySet().forEach(rel->{
+                final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
+                if (curiTemplate.isPresent()) {
+                    curiedLinks.put(curiTemplate.get().curiedRelFrom(rel), links.get(rel));
+                } else {
+                    curiedLinks.put(rel, links.get(rel));
+                }
+
+            });
+            this.links.clear();
+            this.links.putAll(curiedLinks);
+        }
     }
 
     /**
@@ -329,7 +355,8 @@ public class Links {
             gen.writeStartObject();
             for (final String rel : value.links.keySet()) {
                 final List<Link> links = value.links.get(rel);
-                if (links.size() > 1) {
+                // for some strange reason, CURI links obviously need to have an array of values:
+                if (links.size() > 1 || rel.equals("curies")) {
                     gen.writeArrayFieldStart(rel);
                     for (final Link link : links) {
                         gen.writeObject(link);

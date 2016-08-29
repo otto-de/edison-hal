@@ -178,7 +178,7 @@ public class HalRepresentationEmbeddingTest {
         // then
         assertThat(json, is(
                 "{" +
-                        "\"_links\":{\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
+                        "\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}],\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
                         "\"_embedded\":{\"x:orders\":[" +
                         "{" +
                         "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
@@ -190,7 +190,7 @@ public class HalRepresentationEmbeddingTest {
                         "}"));
     }
 
-    @Test(enabled = false)
+    @Test
     public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinks() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
@@ -206,7 +206,7 @@ public class HalRepresentationEmbeddingTest {
         // then
         assertThat(json, is(
                 "{" +
-                        "\"_links\":{\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
+                        "\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}," +
                         "\"_embedded\":{\"x:foo\":[" +
                         "{" +
                         "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +

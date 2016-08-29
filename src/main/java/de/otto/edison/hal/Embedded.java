@@ -100,11 +100,13 @@ public class Embedded {
         this.curies = curies;
         this.items = new LinkedHashMap<>();
         items.keySet().forEach(rel->{
-            Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
+            final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
+            final List<HalRepresentation> itemsForRel = items.get(rel);
+            itemsForRel.stream().forEach(item->item.withParentCuries(curies));
             if (curiTemplate.isPresent()) {
-                this.items.put(curiTemplate.get().curiedRelFrom(rel), items.get(rel));
+                this.items.put(curiTemplate.get().curiedRelFrom(rel), itemsForRel);
             } else {
-                this.items.put(rel, items.get(rel));
+                this.items.put(rel, itemsForRel);
             }
         });
     }
@@ -156,7 +158,7 @@ public class Embedded {
      *
      * @return Embedded with support for curies.
      */
-    public Embedded withCuries(final List<Link> curies) {
+    Embedded withCuries(final List<Link> curies) {
         return new Embedded(items, curies);
     }
 
@@ -190,7 +192,9 @@ public class Embedded {
             final CuriTemplate curiTemplate = curiTemplateFor(curi);
             if (curiTemplate.matches(rel)) {
                 final String shortRel = curiTemplate.curiedRelFrom(rel);
-                return items.containsKey(shortRel) ? items.get(shortRel) : emptyList();
+                return items.containsKey(shortRel)
+                        ? items.get(shortRel)
+                        : emptyList();
             }
         }
         return emptyList();

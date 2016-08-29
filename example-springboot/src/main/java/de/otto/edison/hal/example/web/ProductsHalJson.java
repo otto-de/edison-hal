@@ -8,6 +8,7 @@ import java.util.List;
 
 import static de.otto.edison.hal.Embedded.embeddedBuilder;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
+import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Link.templatedBuilder;
@@ -21,6 +22,11 @@ import static org.springframework.web.servlet.support.ServletUriComponentsBuilde
  */
 public class ProductsHalJson extends HalRepresentation {
 
+    public static final String REL_EXAMPLE_TEMPLATE = "http://example.com/link-relations/{rel}";
+    public static final String REL_EXAMPLE_PRODUCT = REL_EXAMPLE_TEMPLATE.replace("{rel}", "product");
+    public static final String REL_FIND = "find";
+    public static final String APPLICATION_HAL_JSON = "application/hal+json";
+
     public ProductsHalJson(final Product product, final boolean embedded) {
         this(singletonList(product), embedded);
     }
@@ -29,14 +35,14 @@ public class ProductsHalJson extends HalRepresentation {
         super(
                 linksBuilder()
                         .with(self(fromCurrentRequestUri().toUriString()))
-                        .with(templatedBuilder("search", "/api/products{?q,embedded}")
-                                .withTitle("Search Products")
-                                .withType("application/hal+json")
-                                .beeingTemplated()
+                        .with(curi("ex", REL_EXAMPLE_TEMPLATE))
+                        .with(templatedBuilder(REL_FIND, "/api/products{?q,embedded}")
+                                .withTitle("Find Products")
+                                .withType(APPLICATION_HAL_JSON)
                                 .build())
                         .with(products
                                 .stream()
-                                .map(b -> linkBuilder("product", "/api/products/" + b.id)
+                                .map(b -> linkBuilder(REL_EXAMPLE_PRODUCT, "/api/products/" + b.id)
                                         .withTitle(b.title)
                                         .withType("application/hal+json")
                                         .build())
@@ -48,7 +54,7 @@ public class ProductsHalJson extends HalRepresentation {
 
     private static Embedded withEmbedded(final List<Product> products) {
         return embeddedBuilder()
-                .with("product", products
+                .with(REL_EXAMPLE_PRODUCT, products
                         .stream()
                         .map(ProductHalJson::new)
                         .collect(toList()))

@@ -214,6 +214,11 @@ that you are using an up-to-date version of Gradle (>= 2.12.0).
 
 ### 0.3.0
 
+*Bugfixes*
+
+* curies are now rendered as an array of links instead of a single link
+document
+
 *New Features / API extensions*
 
 * Added factory method Link.curi() to build CURI links.
