@@ -11,11 +11,11 @@ import java.util.Optional;
  *     Link curi = Link.curi("x", "http://example.org/rels/{rel}");
  *     String rel = "http://example.org/rels/product";
  *
- *     curiTemplateFor(curi).matches(rel) => true
+ *     curiTemplateFor(curi).matches(rel) =&gt; true
  *
- *     curiTemplateFor(curi).curiedRelFrom(rel) => "x:product"
+ *     curiTemplateFor(curi).curiedRelFrom(rel) =&gt; "x:product"
  *
- *     curiTemplateFor(curi).relPlaceHolderFrom(rel) => "product"
+ *     curiTemplateFor(curi).relPlaceHolderFrom(rel) =&gt; "product"
  *
  * </code></pre>
  * @since 0.3.0
