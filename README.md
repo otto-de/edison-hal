@@ -14,7 +14,7 @@ See https://tools.ietf.org/html/draft-kelly-json-hal-08 for details.
 BETA - work in progress.
 
 The current implementation is supporting HAL compliant links and
-embedded resources, but no curies.
+embedded resources, including full support for curies.
 
 ## About
 
@@ -37,7 +37,7 @@ Creating HAL representations:
 * Links with all specified attributes like rel, href, profile, type, name, title, etc. pp.
 * Embedded resources
 * CURIs in links and embedded resources
-* Generation of HAL representations using Jackson via annotated classes
+* Generation of HAL representations using Jackson using annotated classes
 
 Parsing HAL representations:
 * Mapping application/hal+json to Java classes using Jackson
@@ -212,7 +212,7 @@ that you are using an up-to-date version of Gradle (>= 2.12.0).
 
 ## Version History
 
-### 0.3.0
+### 0.3.0-SNAPSHOT
 
 *Bugfixes*
 
