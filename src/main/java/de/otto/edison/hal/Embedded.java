@@ -13,10 +13,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
 import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
@@ -160,6 +157,17 @@ public class Embedded {
      */
     Embedded withCuries(final List<Link> curies) {
         return new Embedded(items, curies);
+    }
+
+    /**
+     * Returns all link-relation types of the embedded items.
+     *
+     * @return list of link-relation types
+     * @since 0.3.0
+     */
+    @JsonIgnore
+    public Set<String> getRels() {
+        return items.keySet();
     }
 
     /**

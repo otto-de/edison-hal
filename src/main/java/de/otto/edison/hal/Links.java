@@ -1,5 +1,6 @@
 package de.otto.edison.hal;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -13,12 +14,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
 import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static java.lang.Boolean.TRUE;
-import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
@@ -102,7 +103,7 @@ public class Links {
         final Map<String,List<Link>> allLinks = new LinkedHashMap<>();
         allLinks.put(link.getRel(), new ArrayList<Link>(){{add(link);}});
         if (more != null) {
-            stream(more).forEach(l -> {
+            Arrays.stream(more).forEach(l -> {
                 if (!allLinks.containsKey(l.getRel())) {
                     allLinks.put(l.getRel(), new ArrayList<>());
                 }
@@ -138,6 +139,25 @@ public class Links {
      */
     public static Builder linksBuilder() {
         return new Builder();
+    }
+
+    /**
+     * Returns a Stream of links.
+     */
+    public Stream<Link> stream() {
+        return links.values().stream()
+                .flatMap(Collection::stream);
+    }
+
+    /**
+     * Returns all link-relation types of the embedded items.
+     *
+     * @return list of link-relation types
+     * @since 0.3.0
+     */
+    @JsonIgnore
+    public Set<String> getRels() {
+        return links.keySet();
     }
 
     /**
@@ -301,7 +321,7 @@ public class Links {
                 add(link);
             }});
             if (more != null) {
-                stream(more).forEach(l -> {
+                Arrays.stream(more).forEach(l -> {
                     if (!links.containsKey(l.getRel())) {
                         links.put(l.getRel(), new ArrayList<>());
                     }

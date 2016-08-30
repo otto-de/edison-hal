@@ -224,6 +224,9 @@ document
 * Added factory method Link.curi() to build CURI links.
 * Support for curies in links and embedded resources.
 * Improved JavaDoc
+* Added Links.getRels()
+* Added Links.stream()
+* Added Embedded.getRels()
 
 ### 0.2.0
 

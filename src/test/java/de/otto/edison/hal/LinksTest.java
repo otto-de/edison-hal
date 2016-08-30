@@ -98,6 +98,24 @@ public class LinksTest {
     }
 
     @Test
+    public void shouldStreamAllLinks() {
+        final Links links = linkingTo(
+                link("foo", "http://example.org/foo"),
+                link("bar", "http://example.org/bar")
+        );
+        assertThat(links.stream().count(), is(2L));
+    }
+
+    @Test
+    public void shouldGetAllLinkrelations() {
+        final Links links = linkingTo(
+                link("foo", "http://example.org/foo"),
+                link("bar", "http://example.org/bar")
+        );
+        assertThat(links.getRels(), contains("foo", "bar"));
+    }
+
+    @Test
     public void shouldGetEmptyListForUnknownRel() {
         final Links links = emptyLinks();
         assertThat(links.getLinksBy("item"), hasSize(0));
