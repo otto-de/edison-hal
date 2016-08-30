@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>/rels/product</title>
+</head>
+<body>
+<h1>http://localhost:8080/rels/product</h1>
+<h2>GET</h2>
+<p>Get a single product.</p>
+<h3>Request</h3>
+<ul>
+    <li>Headers
+        <ul>
+            <li>ACCEPT: application/hal+json</li>
+            <li>Alternatively ACCEPT: application/json</li>
+        </ul>
+    </li>
+</ul>
+<h3>Responses</h3>
+<ul>
+    <li>200 OK
+<pre>
+{
+  "title": "Title of the product",
+  "description": "Some description",
+  "retailPrice": 4711,
+  "_links": {
+    "self": {
+      "href": "/api/products/86b4894d-5781-4392-8429-7a6044b7c845",
+      "type": "application/hal+json",
+      "title": "Title of the product"
+    },
+    "collection": {
+      "href": "/api/products",
+      "type": "application/hal+json",
+      "title": "All Products"
+    }
+  }
+}
+</pre>
+    </li>
+    <li>404 NOT FOUND
+        <p>Product not found</p>
+    </li>
+</ul>
+</body>
+</html>

@@ -22,9 +22,9 @@ import static org.springframework.web.servlet.support.ServletUriComponentsBuilde
  */
 public class ProductsHalJson extends HalRepresentation {
 
-    public static final String REL_EXAMPLE_TEMPLATE = "http://example.com/link-relations/{rel}";
+    public static final String REL_EXAMPLE_TEMPLATE = "http://localhost:8080/rels/{rel}";
     public static final String REL_EXAMPLE_PRODUCT = REL_EXAMPLE_TEMPLATE.replace("{rel}", "product");
-    public static final String REL_FIND = "find";
+    public static final String REL_SEARCH = "search";
     public static final String APPLICATION_HAL_JSON = "application/hal+json";
 
     public ProductsHalJson(final Product product, final boolean embedded) {
@@ -36,8 +36,8 @@ public class ProductsHalJson extends HalRepresentation {
                 linksBuilder()
                         .with(self(fromCurrentRequestUri().toUriString()))
                         .with(curi("ex", REL_EXAMPLE_TEMPLATE))
-                        .with(templatedBuilder(REL_FIND, "/api/products{?q,embedded}")
-                                .withTitle("Find Products")
+                        .with(templatedBuilder(REL_SEARCH, "/api/products{?q,embedded}")
+                                .withTitle("Search Products")
                                 .withType(APPLICATION_HAL_JSON)
                                 .build())
                         .with(products
