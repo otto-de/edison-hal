@@ -41,6 +41,7 @@ public class HalRepresentation {
     /**
      * Creates a HalRepresentation having {@link Links}
      *
+     * @param links the Links of the HalRepresentation
      * @since 0.1.0
      */
     public HalRepresentation(final Links links) {
@@ -49,10 +50,15 @@ public class HalRepresentation {
     }
 
     /**
-     * Creates a HalRepresentation with {@link Links} and {@link Embedded} objects.
+     * <p>
+     *     Creates a HalRepresentation with {@link Links} and {@link Embedded} objects.
+     * </p>
+     * <p>
+     *     If the Links do contain CURIs, the link-relation types of the embedded objects are shortened.
+     * </p>
      *
-     * If the Links do contain CURIs, the link-relation types of the embedded objects are shortened.
-     *
+     * @param links the Links of the HalRepresentation
+     * @param embedded the Embedded items of the HalRepresentation
      * @since 0.1.0
      */
     public HalRepresentation(final Links links, final Embedded embedded) {
@@ -63,6 +69,7 @@ public class HalRepresentation {
     /**
      * Returns the Links of the HalRepresentation.
      *
+     * @return Links
      * @since 0.1.0
      */
     @JsonIgnore

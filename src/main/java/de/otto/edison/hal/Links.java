@@ -53,9 +53,12 @@ public class Links {
     Links() {}
 
     /**
-     * Creates a Links object from a map containing rel->List<Link>.
-     *
-     * If the links contain curies, the link-relation types are shortened to the curied format name:key.
+     * <p>
+     *     Creates a Links object from a map containing rel->List<Link>.
+     * </p>
+     * <p>
+     *     If the links contain curies, the link-relation types are shortened to the curied format name:key.
+     * </p>
      *
      * @param links a map with link-relation types as key and the list of links as value.
      * @since 0.1.0
@@ -143,6 +146,8 @@ public class Links {
 
     /**
      * Returns a Stream of links.
+     *
+     * @return Stream of Links
      */
     public Stream<Link> stream() {
         return links.values().stream()
@@ -161,11 +166,14 @@ public class Links {
     }
 
     /**
-     * Returns the first (if any) link having the specified link-relation type.
-     *
-     * If CURIs are used to shorten custom link-relation types, it is possible to either use expanded link-relation types,
-     * or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
-     * requires that the name of the CURI is known by clients.
+     * <p>
+     *     Returns the first (if any) link having the specified link-relation type.
+     * </p>
+     * <p>
+     *     If CURIs are used to shorten custom link-relation types, it is possible to either use expanded link-relation types,
+     *     or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
+     *     requires that the name of the CURI is known by clients.
+     * </p>
      *
      * @param rel the link-relation type of the retrieved link.
      * @return optional link
@@ -181,12 +189,14 @@ public class Links {
     }
 
     /**
-     * Returns the list of links having the specified link-relation type.
-     *
-     * If CURIs are used to shorten custom link-relation types, it is possible to either use expanded link-relation types,
-     * or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
-     * requires that the name of the CURI is known by clients.
-     *
+     * <p>
+     *     Returns the list of links having the specified link-relation type.
+     * </p>
+     * <p>
+     *     If CURIs are used to shorten custom link-relation types, it is possible to either use expanded link-relation types,
+     *     or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
+     *     requires that the name of the CURI is known by clients.
+     * </p>
      * @param rel the link-relation type of the retrieved link.
      * @return list of matching link
      *

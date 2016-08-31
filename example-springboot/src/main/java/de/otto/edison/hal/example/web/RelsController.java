@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
- *
+ * Returns HTML documentation for a single link-relation type.
  */
 @Controller
 public class RelsController {

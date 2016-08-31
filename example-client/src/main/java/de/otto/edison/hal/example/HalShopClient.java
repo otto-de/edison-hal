@@ -18,7 +18,9 @@ import static java.lang.String.format;
 import static org.apache.http.impl.client.HttpClients.createDefault;
 
 /**
+ * <p>
  * A client for the API of example-springboot.
+ * </p>
  * <p>
  * The client is using Apache HttpClient to access the /api endpoint of the example server, in order
  * to retrieve the entry-point of the products collection resource. It is then following the links to

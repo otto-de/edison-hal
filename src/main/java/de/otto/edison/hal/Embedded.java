@@ -22,10 +22,12 @@ import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 
 /**
- * The embedded items of a HalResource.
  * <p>
- * Provides access to embedded items by link-relation type.
+ *     The embedded items of a HalResource.
+ * </p>
  * <p>
+ *     Provides access to embedded items by link-relation type.
+ * </p>
  * <pre><code>
  *     {
  *         "_embedded": {
@@ -211,9 +213,9 @@ public class Embedded {
     /**
      * Returns the embedded items by link-relation type.
      * <p>
-     * This method can be used if the Java type of the embedded representations is known, for example because the
-     * {@link HalParser} is used to map the items to a specific HalRepresentation:
-     * <p>
+     *     This method can be used if the Java type of the embedded representations is known, for example because the
+     *     {@link HalParser} is used to map the items to a specific HalRepresentation:
+     * </p>
      * <pre><code>
      * final String json = ...
      *
@@ -295,10 +297,12 @@ public class Embedded {
         private final Map<String,List<HalRepresentation>> _embedded = new LinkedHashMap<>();
 
         /**
-         * Creates an EmbeddedBuilder initialized from a copy of an Embedded instance.
          * <p>
-         * This is used to add / replace lists of HAL representations for a link-relation type.
-         *
+         *     Creates an EmbeddedBuilder initialized from a copy of an Embedded instance.
+         * </p>
+         * <p>
+         *     This is used to add / replace lists of HAL representations for a link-relation type.
+         * </p>
          * @param embedded the Embedded instance to be copied.
          * @return EmbeddedBuilder that is initialized using {@code embedded}.
          *

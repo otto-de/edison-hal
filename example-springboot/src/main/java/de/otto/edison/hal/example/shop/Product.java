@@ -3,9 +3,12 @@ package de.otto.edison.hal.example.shop;
 import java.util.UUID;
 
 /**
- * A product in our example HAL shop.
- *
- * Only a few attributes, just enough to illustrate how to use edison-hal.
+ * <p>
+ *     A product in our example HAL shop.
+ * </p>
+ * <p>
+ *     Only a few attributes, just enough to illustrate how to use edison-hal.
+ * </p>
  */
 public final class Product {
 

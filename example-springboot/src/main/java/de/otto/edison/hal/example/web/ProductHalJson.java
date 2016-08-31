@@ -8,9 +8,12 @@ import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Links.linkingTo;
 
 /**
- * HAL representation of a single product.
- *
- * Created by guido on 27.07.16.
+ * <p>
+ *     HAL representation of a single product.
+ * </p>
+ * <p>
+ *     This is an example on how to provide custom properties for a HAL document.
+ * </p>
  */
 class ProductHalJson extends HalRepresentation {
 

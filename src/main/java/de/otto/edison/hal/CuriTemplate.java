@@ -4,9 +4,12 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A utility class used to handle custom link-relation type URIs and CURI templates.
- *
+ * <p>
+ *     A utility class used to handle custom link-relation type URIs and CURI templates.
+ * </p>
+ * <p>
  * Example usage:
+ * </p>
  * <pre><code>
  *     Link curi = Link.curi("x", "http://example.org/rels/{rel}");
  *     String rel = "http://example.org/rels/product";

@@ -95,24 +95,26 @@ public class Link {
     }
 
     /**
-     * Create a 'curies' link (compact URI) with name and a URI template for the link-relation type.
-     * <p></p>
-     * Curies may be used for brevity for custom link-relation type URIs. Curiess are established within a HAL document
-     * via a set of Link Objects with the relation type "curies" on the root Resource Object.
-     * These links contain a URI template with the token 'rel', and are named via the "name" property.
      * <p>
+     *     Create a 'curies' link (compact URI) with name and a URI template for the link-relation type.
+     * </p>
+     * <p>
+     *     Curies may be used for brevity for custom link-relation type URIs. Curiess are established within a HAL document
+     *     via a set of Link Objects with the relation type "curies" on the root Resource Object.
+     *     These links contain a URI template with the token 'rel', and are named via the "name" property.
+     * </p>
      * <pre><code>
-     * {
-     *   "_links": {
-     *     "self": { "href": "/orders" },
-     *     "curies": [{
-     *       "name": "acme",
-     *       "href": "http://docs.acme.com/relations/{rel}",
-     *       "templated": true
-     *     }],
-     *     "acme:widgets": { "href": "/widgets" }
-     *   }
-     * }
+     *     {
+     *       "_links": {
+     *         "self": { "href": "/orders" },
+     *         "curies": [{
+     *           "name": "acme",
+     *           "href": "http://docs.acme.com/relations/{rel}",
+     *           "templated": true
+     *         }],
+     *         "acme:widgets": { "href": "/widgets" }
+     *       }
+     *     }
      * </code></pre>
      *
      * @param name the short name of the CURI
@@ -240,11 +242,14 @@ public class Link {
      * Returns the href of the link.
      * <p>
      * The "href" property is REQUIRED.
+     * </p>
      * <p>
      * Its value is either a URI [RFC3986] or a URI Template [RFC6570].
+     * </p>
      * <p>
      * If the value is a URI Template then the Link Object SHOULD have a
      * "templated" attribute whose value is true.
+     * </p>
      *
      * @return href of the linked resource, or URI template, if the link is {@code templated}.
      *
@@ -260,12 +265,15 @@ public class Link {
      * Returns true, if the link is templated, false otherwise.
      * <p>
      * The "templated" property is OPTIONAL.
+     * </p>
      * <p>
      * Its value is boolean and SHOULD be true when the Link Object's "href"
      * property is a URI Template.
+     * </p>
      * <p>
      * Its value SHOULD be considered false if it is undefined or any other
      * value than true.
+     * </p>
      *
      * @return boolean
      *
@@ -281,9 +289,11 @@ public class Link {
      * Returns the type of the link, or an empty String if no type is specified.
      * <p>
      * The "type" property is OPTIONAL.
+     * </p>
      * <p>
      * Its value is a string used as a hint to indicate the media type
      * expected when dereferencing the target resource.
+     * </p>
      *
      * @return type
      *
@@ -299,9 +309,11 @@ public class Link {
      * Returns the hreflang of the link, or an empty String if no hreflang is specified.
      * <p>
      * The "hreflang" property is OPTIONAL.
+     * </p>
      * <p>
      * Its value is a string and is intended for indicating the language of
      * the target resource (as defined by [RFC5988]).
+     * </p>
      *
      * @return hreflang or empty string
      *
@@ -317,9 +329,11 @@ public class Link {
      * Returns the title of the link, or an empty String if no title is specified.
      * <p>
      * The "title" property is OPTIONAL.
+     * </p>
      * <p>
      * Its value is a string and is intended for labelling the link with a
      * human-readable identifier (as defined by [RFC5988]).
+     * </p>
      *
      * @return title or empty string
      *
@@ -335,9 +349,11 @@ public class Link {
      * Returns the name of the link, or an empty String if no name is specified.
      * <p>
      * The "name" property is OPTIONAL.
+     * </p>
      * <p>
      * Its value MAY be used as a secondary key for selecting Link Objects
      * which share the same relation type.
+     * </p>
      *
      * @return name or empty string
      *
@@ -353,8 +369,10 @@ public class Link {
      * Returns the profile of the link, or an empty String if no profile is specified.
      * <p>
      * The "profile" property is OPTIONAL.
+     * </p>
      * <p>
      * Its value is a string which is a URI that hints about the profile of the target resource.
+     * </p>
      *
      * @return profile or empty string
      *
@@ -370,17 +388,19 @@ public class Link {
      * Returns the deprecation information, or an empty string, if the link is not deprecated.
      * <p>
      * The "deprecation" property is OPTIONAL.
+     * </p>
      * <p>
      * Its presence indicates that the link is to be deprecated (i.e.
      * removed) at a future date.  Its value is a URL that SHOULD provide
      * further information about the deprecation.
+     * </p>
      * <p>
      * A client SHOULD provide some notification (for example, by logging a
      * warning message) whenever it traverses over a link that has this
      * property.  The notification SHOULD include the deprecation property's
      * value so that a client manitainer can easily find information about
      * the deprecation.
-     *
+     * </p>
      * @return URL
      *
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.4">draft-kelly-json-hal-08#section-5.4</a>
@@ -488,6 +508,7 @@ public class Link {
          *
          * @param rel  the link-relation type of the link
          * @param href the href of the linked resource
+         * @return this
          *
          * @since 0.1.0
          */
@@ -509,7 +530,10 @@ public class Link {
         }
 
         /**
+         * Set the language of the linked resource
          *
+         * @param hrefLang the hreflang of the Link
+         * @return this
          * @since 0.1.0
          */
         public Builder withHrefLang(final String hrefLang) {
@@ -519,6 +543,7 @@ public class Link {
 
         /**
          * Set the title attribute
+         *
          * @param title the title of the linked resource.
          * @return this
          *
@@ -556,10 +581,17 @@ public class Link {
         }
 
         /**
-         * Set deprecation attribute.
+         * <p>
+         *     Set deprecation attribute.
+         * </p>
+         * <p>
+         *     Its presence indicates that the link is to be deprecated (i.e.
+         *     removed) at a future date.  Its value is a URL that SHOULD provide
+         *     further information about the deprecation.
+         * </p>
          *
+         * @param deprecation URL pointing to further information
          * @return this
-         *
          * @since 0.1.0
          */
         public Builder withDeprecation(final String deprecation) {

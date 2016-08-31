@@ -15,7 +15,7 @@ import static de.otto.edison.hal.Links.linkingTo;
 public class HomeController {
 
     /**
-     * Entry point for the bookmarks REST API.
+     * Entry point for the products REST API.
      *
      * @param request current request
      * @return application/hal+json document containing links to the API.

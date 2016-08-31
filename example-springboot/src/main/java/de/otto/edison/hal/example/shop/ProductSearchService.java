@@ -13,7 +13,6 @@ import static java.util.stream.Collectors.toList;
  *
  * A service used to search for products.
  *
- * Created by guido on 27.07.16.
  */
 @Service
 public class ProductSearchService {

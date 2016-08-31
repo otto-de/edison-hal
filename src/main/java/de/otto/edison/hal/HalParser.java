@@ -11,28 +11,32 @@ import java.util.Optional;
 import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 
 /**
- * A parser used to parse application/hal+json representations of REST resources into Java objects.
  * <p>
- * Simple HAL representations can be parsed using Jackson's ObjectMapper like this:
+ *     A parser used to parse application/hal+json representations of REST resources into Java objects.
+ * </p>
+ * <p>
+ *     Simple HAL representations can be parsed using Jackson's ObjectMapper like this:
+ * </p>
  * <pre><code>
  *     new ObjectMapper().readValue(json.getBytes(), MyHalRepresentation.class)
  * </code></pre>
- *
- * The same can be achieved by using a HalParser:
+ * <p>
+ *     The same can be achieved by using a HalParser:
+ * </p>
  * <pre><code>
- * final MyHalRepresentation result = HalParser.parse(json).as(MyHalRepresentation.class);
+ *     final MyHalRepresentation result = HalParser.parse(json).as(MyHalRepresentation.class);
  * </code></pre>
  * <p>
- * However, if the representation contains embedded items, Jackson is unable to determine the Java type of
- * the embedded items, because the HAL document itself does not contain type information. In this case, Jackson
- * needs some help to identify the concrete types of embedded items. Using the HalParser, this is accomplished
- * like this:
+ *     However, if the representation contains embedded items, Jackson is unable to determine the Java type of
+ *     the embedded items, because the HAL document itself does not contain type information. In this case, Jackson
+ *     needs some help to identify the concrete types of embedded items. Using the HalParser, this is accomplished
+ *     like this:
+ * </p>
  * <pre><code>
- * final FooHalRepresentation result = HalParser
- *         .parse(json)
- *         .as(FooHalRepresentation.class, with("bar", BarHalRepresentation.class));
+ *     final FooHalRepresentation result = HalParser
+ *             .parse(json)
+ *             .as(FooHalRepresentation.class, with("bar", BarHalRepresentation.class));
  * </code></pre>
- *
  * @since 0.1.0
  */
 public final class HalParser {
@@ -43,8 +47,8 @@ public final class HalParser {
     /**
      * Type information for embedded items. This is required if more complex embedded items should be parsed
      * into sub classes of HalRepresentation.
-     * @param <T> The type of the HalRepresentation used for a single link-relation type.
      *
+     * @param <T> The type of the HalRepresentation used for a single link-relation type.
      * @since 0.1.0
      */
     public static class EmbeddedTypeInfo<T extends HalRepresentation> {
@@ -97,7 +101,6 @@ public final class HalParser {
      * @param <T> the type of the class, extending HalRepresentation
      * @return instance of T, containing the data of the parsed HAL document.
      * @throws IOException if parsing JSOn failed for some reason.
-     *
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type) throws IOException {
@@ -114,7 +117,6 @@ public final class HalParser {
      * @param <E> The type used to parse the embedded HAL documents
      * @return T
      * @throws IOException if parsing the JSON fails for some reason.
-     *
      * @since 0.1.0
      */
     public <T extends HalRepresentation, E extends HalRepresentation> T as(final Class<T> type, final EmbeddedTypeInfo<E> typeInfo) throws IOException {
