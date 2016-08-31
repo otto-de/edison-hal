@@ -1,0 +1,26 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+
+jar {
+    baseName = 'edison-hal-example-client'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //compile rootProject
+    compile rootProject
+    compile('org.apache.httpcomponents:httpclient:4.5.2')
+    compile('com.damnhandy:handy-uri-templates:2.1.6')
+}

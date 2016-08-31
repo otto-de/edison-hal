@@ -1,2 +1,3 @@
 include 'example-springboot'
+include 'example-client'
 rootProject.name = 'edison-hal'

@@ -227,6 +227,7 @@ document
 * Added Links.getRels()
 * Added Links.stream()
 * Added Embedded.getRels()
+* Added simple example for a client of a HAL service.
 
 ### 0.2.0
 
