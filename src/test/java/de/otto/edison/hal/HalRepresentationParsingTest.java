@@ -1,5 +1,6 @@
 package de.otto.edison.hal;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testng.annotations.Test;
 
@@ -16,18 +17,18 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-/**
- * Created by guido on 05.07.16.
- */
 public class HalRepresentationParsingTest {
 
     static class SimpleHalRepresentation extends HalRepresentation {
-        public String first = "foo";
-        public String second = "bar";
+        @JsonProperty
+        public String first;
+        @JsonProperty
+        public String second;
     }
 
     static class EmbeddedHalRepresentation extends HalRepresentation {
-        public final String value = "foobar";
+        @JsonProperty
+        public String value;
     }
 
     @Test
@@ -207,5 +208,29 @@ public class HalRepresentationParsingTest {
         final List<HalRepresentation> items = embedded.getItemsBy("http://example.org/rels/foo");
         assertThat(items, hasSize(2));
         assertThat(items.get(0).getLinks().getLinkBy("http://example.org/rels/bar").get().getHref(), is("http://example.org/test/bar/01"));
+    }
+
+    @Test
+    public void shouldParseCuriedEmbeddedsWithDerivedType() throws IOException {
+        // given
+        final String json = "{\"_links\":{" +
+                "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}}," +
+                "\"_embedded\":{\"ex:bar\":[" +
+                "{" +
+                "\"value\":\"Hello World\"," +
+                "\"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
+                "}" +
+                "]}" +
+                "}" +
+                "}";
+        // when
+        Embedded embedded = parse(json)
+                .as(HalRepresentation.class, withEmbedded("http://example.org/rels/bar", EmbeddedHalRepresentation.class))
+                .getEmbedded();
+        // then
+        final List<EmbeddedHalRepresentation> items = embedded
+                .getItemsBy("http://example.org/rels/bar", EmbeddedHalRepresentation.class);
+        assertThat(items, hasSize(1));
+        assertThat(items.get(0).value, is("Hello World"));
     }
 }

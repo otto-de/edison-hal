@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 
 /**
  * A parser used to parse application/hal+json representations of REST resources into Java objects.
@@ -116,16 +119,37 @@ public final class HalParser {
      */
     public <T extends HalRepresentation, E extends HalRepresentation> T as(final Class<T> type, final EmbeddedTypeInfo<E> typeInfo) throws IOException {
         final JsonNode jsonNode = JSON_MAPPER.readTree(json);
-        final T representation = JSON_MAPPER.convertValue(jsonNode, type);
+        final T halRepresentation = JSON_MAPPER.convertValue(jsonNode, type);
 
         final List<HalRepresentation> embeddedValues = new ArrayList<>();
-        final JsonNode listOfHalRepresentations = jsonNode.at("/_embedded/" + typeInfo.rel);
+        final JsonNode listOfHalRepresentations = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.rel);
         for (int i = 0; i < listOfHalRepresentations.size(); i++) {
             JsonNode embeddedRepresentation = listOfHalRepresentations.get(i);
             embeddedValues.add(JSON_MAPPER.convertValue(embeddedRepresentation, typeInfo.type));
         }
-        representation.withEmbedded(typeInfo.rel, embeddedValues);
-        return representation;
+        halRepresentation.withEmbedded(typeInfo.rel, embeddedValues);
+        return halRepresentation;
     }
 
+    /**
+     * Returns the JsonNode of the embedded items by link-relation type and resolves possibly curied rels.
+     *
+     * @param halRepresentation the HAL document including the 'curies' links.
+     * @param jsonNode the JsonNode of the document
+     * @param rel the link-relation type of interest
+     * @return JsonNode
+     * @since 0.3.0
+     */
+    private JsonNode findPossiblyCuriedEmbeddedNode(final HalRepresentation halRepresentation, final JsonNode jsonNode, final String rel) {
+        final JsonNode listOfHalRepresentations = jsonNode.at("/_embedded/" + rel);
+        if (listOfHalRepresentations.isMissingNode()) {
+            // Try it with curied links:
+            final List<Link> curies = halRepresentation.getLinks().getLinksBy("curies");
+            final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
+            if (curiTemplate.isPresent()) {
+                return jsonNode.at("/_embedded/" + curiTemplate.get().curiedRelFrom(rel));
+            }
+        }
+        return listOfHalRepresentations;
+    }
 }
