@@ -65,16 +65,17 @@ the properties defined in application/hal+json, you can create a
 HalRepresentations like this:
 
 ```java
-        final HalRepresentation representation = new HalRepresentation(
-                linkingTo(self("http://example.org/test/bar")),
-                embeddedBuilder()
-                        .with("foo", asList(
-                                new HalRepresentation(linkingTo(self("http://example.org/test/foo/01"))),
-                                new HalRepresentation(linkingTo(self("http://example.org/test/foo/02")))))
-                        .with("bar", asList(
-                                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
-                                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))))
-                        .build());
+    final HalRepresentation representation = new HalRepresentation(
+            linkingTo(
+                    self("http://example.org/test/bar")),
+            embeddedBuilder()
+                    .with("foo", asList(
+                            new HalRepresentation(linkingTo(self("http://example.org/test/foo/01"))),
+                            new HalRepresentation(linkingTo(self("http://example.org/test/foo/02")))))
+                    .with("bar", asList(
+                            new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
+                            new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))))
+                    .build());
 
 ```
 
