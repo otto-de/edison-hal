@@ -13,25 +13,20 @@ import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Link.templatedBuilder;
 import static de.otto.edison.hal.Links.linksBuilder;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentRequestUri;
 
 /**
  * HAL reprensentation of a list of products.
  */
-public class ProductsHalJson extends HalRepresentation {
+class ProductsHalJson extends HalRepresentation {
 
-    public static final String REL_EXAMPLE_TEMPLATE = "http://localhost:8080/rels/{rel}";
-    public static final String REL_EXAMPLE_PRODUCT = REL_EXAMPLE_TEMPLATE.replace("{rel}", "product");
-    public static final String REL_SEARCH = "search";
-    public static final String APPLICATION_HAL_JSON = "application/hal+json";
+    private static final String REL_EXAMPLE_TEMPLATE = "http://localhost:8080/rels/{rel}";
+    private static final String REL_EXAMPLE_PRODUCT = REL_EXAMPLE_TEMPLATE.replace("{rel}", "product");
+    private static final String REL_SEARCH = "search";
+    private static final String APPLICATION_HAL_JSON = "application/hal+json";
 
-    public ProductsHalJson(final Product product, final boolean embedded) {
-        this(singletonList(product), embedded);
-    }
-
-    public ProductsHalJson(final List<Product> products, final boolean embedded) {
+    ProductsHalJson(final List<Product> products, final boolean embedded) {
         super(
                 linksBuilder()
                         .with(self(fromCurrentRequestUri().toUriString()))

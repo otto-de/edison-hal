@@ -12,7 +12,7 @@ import static de.otto.edison.hal.Links.linkingTo;
  *
  * Created by guido on 27.07.16.
  */
-public class ProductHalJson extends HalRepresentation {
+class ProductHalJson extends HalRepresentation {
 
     @JsonProperty
     private String title;
