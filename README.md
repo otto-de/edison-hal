@@ -53,7 +53,7 @@ Parsing HAL representations:
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:0.1.0",
+        compile "de.otto.edison:edison-hal:0.3.0",
         ...
     }
 ```
@@ -212,7 +212,7 @@ that you are using an up-to-date version of Gradle (>= 2.12.0).
 
 ## Version History
 
-### 0.3.0-SNAPSHOT
+### 0.3.0
 
 *Bugfixes*
 
