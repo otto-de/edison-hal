@@ -27,9 +27,8 @@ Currently, there are only few libraries supporting HAL and even
  less that support the full media type including all link properties,
  curies (compact URIs) and embedded resources. 
  
-Spring HATEOAS, for
- example, is lacking many link properties, such as title, name, type and
- others. 
+Spring HATEOAS, for example, is lacking many link properties, such as 
+ title, name, type and others. 
  
 ## Features
 
@@ -43,8 +42,12 @@ Parsing HAL representations:
 * Mapping application/hal+json to Java classes using Jackson
 * simple domain model to access links, embedded resources etc.
 
+Traversion of HAL representations:
+* Simple client-side navigation through linked and embedded REST resources using
+Traverson API
+
 ## Next Steps
-* Support for simple traversal of linked resources
+* Extend Traverson API
 * Support for collection resources including paging
 
 ## Usage
@@ -216,7 +219,7 @@ that you are using an up-to-date version of Gradle (>= 2.12.0).
 ### 0.4.0-SNAPSHOT
 
 *New Features / API extensions*
-* Added first draft of a Traverson API to traverse HAL resources.
+* Added first draft of a Traverson API to navigate through HAL resources.
 
 ### 0.3.0
 
