@@ -8,6 +8,7 @@ public class Client {
         try (final HalShopClient shopClient = new HalShopClient()) {
             shopClient.printAllBooks();
             shopClient.printPricesOfAllBooksAbout("Web API");
+            shopClient.traverseLinksUsingTraverson("Spring");
         } catch (final IOException e) {
             System.out.println("\n\n\tPlease first start example-springboot so we can get some products from a server");
         }

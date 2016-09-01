@@ -427,7 +427,11 @@ public class Links {
             if (value instanceof Map) {
                 return singletonList(asLink(rel, (Map)value));
             } else {
-                return ((List<Map>)value).stream().map(o->asLink(rel, o)).collect(toList());
+                try {
+                    return ((List<Map>) value).stream().map(o -> asLink(rel, o)).collect(toList());
+                } catch (final ClassCastException e) {
+                    throw new IllegalStateException("Document is not in application/hal+json format. Expected a single Link or a List of Links: rel=" + rel + " value=" + value);
+                }
             }
         }
 

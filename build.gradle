@@ -13,6 +13,7 @@ repositories {
 
 dependencies {
     compile libraries.jackson
+    compile libraries.uritemplates
 
     testCompile libraries.test
 }

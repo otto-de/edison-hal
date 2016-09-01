@@ -14,6 +14,8 @@ import java.util.List;
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
+import static de.otto.edison.hal.Traverson.traverson;
+import static de.otto.edison.hal.Traverson.withVars;
 import static java.lang.String.format;
 import static org.apache.http.impl.client.HttpClients.createDefault;
 
@@ -46,14 +48,13 @@ public class HalShopClient implements AutoCloseable {
     /**
      * Traverses the API and renders all product links.
      *
-     * @throws IOException
      */
-    public void printAllBooks() throws IOException {
+    public void printAllBooks() {
         System.out.println("\n\n");
         System.out.println("------------- All Books ----------------");
         final String uri = findSearchUriTemplate()
                 .expand();
-        final List<Link> productLinks = httpGet(uri)
+        final List<Link> productLinks = getHalRepresentation(uri)
                 .getLinks()
                 .getLinksBy(REL_PRODUCT);
         System.out.println("|");
@@ -75,17 +76,16 @@ public class HalShopClient implements AutoCloseable {
      *     parameters like 'q' or 'embedded' can be set.
      * </p>
      * @param query some query term
-     * @throws IOException
      * @see <a href="https://github.com/damnhandy/Handy-URI-Templates">Handy-URI-Templates</a>
      */
-    public void printPricesOfAllBooksAbout(final String query) throws IOException {
+    public void printPricesOfAllBooksAbout(final String query) {
         System.out.println("\n\n");
         System.out.println("------------- All Books about ----------");
         final String uri = findSearchUriTemplate()
                 .set("q", query)
                 .set("embedded", true)
                 .expand();
-        final List<BookHalJson> products = httpGet(uri)
+        final List<BookHalJson> products = getHalRepresentation(uri)
                 .getEmbedded()
                 .getItemsBy(REL_PRODUCT, BookHalJson.class);
         System.out.println("|");
@@ -97,14 +97,37 @@ public class HalShopClient implements AutoCloseable {
     }
 
     /**
+     * <p>
+     *     Traverses the API and searches for all products matching the query term.
+ *     </p>
+     * <p>
+     *     This is similar to {@link #printPricesOfAllBooksAbout(String)}, but is using a Traverson to access
+     *     the products.
+     * </p>
+     * @param query some query term
+     * @see <a href="https://github.com/damnhandy/Handy-URI-Templates">Handy-URI-Templates</a>
+     */
+    public void traverseLinksUsingTraverson(final String query) {
+        System.out.println("\n\n");
+        System.out.println("---------- Traverson Example ----------");
+        traverson(this::getHalJson)
+                .startWith(HOME_URI)
+                .follow(REL_SEARCH, withVars("q", query, "embedded", false))
+                .stream(REL_PRODUCT, BookHalJson.class)
+                .forEach(product->{
+                    System.out.println("|   * " + product.title + ": " + format("%.2f€", product.retailPrice/100.0));
+                });
+        System.out.println("----------------------------------------");
+    }
+
+    /**
      * Retrieves the entry-point of the example server and returns the UriTemplate of the search link.
      *
      * @return UriTemplate
-     * @throws IOException
      * @see <a href="https://github.com/damnhandy/Handy-URI-Templates">Handy-URI-Templates</a>
      */
-    private UriTemplate findSearchUriTemplate() throws IOException {
-        final Link searchLink = httpGet(HOME_URI)
+    private UriTemplate findSearchUriTemplate() {
+        final Link searchLink = getHalRepresentation(HOME_URI)
                 .getLinks()
                 .getLinksBy(REL_SEARCH)
                 .get(0);
@@ -116,21 +139,38 @@ public class HalShopClient implements AutoCloseable {
      *
      * @param uri the URI of the resource
      * @return HalRepresentation with optionally embedded BookHalJson items.
-     * @throws IOException
      */
-    private HalRepresentation httpGet(final String uri) throws IOException {
-        final HttpGet httpget = new HttpGet(HOST + uri);
-        httpget.addHeader("Accept", "application/hal+json");
+    private HalRepresentation getHalRepresentation(final String uri) {
+        try {
+            final String json = getHalJson(uri);
 
-        System.out.println("|   ------------- Request --------------");
-        System.out.println("|   " + httpget.getRequestLine());
+            System.out.println("|   ------------- Response -------------");
+            System.out.println("|   " + json);
+            return parse(json).as(HalRepresentation.class, withEmbedded(REL_PRODUCT, BookHalJson.class));
+        } catch (final IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
 
-        final HttpEntity entity = httpclient.execute(httpget).getEntity();
-        final String json = EntityUtils.toString(entity);
+    /**
+     * Returns the REST resource identified by {@code uri} as a JSON string.
+     *
+     * @param uri the URI of the resource
+     * @return json
+     */
+    private String getHalJson(final String uri) {
+        try {
+            final HttpGet httpget = new HttpGet(HOST + uri);
+            httpget.addHeader("Accept", "application/hal+json");
 
-        System.out.println("|   ------------- Response -------------");
-        System.out.println("|   " + json);
-        return parse(json).as(HalRepresentation.class, withEmbedded(REL_PRODUCT, BookHalJson.class));
+            System.out.println("|   ------------- Request --------------");
+            System.out.println("|   " + httpget.getRequestLine());
+
+            final HttpEntity entity = httpclient.execute(httpget).getEntity();
+            return EntityUtils.toString(entity);
+        } catch (final IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
     /**

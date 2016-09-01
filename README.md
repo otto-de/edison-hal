@@ -213,6 +213,11 @@ that you are using an up-to-date version of Gradle (>= 2.12.0).
 
 ## Version History
 
+### 0.4.0-SNAPSHOT
+
+*New Features / API extensions*
+* Added first draft of a Traverson API to traverse HAL resources.
+
 ### 0.3.0
 
 *Bugfixes*

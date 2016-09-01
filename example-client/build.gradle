@@ -22,5 +22,4 @@ dependencies {
     //compile rootProject
     compile rootProject
     compile('org.apache.httpcomponents:httpclient:4.5.2')
-    compile('com.damnhandy:handy-uri-templates:2.1.6')
 }

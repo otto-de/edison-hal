@@ -10,6 +10,7 @@ import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.Links.emptyLinks;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -19,6 +20,18 @@ import static org.hamcrest.Matchers.is;
  * Created by guido on 19.07.16.
  */
 public class HalParserTest {
+
+    @Test
+    public void shouldParseEmptyHalDocument() throws IOException {
+        // given
+        final String json =
+                 "{}";
+        // when
+        final HalRepresentation result = parse(json).as(HalRepresentation.class);
+        // then
+        final Links links = result.getLinks();
+        assertThat(links, is(emptyLinks()));
+    }
 
     @Test
     public void shouldParseSimpleHalDocumentsWithoutEmbeddedItems() throws IOException {
