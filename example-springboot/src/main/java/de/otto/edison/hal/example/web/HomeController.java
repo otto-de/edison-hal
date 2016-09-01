@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
+import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
-import static de.otto.edison.hal.Link.templatedBuilder;
 import static de.otto.edison.hal.Links.linkingTo;
 
 @RestController
@@ -30,7 +30,7 @@ public class HomeController {
         return new HalRepresentation(
                 linkingTo(
                         self(homeUrl),
-                        templatedBuilder("search", "/api/products{?q,embedded}")
+                        linkBuilder("search", "/api/products{?q,embedded}")
                                 .withTitle("Search Products")
                                 .withType("application/hal+json")
                                 .beeingTemplated()
