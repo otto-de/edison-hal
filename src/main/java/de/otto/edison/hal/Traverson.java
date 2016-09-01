@@ -186,6 +186,7 @@ public class Traverson {
      *     these items are used instead of following the associated {@link Link}.
      * </p>
      * @param rel the link-relation type of the followed link
+     * @param vars uri-template variables used to build links.
      * @return this
      */
     public Traverson follow(final String rel, final Map<String, Object> vars) {
@@ -210,7 +211,7 @@ public class Traverson {
     }
 
     /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@Stream}
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
      * containing the returned {@link HalRepresentation HalRepresentations}.
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
@@ -224,7 +225,7 @@ public class Traverson {
     }
 
     /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@Stream}
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
      * containing the returned {@link HalRepresentation HalRepresentations}.
      * <p>
      *     Templated links are resolved to URIs using the specified template variables.
@@ -234,6 +235,7 @@ public class Traverson {
      *     these items are used instead of following the associated {@link Link}.
      * </p>
      * @param rel the link-relation type of the followed link
+     * @param vars uri-template variables used to build links.
      * @return this
      */
     public Stream<HalRepresentation> stream(final String rel, final Map<String, Object> vars) {
@@ -241,7 +243,7 @@ public class Traverson {
     }
 
     /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@Stream}
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
      * containing the returned {@link HalRepresentation HalRepresentations}.
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
@@ -249,6 +251,7 @@ public class Traverson {
      * </p>
      * @param rel the link-relation type of the followed link
      * @param type the type of the returned HalRepresentations
+     * @param <T> type of the returned HalRepresentations
      * @return this
      */
     public <T extends HalRepresentation> Stream<T> stream(final String rel, final Class<T> type) {
@@ -256,7 +259,7 @@ public class Traverson {
     }
 
     /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@Stream}
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
      * containing the returned {@link HalRepresentation HalRepresentations}.
      * <p>
      *     Templated links are resolved to URIs using the specified template variables.
@@ -266,7 +269,9 @@ public class Traverson {
      *     these items are used instead of following the associated {@link Link}.
      * </p>
      * @param rel the link-relation type of the followed link
+     * @param vars uri-template variables used to build links.
      * @param type the type of the returned HalRepresentations
+     * @param <T> type of the returned HalRepresentations
      * @return this
      */
     public <T extends HalRepresentation> Stream<T> stream(final String rel, final Map<String, Object> vars, final Class<T> type) {
