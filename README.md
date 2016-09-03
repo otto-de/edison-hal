@@ -14,7 +14,10 @@ See https://tools.ietf.org/html/draft-kelly-json-hal-08 for details.
 BETA - work in progress.
 
 The current implementation is supporting HAL compliant links and
-embedded resources, including full support for curies.
+embedded resources, including curies (compact URIs). 
+
+The full media-type as defined in https://tools.ietf.org/html/draft-kelly-json-hal-08
+is supported by edison-hal.
 
 ## About
 
@@ -46,9 +49,15 @@ Traversion of HAL representations:
 * Simple client-side navigation through linked and embedded REST resources using
 Traverson API
 
-## Next Steps
-* Extend Traverson API
-* Support for collection resources including paging
+## Open Issues and next steps
+* The Function used in the Traverson API does not support content-
+negotiation.  
+* Missing support for collection resources including paging
+* Optional support for Apache httpcomponents and/or other HTTP clients.
+* Deep nesting of embedded items is currently not supported: a resource
+that has embedded items, which have embedded items, and so on. It would
+possibly work for simple HalRepresentations, but not for subtypes of
+HalRepresentation. Fixing this might break some of the current APIs.
 
 ## Usage
  
@@ -57,6 +66,15 @@ Traverson API
 ```gradle
     dependencies {
         compile "de.otto.edison:edison-hal:0.3.0",
+        ...
+    }
+```
+ 
+The current snapshot release is 0.4.0-SNAPSHOT:
+
+```gradle
+    dependencies {
+        compile "de.otto.edison:edison-hal:0.4.0-SNAPSHOT",
         ...
     }
 ```
@@ -193,26 +211,87 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
     }
 ```
 
+### 6. Using the Traverson:
+
+Using Spring MVC, you can directly return HalRepresentations from you controller methods:
+
+```java
+    class ProductHalJson extends HalRepresentation {
+        @JsonProperty String price;
+    }
+    
+    void printProducts(final String query) {
+        traverson(this::getHalJson)
+                .startWith(HOME_URI)
+                .follow(REL_SEARCH, withVars("q", query))
+                .follow(REL_PRODUCT)
+                .streamAs(ProductHalJson.class)
+                .forEach(product->{
+                    System.out.println(product.title + ": " + product.price);
+                });
+    }
+    
+    String getHalJson(final String uri) {
+        try {
+            final HttpGet httpget = new HttpGet(HOST + uri);
+            httpget.addHeader("Accept", "application/hal+json");
+            final HttpEntity entity = httpclient.execute(httpget).getEntity();
+            return EntityUtils.toString(entity);
+        } catch (final IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+```
+
 ## Building edison-hal
 
 If you want to build edison-hal for some reason, you might want to use
  the included Gradle wrapper:
  
- ```
- bin/go build
- ```
- or
 ```
- bin/gradlew build
- ```
+    bin/go build
+```
+ or
+
+```
+    bin/gradlew build
+```
  
  An IntelliJ IDEA Workspace can be created using 
- ```
-  bin/go idea
+
+```
+    bin/go idea
 ```
 
 If you do not want to use the provided gradle wrapper, please make sure 
 that you are using an up-to-date version of Gradle (>= 2.12.0).
+
+## Running the examples
+
+Currently, there are two examples: 
+* One for the server side, using Spring Boot
+* One for the client side, which is a simple Java application using
+ an Apache HttpClient to access the example server.
+ 
+The server can be started using Gradle:
+
+```
+    gradle :example-springboot:bootRun
+```
+
+Alternatively, you can simply run the class Server in your favorite IDE.
+
+Open 'http://localhost:8080' in your Browser and navigate to the included 
+HAL Browser to play around with the example.
+
+The client can be started like this:
+
+```
+    gradle :example-client:run
+```
+
+It requires the server to be running. The REST resources are traversed
+in different ways. 
 
 ## Version History
 

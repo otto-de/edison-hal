@@ -6,6 +6,9 @@ buildscript {
 
 apply plugin: 'java'
 apply plugin: 'idea'
+apply plugin: 'application'
+
+mainClassName = 'de.otto.edison.hal.example.Client'
 
 jar {
     baseName = 'edison-hal-example-client'
