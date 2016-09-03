@@ -179,17 +179,17 @@ If you want to parse embedded resources into a extended HalRepresentation, you n
                         "}";
         
         // when
-        final SomeHalRepresentation result = HalParser
+        final HalRepresentation result = HalParser
                 .parse(json)
-                .as(SomeHalRepresentation.class, withEmbedded("bar", TestHalRepresentation.class));
+                .as(HalRepresentation.class, withEmbedded("bar", EmbeddedHalRepresentation.class));
         
         // then
         final List<EmbeddedHalRepresentation> embeddedItems = result
                 .getEmbedded()
-                .getItemsBy("bar", TestHalRepresentation.class);
+                .getItemsBy("bar", EmbeddedHalRepresentation.class);
         
         assertThat(embeddedItems, hasSize(1));
-        assertThat(embeddedItems.get(0).getClass(), equalTo(TestHalRepresentation.class));
+        assertThat(embeddedItems.get(0).getClass(), equalTo(EmbeddedHalRepresentation.class));
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 ```
@@ -213,7 +213,7 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
 
 ### 6. Using the Traverson:
 
-Using Spring MVC, you can directly return HalRepresentations from you controller methods:
+Traverson is a utility to make it easy to traverse linked and/or embedded resources using link-relation types:
 
 ```java
     class ProductHalJson extends HalRepresentation {
@@ -245,7 +245,7 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
 
 ## Building edison-hal
 
-If you want to build edison-hal for some reason, you might want to use
+If you want to build edison-hal using Gradle, you might want to use
  the included Gradle wrapper:
  
 ```
