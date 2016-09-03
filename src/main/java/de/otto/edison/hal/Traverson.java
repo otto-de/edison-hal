@@ -1,14 +1,23 @@
 package de.otto.edison.hal;
 
+import com.damnhandy.uri.template.UriTemplate;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
+import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo;
+import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
+import static de.otto.edison.hal.HalParser.parse;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A Traverson is a utility that makes it easy to navigate REST APIs using HAL+JSON.
@@ -22,7 +31,7 @@ import static java.util.Collections.singletonList;
  * </p>
  * <pre><code>
  *        final HalRepresentation hal = traverson(this::myHttpGetFunction)
- *                .startWith("/example")
+ *                .startWith("http://example.org")
  *                .follow("foobar")
  *                .follow(
  *                        hops("foo", "bar"),
@@ -36,9 +45,23 @@ import static java.util.Collections.singletonList;
  */
 public class Traverson {
 
+    private static class Hop {
+        /** Link-relation type of the hop. */
+        final String rel;
+        /** URI-template variables used when following the hop. */
+        final Map<String,Object> vars;
+
+        private Hop(final String rel,
+                    final Map<String, Object> vars) {
+            this.rel = rel;
+            this.vars = vars;
+        }
+    }
 
     private final Function<String, String> uriToJsonFunc;
-    private volatile HalRepresentation current;
+    private final List<Hop> hops = new ArrayList<>();
+    private String startWith;
+    private List<? extends HalRepresentation> lastResult;
 
     private Traverson(final Function<String,String> uriToJsonFunc) {
         this.uriToJsonFunc = uriToJsonFunc;
@@ -93,13 +116,13 @@ public class Traverson {
      * Creates a list of link-relation types used to {@link #follow(List) follow} multiple hops, optionally
      * using {@link #follow(List, Map) uri template variables}.
      * <p>
-     *     Basically, this method is only adding some semantic sugar, so you can write code like this:
+     *     This method is only adding some semantic sugar, so you can write code like this:
      * </p>
      * <pre><code>
      *     traverson(this::httpGet)
      *             .startWith("http://example.org")
      *             .follow(
-     *                     hops("foo", "bar"),
+     *                     <strong>hops("foo", "bar"),</strong>
      *                     withVars("param1", "value1", "param2", "value2"))
      *             .get();
      * </code></pre>
@@ -122,11 +145,23 @@ public class Traverson {
     /**
      * Start traversal at the application/hal+json resource idenfied by {@code uri}.
      *
+     * @param uriTemplate the {@code URI} of the initial HAL resource.
+     * @param vars uri-template variables used to build links.
+     * @return Traverson initialized with the {@link HalRepresentation} identified by {@code uri}.
+     */
+    public Traverson startWith(final String uriTemplate, final Map<String, Object> vars) {
+        return startWith(fromTemplate(uriTemplate).expand(vars));
+    }
+
+    /**
+     * Start traversal at the application/hal+json resource idenfied by {@code uri}.
+     *
      * @param uri the {@code URI} of the initial HAL resource.
      * @return Traverson initialized with the {@link HalRepresentation} identified by {@code uri}.
      */
     public Traverson startWith(final String uri) {
-        this.current = getAndParse(uri, HalRepresentation.class);
+        startWith = uri;
+        lastResult = null;
         return this;
     }
 
@@ -191,22 +226,7 @@ public class Traverson {
      */
     public Traverson follow(final String rel, final Map<String, Object> vars) {
         checkState();
-        final List<HalRepresentation> items = this.current.getEmbedded().getItemsBy(rel);
-        if (items.size() > 0) {
-            this.current = items.get(0);
-        } else {
-            final Optional<Link> optionalLink = this.current.getLinks().getLinkBy(rel);
-            if (optionalLink.isPresent()) {
-                final Link link = optionalLink.get();
-                if (link.isTemplated()) {
-                    this.current = getAndParse(fromTemplate(link.getHref()).expand(vars), HalRepresentation.class);
-                } else {
-                    this.current = getAndParse(link.getHref(), HalRepresentation.class);
-                }
-            } else {
-                throw new IllegalStateException("Link with rel=" + rel + " not found in resource.");
-            }
-        }
+        hops.add(new Hop(rel, vars));
         return this;
     }
 
@@ -217,11 +237,10 @@ public class Traverson {
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
      *     these items are used instead of following the associated {@link Link}.
      * </p>
-     * @param rel the link-relation type of the followed link
      * @return this
      */
-    public Stream<HalRepresentation> stream(final String rel) {
-        return stream(rel, emptyMap(), HalRepresentation.class);
+    public Stream<HalRepresentation> stream() {
+        return streamAs(HalRepresentation.class);
     }
 
     /**
@@ -234,90 +253,129 @@ public class Traverson {
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
      *     these items are used instead of following the associated {@link Link}.
      * </p>
-     * @param rel the link-relation type of the followed link
-     * @param vars uri-template variables used to build links.
-     * @return this
-     */
-    public Stream<HalRepresentation> stream(final String rel, final Map<String, Object> vars) {
-        return stream(rel, vars, HalRepresentation.class);
-    }
-
-    /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
-     * containing the returned {@link HalRepresentation HalRepresentations}.
-     * <p>
-     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
-     * </p>
-     * @param rel the link-relation type of the followed link
      * @param type the type of the returned HalRepresentations
      * @param <T> type of the returned HalRepresentations
      * @return this
      */
-    public <T extends HalRepresentation> Stream<T> stream(final String rel, final Class<T> type) {
-        return stream(rel, emptyMap(), type);
-    }
-
-    /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
-     * containing the returned {@link HalRepresentation HalRepresentations}.
-     * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
-     * </p>
-     * <p>
-     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
-     * </p>
-     * @param rel the link-relation type of the followed link
-     * @param vars uri-template variables used to build links.
-     * @param type the type of the returned HalRepresentations
-     * @param <T> type of the returned HalRepresentations
-     * @return this
-     */
-    public <T extends HalRepresentation> Stream<T> stream(final String rel, final Map<String, Object> vars, final Class<T> type) {
+    @SuppressWarnings("unchecked")
+    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type) {
         checkState();
-
-        // TODO: Get embedded items as Stream. If type is something different than HalRepresentation.class, this will fail,
-        // because we would have to get the embedded items as type...
-        final List<HalRepresentation> items = this.current.getEmbedded().getItemsBy(rel);
-        if (items.size() > 0) {
-            return items.stream().map(type::cast);
-        } else {
-            final List<Link> links = this.current.getLinks().getLinksBy(rel);
-            return links.stream().map(link->{
-                if (link.isTemplated()) {
-                    return getAndParse(fromTemplate(link.getHref()).expand(vars), type);
-                } else {
-                    return getAndParse(link.getHref(), type);
-                }
-            });
+        if (startWith != null) {
+            lastResult = traverse(type, true);
+        } else if (!hops.isEmpty()) {
+            lastResult = traverse(lastResult.get(0), type, true);
         }
+        return (Stream<T>) lastResult.stream();
     }
 
     /**
-     * Return the current HalRepresentation.
+     * Return the selected HalRepresentation.
+     * <p>
+     *     If there are multiple matching representations, the first node is returned.
+     * </p>
      *
      * @return HalRepresentation
      */
     public HalRepresentation get() {
-        checkState();
-        return current;
+        return getAs(HalRepresentation.class);
     }
 
     /**
-     * Retrieve the HAL resource identified by {@code uri} and return the representation as a subtype of HalRepresentation
+     * Return the selected HalRepresentation and return it in the specified type.
+     *
+     * @param type the subtype of the HalRepresentation used to parse the resource.
+     * @param <T> the subtype of HalRepresentation
+     * @return HalRepresentation
+     */
+    public <T extends HalRepresentation> T getAs(final Class<T> type) {
+        checkState();
+        if (startWith != null) {
+            lastResult = traverse(type, false);
+        } else if (!hops.isEmpty()) {
+            lastResult = traverse(lastResult.get(0), type, false);
+        }
+        return (T) lastResult.get(0);
+    }
+
+    private <T extends HalRepresentation> List<T> traverse(final Class<T> type, final boolean retrieveAll) {
+        final String href = this.startWith;
+        this.startWith = null;
+        if (hops.isEmpty()) {
+            return singletonList(getResource(href, type, null));
+        } else {
+            final HalRepresentation firstHop;
+            if (hops.size() == 1) {
+                final Hop hop = hops.get(0);
+                firstHop = getResource(href, HalRepresentation.class, withEmbedded(hop.rel, type));
+            } else {
+                firstHop = getResource(href, HalRepresentation.class, null);
+            }
+            return traverse(firstHop, type, retrieveAll);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends HalRepresentation> List<T> traverse(final HalRepresentation current, final Class<T> resultType, boolean retrieveAll) {
+
+        final Hop currentHop = hops.remove(0);
+
+        // the next hop could possibly be already available as an embedded object:
+        final List<? extends HalRepresentation> items = hops.isEmpty()
+                ? current.getEmbedded().getItemsBy(currentHop.rel, resultType)
+                : current.getEmbedded().getItemsBy(currentHop.rel);
+        if (!items.isEmpty()) {
+
+            return hops.isEmpty()
+                    ? (List<T>) items
+                    : traverse(items.get(0), resultType, retrieveAll);
+        }
+
+        final List<Link> links = current
+                .getLinks()
+                .getLinksBy(currentHop.rel);
+        if (links.isEmpty()) {
+            throw new IllegalStateException("Can not follow hop " + currentHop.rel + ": no matching links found in resource " + current);
+        }
+        final String href = toHref(links.get(0), currentHop.vars);
+
+        if (hops.isEmpty()) { // last hop
+            if (retrieveAll) {
+                return links
+                        .stream()
+                        .map(link-> getResource(toHref(link, currentHop.vars), resultType, null))
+                        .collect(toList());
+            } else {
+                return singletonList(getResource(href, resultType, null));
+            }
+        }
+
+        if (hops.size() == 1) { // one before the last hop:
+            final Hop nextHop = hops.get(0);
+            return traverse(getResource(href, HalRepresentation.class, withEmbedded(nextHop.rel, resultType)), resultType, retrieveAll);
+        } else { // some more hops
+            return traverse(getResource(href, HalRepresentation.class, null), resultType, retrieveAll);
+        }
+    }
+
+    private String toHref(final Link link, final Map<String,Object> vars) {
+        return link.isTemplated()
+                ? UriTemplate.fromTemplate(link.getHref()).expand(vars)
+                : link.getHref();
+    }
+
+    /**
+     * Retrieve the HAL resource identified by {@code uri} and return the representation as a HopResponse.
      *
      * @param uri the URI of the resource to retrieve
-     * @param type the type of the HalRepresentation
-     * @param <T> the concrete type of the returned representation object
-     * @return T
+     * @return HopResponse
      */
-    private <T extends HalRepresentation> T getAndParse(final String uri, final Class<T> type) {
+    private <T extends HalRepresentation> T getResource(final String uri, final Class<T> type, final EmbeddedTypeInfo<?> embeddedType) {
         try {
-            return HalParser
-                    .parse(uriToJsonFunc.apply(uri))
-                    .as(type);
-        } catch (final IOException e) {
+            final String json = uriToJsonFunc.apply(uri);
+            return embeddedType != null
+                    ? parse(json).as(type, embeddedType)
+                    : parse(json).as(type);
+        } catch (IOException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
@@ -328,7 +386,7 @@ public class Traverson {
      * @throws IllegalStateException if some error occured during traversion
      */
     private void checkState() {
-        if (this.current == null) {
+        if (startWith == null && lastResult == null) {
             throw new IllegalStateException("Please call startWith(uri) first.");
         }
     }

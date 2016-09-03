@@ -113,7 +113,8 @@ public class HalShopClient implements AutoCloseable {
         traverson(this::getHalJson)
                 .startWith(HOME_URI)
                 .follow(REL_SEARCH, withVars("q", query, "embedded", false))
-                .stream(REL_PRODUCT, BookHalJson.class)
+                .follow(REL_PRODUCT)
+                .streamAs(BookHalJson.class)
                 .forEach(product->{
                     System.out.println("|   * " + product.title + ": " + format("%.2f€", product.retailPrice/100.0));
                 });

@@ -1,5 +1,6 @@
 package de.otto.edison.hal;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -44,6 +45,48 @@ public class TraversonTest {
     }
 
     @Test
+    public void shouldGetHalRepresentationAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<String,String> mock = mock(Function.class);
+        when(mock.apply(anyString())).thenReturn(
+                "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
+                "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}, \"someProperty\":\"bar\"}");
+        // when
+        final ExtendedHalRepresentation hal = traverson(mock)
+                .startWith("/example")
+                .follow("foo")
+                .getAs(ExtendedHalRepresentation.class);
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("/example/foo"));
+        assertThat(hal.someProperty, is("bar"));
+    }
+
+    @Test
+    public void shouldGetEmbeddedHalRepresentationAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<String,String> mock = mock(Function.class);
+        when(mock.apply(anyString())).thenReturn(
+                "{" +
+                        "\"_embedded\":{\"foo\":[{\"someProperty\":\"bar\",\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}]}," +
+                        "\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}" +
+                        "}");
+        // when
+        final ExtendedHalRepresentation hal = traverson(mock)
+                .startWith("/example")
+                .follow("foo")
+                .getAs(ExtendedHalRepresentation.class);
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("/example/foo"));
+        assertThat(hal.someProperty, is("bar"));
+    }
+
+    @Test
     public void shouldFollowLink() {
         // given
         @SuppressWarnings("unchecked")
@@ -70,16 +113,59 @@ public class TraversonTest {
         when(mock.apply(anyString())).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
                 "{\"_links\":{\"bar\":{\"href\":\"/example/bar\"}}}",
-                "{\"_links\":{\"self\":{\"href\":\"/example/bar\"}}}");
+                "{\"_links\":{\"foobar\":{\"href\":\"/example/foobar\"}}}",
+                "{\"_links\":{\"barbar\":{\"href\":\"/example/barbar\"}}}",
+                "{\"_links\":{\"self\":{\"href\":\"/example/barbar\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
                 .startWith("/example")
-                .follow(hops("foo", "bar"))
+                .follow(hops("foo", "bar", "foobar", "barbar"))
+                .get();
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("/example/barbar"));
+    }
+
+    @Test
+    public void shouldFollowLinksAfterGettingRepresentation() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<String,String> mock = mock(Function.class);
+        when(mock.apply(anyString())).thenReturn(
+                "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
+                "{\"_links\":{\"bar\":{\"href\":\"/example/bar\"}}}",
+                "{\"_links\":{\"self\":{\"href\":\"/example/bar\"}}}");
+        final Traverson traverson = traverson(mock)
+                .startWith("/example");
+        // when
+        traverson.get();
+        traverson.follow("foo");
+        traverson.get();
+        final HalRepresentation hal = traverson
+                .follow(hops("bar"))
                 .get();
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
         assertThat(self.get().getHref(), is("/example/bar"));
+    }
+
+    @Test
+    public void shouldGetCurrentNodeTwice() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<String,String> mock = mock(Function.class);
+        when(mock.apply(anyString())).thenReturn(
+                "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
+                "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
+        // when
+        final Traverson traverson = traverson(mock)
+                .startWith("/example")
+                .follow("foo");
+
+        // then
+        assertThat(traverson.get(), is(traverson.get()));
     }
 
     @Test
@@ -153,20 +239,49 @@ public class TraversonTest {
                 "}");
         when(mock.apply("/example/foo/1")).thenReturn(
                 "{" +
-                        "\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}}," +
+                        "\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}" +
                 "}");
         when(mock.apply("/example/foo/2")).thenReturn(
                 "{" +
-                        "\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}}," +
+                        "\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}" +
                 "}");
         // when
         final List<String> hrefs = traverson(mock)
                 .startWith("/example/foo")
-                .stream("foo")
+                .follow("foo")
+                .stream()
                 .map(r->r.getLinks().getLinkBy("self").get().getHref())
                 .collect(toList());
         // then
         assertThat(hrefs, contains("/example/foo/1","/example/foo/2"));
+    }
+
+    @Test
+    public void shouldStreamLinkedObjectsAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<String,String> mock = mock(Function.class);
+        when(mock.apply("/example/foo")).thenReturn(
+                "{" +
+                        "\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}" +
+                "}");
+        when(mock.apply("/example/foo/1")).thenReturn(
+                "{" +
+                        "\"someProperty\":\"first\",\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}" +
+                "}");
+        when(mock.apply("/example/foo/2")).thenReturn(
+                "{" +
+                        "\"someProperty\":\"second\",\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}" +
+                "}");
+        // when
+        final List<String> hrefs = traverson(mock)
+                .startWith("/example/foo")
+                .follow("foo")
+                .streamAs(ExtendedHalRepresentation.class)
+                .map(r->r.someProperty)
+                .collect(toList());
+        // then
+        assertThat(hrefs, contains("first","second"));
     }
 
     @Test
@@ -182,11 +297,36 @@ public class TraversonTest {
         // when
         final List<String> hrefs = traverson(mock)
                 .startWith("/example")
-                .stream("foo")
+                .follow("foo")
+                .stream()
                 .map(r->r.getLinks().getLinkBy("self").get().getHref())
                 .collect(toList());
         // then
         assertThat(hrefs, contains("/example/foo/1","/example/foo/2"));
     }
 
+    @Test
+    public void shouldStreamEmbeddedObjectsAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<String,String> mock = mock(Function.class);
+        when(mock.apply(anyString())).thenReturn(
+                "{" +
+                        "\"_embedded\":{\"foo\":[{\"someProperty\":\"first\"},{\"someProperty\":\"second\"}]}" +
+                "}");
+        // when
+        final List<String> hrefs = traverson(mock)
+                .startWith("/example")
+                .follow("foo")
+                .streamAs(ExtendedHalRepresentation.class)
+                .map(r->r.someProperty)
+                .collect(toList());
+        // then
+        assertThat(hrefs, contains("first","second"));
+    }
+
+    static class ExtendedHalRepresentation extends HalRepresentation {
+        @JsonProperty
+        public String someProperty;
+    }
 }
