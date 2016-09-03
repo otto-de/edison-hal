@@ -50,8 +50,6 @@ Traversion of HAL representations:
 Traverson API
 
 ## Open Issues and next steps
-* The Function used in the Traverson API does not support content-
-negotiation.  
 * Missing support for collection resources including paging
 * Optional support for Apache httpcomponents and/or other HTTP clients.
 * Deep nesting of embedded items is currently not supported: a resource
@@ -231,10 +229,14 @@ Traverson is a utility to make it easy to traverse linked and/or embedded resour
                 });
     }
     
-    String getHalJson(final String uri) {
+    String getHalJson(final Link link) {
         try {
-            final HttpGet httpget = new HttpGet(HOST + uri);
-            httpget.addHeader("Accept", "application/hal+json");
+            final HttpGet httpget = new HttpGet(HOST + link.getHref());
+            if (link.getType().isEmpty()) {
+                httpget.addHeader("Accept", "application/hal+json");
+            } else {
+                httpget.addHeader("Accept", link.getType());
+            }
             final HttpEntity entity = httpclient.execute(httpget).getEntity();
             return EntityUtils.toString(entity);
         } catch (final IOException e) {
@@ -318,7 +320,6 @@ document
 * Added simple example for a client of a HAL service.
 
 ### 0.2.0
-
 
 *Bugfixes*
 

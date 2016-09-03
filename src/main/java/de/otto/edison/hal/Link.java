@@ -227,6 +227,24 @@ public class Link {
     }
 
     /**
+     * Create a Builder instance and initialize it from a prototype Link.
+     *
+     * @param prototype the prototype link
+     * @return a Builder for a Link.
+     *
+     * @since 0.1.0
+     */
+    public static Builder fromPrototype(final Link prototype) {
+        return linkBuilderFor(prototype.rel, prototype.href)
+                .withType(prototype.type)
+                .withProfile(prototype.profile)
+                .withTitle(prototype.title)
+                .withName(prototype.name)
+                .withDeprecation(prototype.deprecation)
+                .withHrefLang(prototype.hreflang);
+    }
+
+    /**
      * Returns the link-relation type of the link.
      *
      * @return link-relation type
@@ -480,8 +498,8 @@ public class Link {
      * @since 0.1.0
      */
     public static class Builder {
-        private final String rel;
-        private final String href;
+        private String rel;
+        private String href;
         private String type;
         private String hrefLang;
         private String title;
@@ -514,6 +532,32 @@ public class Link {
          */
         public static Builder linkBuilderFor(final String rel, final String href) {
             return new Builder(rel, href);
+        }
+
+        /**
+         * Set the rel of the linked resource
+         *
+         * @param rel link-relation type
+         * @return this
+         *
+         * @since 0.4.0
+         */
+        public Builder withRel(final String rel) {
+            this.rel = rel;
+            return this;
+        }
+
+        /**
+         * Set the href of the linked resource
+         *
+         * @param href href
+         * @return this
+         *
+         * @since 0.4.0
+         */
+        public Builder withHref(final String href) {
+            this.href = href;
+            return this;
         }
 
         /**
@@ -608,6 +652,18 @@ public class Link {
          */
         public Builder beeingTemplated() {
             this.templated = TRUE;
+            return this;
+        }
+
+        /**
+         * Set templated attribute to false.
+         *
+         * @return this
+         *
+         * @since 0.4.0
+         */
+        public Builder notBeeingTemplated() {
+            this.templated = null;
             return this;
         }
 

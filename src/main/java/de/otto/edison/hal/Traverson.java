@@ -14,6 +14,8 @@ import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo;
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
+import static de.otto.edison.hal.Link.fromPrototype;
+import static de.otto.edison.hal.Link.self;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -58,27 +60,32 @@ public class Traverson {
         }
     }
 
-    private final Function<String, String> uriToJsonFunc;
+    private final Function<Link, String> linkToJsonFunc;
     private final List<Hop> hops = new ArrayList<>();
     private String startWith;
     private List<? extends HalRepresentation> lastResult;
 
-    private Traverson(final Function<String,String> uriToJsonFunc) {
-        this.uriToJsonFunc = uriToJsonFunc;
+    private Traverson(final Function<Link,String> linkToJsonFunc) {
+        this.linkToJsonFunc = linkToJsonFunc;
     }
 
     /**
      * <p>
-     *     Create a Traverson that is using the given {@link Function} to resolve an URI and return a HAL+JSON document.
+     *     Create a Traverson that is using the given {@link Function} to resolve a Link and return a HAL+JSON document.
+     * </p>
+     * <p>
+     *     The function will be called by the Traverson, whenever a Link must be followed. The Traverson will
+     *     take care of URI templates (templated links), so the implementation of the function can rely on the
+     *     Link parameter to be not {@link Link#isTemplated() templated}.
      * </p>
      * <p>
      *     Typical implementations of the Function will rely on some HTTP client.
      * </p>
-     * @param getJsonFromUri A Function that gets an URI of a resource and returns a HAL+JSON document.
+     * @param linkToJsonFunc A Function that gets a ) Link of a resource and returns a HAL+JSON document.
      * @return Traverson
      */
-    public static Traverson traverson(final Function<String,String> getJsonFromUri) {
-        return new Traverson(getJsonFromUri);
+    public static Traverson traverson(final Function<Link,String> linkToJsonFunc) {
+        return new Traverson(linkToJsonFunc);
     }
 
     /**
@@ -298,17 +305,17 @@ public class Traverson {
     }
 
     private <T extends HalRepresentation> List<T> traverse(final Class<T> type, final boolean retrieveAll) {
-        final String href = this.startWith;
+        final Link link = self(this.startWith);
         this.startWith = null;
         if (hops.isEmpty()) {
-            return singletonList(getResource(href, type, null));
+            return singletonList(getResource(link, type, null));
         } else {
             final HalRepresentation firstHop;
             if (hops.size() == 1) {
                 final Hop hop = hops.get(0);
-                firstHop = getResource(href, HalRepresentation.class, withEmbedded(hop.rel, type));
+                firstHop = getResource(link, HalRepresentation.class, withEmbedded(hop.rel, type));
             } else {
-                firstHop = getResource(href, HalRepresentation.class, null);
+                firstHop = getResource(link, HalRepresentation.class, null);
             }
             return traverse(firstHop, type, retrieveAll);
         }
@@ -336,42 +343,49 @@ public class Traverson {
         if (links.isEmpty()) {
             throw new IllegalStateException("Can not follow hop " + currentHop.rel + ": no matching links found in resource " + current);
         }
-        final String href = toHref(links.get(0), currentHop.vars);
+        final Link expandedLink = expand(links.get(0), currentHop.vars);
 
         if (hops.isEmpty()) { // last hop
             if (retrieveAll) {
                 return links
                         .stream()
-                        .map(link-> getResource(toHref(link, currentHop.vars), resultType, null))
+                        .map(link-> getResource(expand(link, currentHop.vars), resultType, null))
                         .collect(toList());
             } else {
-                return singletonList(getResource(href, resultType, null));
+                return singletonList(getResource(expandedLink, resultType, null));
             }
         }
 
         if (hops.size() == 1) { // one before the last hop:
             final Hop nextHop = hops.get(0);
-            return traverse(getResource(href, HalRepresentation.class, withEmbedded(nextHop.rel, resultType)), resultType, retrieveAll);
+            return traverse(getResource(expandedLink, HalRepresentation.class, withEmbedded(nextHop.rel, resultType)), resultType, retrieveAll);
         } else { // some more hops
-            return traverse(getResource(href, HalRepresentation.class, null), resultType, retrieveAll);
+            return traverse(getResource(expandedLink, HalRepresentation.class, null), resultType, retrieveAll);
         }
     }
 
-    private String toHref(final Link link, final Map<String,Object> vars) {
-        return link.isTemplated()
-                ? UriTemplate.fromTemplate(link.getHref()).expand(vars)
-                : link.getHref();
+    private Link expand(final Link link, final Map<String,Object> vars) {
+        if (link.isTemplated()) {
+            final String href = UriTemplate.fromTemplate(link.getHref()).expand(vars);
+            return fromPrototype(link)
+                    .withHref(href)
+                    .withRel(link.getRel())
+                    .notBeeingTemplated()
+                    .build();
+        } else {
+            return link;
+        }
     }
 
     /**
      * Retrieve the HAL resource identified by {@code uri} and return the representation as a HopResponse.
      *
-     * @param uri the URI of the resource to retrieve
+     * @param link the Link of the resource to retrieve
      * @return HopResponse
      */
-    private <T extends HalRepresentation> T getResource(final String uri, final Class<T> type, final EmbeddedTypeInfo<?> embeddedType) {
+    private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final EmbeddedTypeInfo<?> embeddedType) {
         try {
-            final String json = uriToJsonFunc.apply(uri);
+            final String json = linkToJsonFunc.apply(link);
             return embeddedType != null
                     ? parse(json).as(type, embeddedType)
                     : parse(json).as(type);

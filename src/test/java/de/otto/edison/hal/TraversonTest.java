@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
+import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Traverson.hops;
 import static de.otto.edison.hal.Traverson.traverson;
@@ -16,7 +17,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,8 +49,8 @@ public class TraversonTest {
     public void shouldGetHalRepresentationAsSubtype() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
                 "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}, \"someProperty\":\"bar\"}");
         // when
@@ -68,8 +69,8 @@ public class TraversonTest {
     public void shouldGetEmbeddedHalRepresentationAsSubtype() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"foo\":[{\"someProperty\":\"bar\",\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}]}," +
                         "\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}" +
@@ -90,8 +91,8 @@ public class TraversonTest {
     public void shouldFollowLink() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
                 "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
         // when
@@ -109,8 +110,8 @@ public class TraversonTest {
     public void shouldFollowMultipleLinks() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
                 "{\"_links\":{\"bar\":{\"href\":\"/example/bar\"}}}",
                 "{\"_links\":{\"foobar\":{\"href\":\"/example/foobar\"}}}",
@@ -131,8 +132,8 @@ public class TraversonTest {
     public void shouldFollowLinksAfterGettingRepresentation() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
                 "{\"_links\":{\"bar\":{\"href\":\"/example/bar\"}}}",
                 "{\"_links\":{\"self\":{\"href\":\"/example/bar\"}}}");
@@ -155,8 +156,8 @@ public class TraversonTest {
     public void shouldGetCurrentNodeTwice() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
                 "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
         // when
@@ -172,9 +173,9 @@ public class TraversonTest {
     public void shouldFollowTemplatedLink() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply("/example")).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?test}\"}}}");
-        when(mock.apply("/example/foo?test=bar")).thenReturn("{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self","/example"))).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?test}\"}}}");
+        when(mock.apply(link("foo", "/example/foo?test=bar"))).thenReturn("{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
                 .startWith("/example")
@@ -190,10 +191,10 @@ public class TraversonTest {
     public void shouldFollowMultipleTemplatedLinks() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply("/example")).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?param1}\"}}}");
-        when(mock.apply("/example/foo?param1=value1")).thenReturn("{\"_links\":{\"bar\":{\"templated\":true,\"href\":\"/example/bar{?param2}\"}}}");
-        when(mock.apply("/example/bar?param2=value2")).thenReturn("{\"_links\":{\"self\":{\"href\":\"/example/bar\"}}}");
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "/example"))).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?param1}\"}}}");
+        when(mock.apply(link("foo", "/example/foo?param1=value1"))).thenReturn("{\"_links\":{\"bar\":{\"templated\":true,\"href\":\"/example/bar{?param2}\"}}}");
+        when(mock.apply(link("bar", "/example/bar?param2=value2"))).thenReturn("{\"_links\":{\"self\":{\"href\":\"/example/bar\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
                 .startWith("/example")
@@ -211,8 +212,8 @@ public class TraversonTest {
     public void shouldFollowLinkWithEmbeddedObjects() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}]}," +
                         "\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}" +
@@ -232,16 +233,16 @@ public class TraversonTest {
     public void shouldStreamLinkedObjects() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply("/example/foo")).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}" +
                 "}");
-        when(mock.apply("/example/foo/1")).thenReturn(
+        when(mock.apply(link("foo", "/example/foo/1"))).thenReturn(
                 "{" +
                         "\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}" +
                 "}");
-        when(mock.apply("/example/foo/2")).thenReturn(
+        when(mock.apply(link("foo", "/example/foo/2"))).thenReturn(
                 "{" +
                         "\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}" +
                 "}");
@@ -260,16 +261,16 @@ public class TraversonTest {
     public void shouldStreamLinkedObjectsAsSubtype() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply("/example/foo")).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}" +
                 "}");
-        when(mock.apply("/example/foo/1")).thenReturn(
+        when(mock.apply(link("foo","/example/foo/1"))).thenReturn(
                 "{" +
                         "\"someProperty\":\"first\",\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}" +
                 "}");
-        when(mock.apply("/example/foo/2")).thenReturn(
+        when(mock.apply(link("foo","/example/foo/2"))).thenReturn(
                 "{" +
                         "\"someProperty\":\"second\",\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}" +
                 "}");
@@ -288,8 +289,8 @@ public class TraversonTest {
     public void shouldStreamEmbeddedObjects() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}},{\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}}]}," +
                         "\"_links\":{\"foo\":[{\"href\":\"/example/foo#/1\"},{\"href\":\"/example/foo/2\"}]}" +
@@ -309,8 +310,8 @@ public class TraversonTest {
     public void shouldStreamEmbeddedObjectsAsSubtype() {
         // given
         @SuppressWarnings("unchecked")
-        final Function<String,String> mock = mock(Function.class);
-        when(mock.apply(anyString())).thenReturn(
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"foo\":[{\"someProperty\":\"first\"},{\"someProperty\":\"second\"}]}" +
                 "}");

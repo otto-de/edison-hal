@@ -14,6 +14,8 @@ import java.util.List;
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
+import static de.otto.edison.hal.Link.link;
+import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Traverson.traverson;
 import static de.otto.edison.hal.Traverson.withVars;
 import static java.lang.String.format;
@@ -54,7 +56,7 @@ public class HalShopClient implements AutoCloseable {
         System.out.println("------------- All Books ----------------");
         final String uri = findSearchUriTemplate()
                 .expand();
-        final List<Link> productLinks = getHalRepresentation(uri)
+        final List<Link> productLinks = getHalRepresentation(link(REL_SEARCH, uri))
                 .getLinks()
                 .getLinksBy(REL_PRODUCT);
         System.out.println("|");
@@ -85,7 +87,7 @@ public class HalShopClient implements AutoCloseable {
                 .set("q", query)
                 .set("embedded", true)
                 .expand();
-        final List<BookHalJson> products = getHalRepresentation(uri)
+        final List<BookHalJson> products = getHalRepresentation(link(REL_SEARCH, uri))
                 .getEmbedded()
                 .getItemsBy(REL_PRODUCT, BookHalJson.class);
         System.out.println("|");
@@ -128,7 +130,7 @@ public class HalShopClient implements AutoCloseable {
      * @see <a href="https://github.com/damnhandy/Handy-URI-Templates">Handy-URI-Templates</a>
      */
     private UriTemplate findSearchUriTemplate() {
-        final Link searchLink = getHalRepresentation(HOME_URI)
+        final Link searchLink = getHalRepresentation(self(HOME_URI))
                 .getLinks()
                 .getLinksBy(REL_SEARCH)
                 .get(0);
@@ -138,12 +140,12 @@ public class HalShopClient implements AutoCloseable {
     /**
      * Returns the REST resource identified by {@code uri} as a HalRepresentation.
      *
-     * @param uri the URI of the resource
+     * @param link the non-templated Link of the resource
      * @return HalRepresentation with optionally embedded BookHalJson items.
      */
-    private HalRepresentation getHalRepresentation(final String uri) {
+    private HalRepresentation getHalRepresentation(final Link link) {
         try {
-            final String json = getHalJson(uri);
+            final String json = getHalJson(link);
 
             System.out.println("|   ------------- Response -------------");
             System.out.println("|   " + json);
@@ -156,13 +158,17 @@ public class HalShopClient implements AutoCloseable {
     /**
      * Returns the REST resource identified by {@code uri} as a JSON string.
      *
-     * @param uri the URI of the resource
+     * @param link the non-templated Link of the resource
      * @return json
      */
-    private String getHalJson(final String uri) {
+    private String getHalJson(final Link link) {
         try {
-            final HttpGet httpget = new HttpGet(HOST + uri);
-            httpget.addHeader("Accept", "application/hal+json");
+            final HttpGet httpget = new HttpGet(HOST + link.getHref());
+            if (link.getType().isEmpty()) {
+                httpget.addHeader("Accept", "application/hal+json");
+            } else {
+                httpget.addHeader("Accept", link.getType());
+            }
 
             System.out.println("|   ------------- Request --------------");
             System.out.println("|   " + httpget.getRequestLine());
