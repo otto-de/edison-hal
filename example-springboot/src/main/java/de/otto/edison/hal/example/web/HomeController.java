@@ -33,7 +33,6 @@ public class HomeController {
                         linkBuilder("search", "/api/products{?q,embedded}")
                                 .withTitle("Search Products")
                                 .withType("application/hal+json")
-                                .beeingTemplated()
                                 .build()
                 )
         );

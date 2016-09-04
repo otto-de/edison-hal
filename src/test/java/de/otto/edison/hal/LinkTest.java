@@ -7,9 +7,6 @@ import static de.otto.edison.hal.Link.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-/**
- * Created by guido on 21.07.16.
- */
 public class LinkTest {
 
     @Test
@@ -42,15 +39,15 @@ public class LinkTest {
 
     @Test
     public void shouldBuildTemplatedLink() {
-        final Link self = templated("myRel", "/test/{foo}");
+        final Link self = link("myRel", "/test/{foo}");
         assertThat(self.getRel(), is("myRel"));
         assertThat(self.getHref(), is("/test/{foo}"));
         assertThat(self.isTemplated(), is(true));
     }
 
     @Test
-    public void shouldBuildLinkUsingTemplatedBuilder() {
-        final Link self = templatedBuilder("myRel", "/test/{foo}")
+    public void shouldBuildTemplatedLinkUsingLinkBuilder() {
+        final Link self = linkBuilder("myRel", "/test/{foo}")
                 .withHrefLang("de_DE")
                 .withTitle("title")
                 .withName("name")
@@ -69,21 +66,21 @@ public class LinkTest {
 
     @Test
     public void shouldBuildLinkUsingBuilder() {
-        final Link self = linkBuilder("myRel", "/test/{foo}")
+        final Link link = linkBuilder("myRel", "/test/foo")
                 .withHrefLang("de_DE")
                 .withTitle("title")
                 .withName("name")
                 .withProfile("my-profile")
                 .withType("type")
                 .build();
-        assertThat(self.getRel(), is("myRel"));
-        assertThat(self.getHref(), is("/test/{foo}"));
-        assertThat(self.isTemplated(), is(false));
-        assertThat(self.getHreflang(), is("de_DE"));
-        assertThat(self.getTitle(), is("title"));
-        assertThat(self.getName(), is("name"));
-        assertThat(self.getType(), is("type"));
-        assertThat(self.getProfile(), is("my-profile"));
+        assertThat(link.getRel(), is("myRel"));
+        assertThat(link.getHref(), is("/test/foo"));
+        assertThat(link.isTemplated(), is(false));
+        assertThat(link.getHreflang(), is("de_DE"));
+        assertThat(link.getTitle(), is("title"));
+        assertThat(link.getName(), is("name"));
+        assertThat(link.getType(), is("type"));
+        assertThat(link.getProfile(), is("my-profile"));
     }
 
     @Test

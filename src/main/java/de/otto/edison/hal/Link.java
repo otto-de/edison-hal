@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_ABSENT;
-import static de.otto.edison.hal.Link.Builder.linkBuilderFor;
 import static java.lang.Boolean.TRUE;
 
 /**
@@ -39,19 +39,26 @@ public class Link {
 
     /**
      * Create a link having only rel and href.
+     * <p>
+     *     If href is an URI template, the created link {@link #isTemplated() is templated} and {@link #templated}
+     *     will be true.
+     * </p>
      *
      * @since 0.1.0
      */
     private Link(final String rel, final String href) {
-        this(rel, href, null, null, null, null, null, null, null);
+        this(rel, href, null, null, null, null, null, null);
     }
 
     /**
      * Create a link with all attributes.
+     * <p>
+     *     If href is an URI template, the created link {@link #isTemplated() is templated} and {@link #templated}
+     *     will be true.
+     * </p>
      *
      * @param rel mandatory link-relation type
      * @param href mandatory href or URI template
-     * @param templated optional boolean indicating whether or not the href is templated
      * @param type optional media type
      * @param hrefLang optional href language
      * @param title optional human-readable title
@@ -63,7 +70,6 @@ public class Link {
      */
     private Link(final String rel,
                  final String href,
-                 final Boolean templated,
                  final String type,
                  final String hrefLang,
                  final String title,
@@ -72,13 +78,15 @@ public class Link {
                  final String deprecation) {
         this.rel = rel;
         this.href = href;
-        this.templated = templated;
         this.type = type;
         this.hreflang = hrefLang;
         this.title = title;
         this.name = name;
         this.profile = profile;
         this.deprecation = deprecation;
+        if (fromTemplate(href).getVariables().length > 0) {
+            this.templated = TRUE;
+        }
     }
 
     /**
@@ -129,7 +137,7 @@ public class Link {
         if (!relTemplate.contains("{rel}")) {
             throw new IllegalArgumentException("Not a CURI template. Template is required to contain a {rel} placeholder");
         }
-        return new Link("curies", relTemplate, true, null, null, null, name, null, null);
+        return new Link("curies", relTemplate, null, null, null, name, null, null);
     }
 
     /**
@@ -147,6 +155,10 @@ public class Link {
 
     /**
      * Create a 'item' link from a href.
+     * <p>
+     *     If href is an URI template, the created link {@link #isTemplated() is templated} and {@link #templated}
+     *     will be true.
+     * </p>
      *
      * @param href the linked item
      * @return Link
@@ -160,6 +172,10 @@ public class Link {
 
     /**
      * Create a 'collection' link from a href
+     * <p>
+     *     If href is an URI template, the created link {@link #isTemplated() is templated} and {@link #templated}
+     *     will be true.
+     * </p>
      *
      * @param href the linked collection
      * @return Link
@@ -173,6 +189,10 @@ public class Link {
 
     /**
      * Create a link from a link-relation type and href.
+     * <p>
+     *     If href is an URI template, the created link {@link #isTemplated() is templated} and {@link #templated}
+     *     will be true.
+     * </p>
      *
      * @param rel registered link-relation type, or URI identifying a custom link-relation type.
      * @param href href of the linked resource
@@ -186,35 +206,10 @@ public class Link {
     }
 
     /**
-     * Create a templated link from a link-relation type and an URI template.
-     *
-     * @param rel registered link-relation type, or URI identifying a custom link-relation type.
-     * @param uriTemplate a valid URI template
-     * @return Link
-     *
-     * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
-     * @since 0.1.0
-     */
-    public static Link templated(final String rel, final String uriTemplate) {
-        return new Link(rel, uriTemplate, TRUE, null, null, null, null, null, null);
-    }
-
-    /**
-     * Create a Builder instance for templated links with mandatory link-relation type and uri template.
-     *
-     * @param rel  the link-relation type of the link
-     * @param uriTemplate the URI template used to create the href of the linked resource
-     * @return a Builder for a templated link.
-     *
-     * @see <a href="https://tools.ietf.org/html/rfc6570">URI Template</a>
-     * @since 0.1.0
-     */
-    public static Builder templatedBuilder(final String rel, final String uriTemplate) {
-        return linkBuilderFor(rel, uriTemplate).beeingTemplated();
-    }
-
-    /**
      * Create a Builder instance with mandatory link-relation type and href
+     * <p>
+     *     If href is an URI template, the link created by the Builder will be {@link #isTemplated() templated}.
+     * </p>
      *
      * @param rel  the link-relation type of the link
      * @param href the href of the linked resource
@@ -223,7 +218,7 @@ public class Link {
      * @since 0.1.0
      */
     public static Builder linkBuilder(final String rel, final String href) {
-        return linkBuilderFor(rel, href);
+        return new Builder(rel, href);
     }
 
     /**
@@ -235,7 +230,7 @@ public class Link {
      * @since 0.1.0
      */
     public static Builder fromPrototype(final Link prototype) {
-        return linkBuilderFor(prototype.rel, prototype.href)
+        return new Builder(prototype.rel, prototype.href)
                 .withType(prototype.type)
                 .withProfile(prototype.profile)
                 .withTitle(prototype.title)
@@ -506,10 +501,13 @@ public class Link {
         private String name;
         private String profile;
         private String deprecation;
-        private Boolean templated;
 
         /**
          * Create a Builder instance with mandatory link-relation type and href
+         * <p>
+         *     If href is an URI template, the created link {@link #isTemplated() is templated} and {@link #templated}
+         *     will be true.
+         * </p>
          *
          * @param rel  the link-relation type of the link
          * @param href the href of the linked resource
@@ -522,19 +520,6 @@ public class Link {
         }
 
         /**
-         * Create a Builder instance with mandatory link-relation type and href
-         *
-         * @param rel  the link-relation type of the link
-         * @param href the href of the linked resource
-         * @return this
-         *
-         * @since 0.1.0
-         */
-        public static Builder linkBuilderFor(final String rel, final String href) {
-            return new Builder(rel, href);
-        }
-
-        /**
          * Set the rel of the linked resource
          *
          * @param rel link-relation type
@@ -543,12 +528,19 @@ public class Link {
          * @since 0.4.0
          */
         public Builder withRel(final String rel) {
+            if (rel == null || rel.isEmpty()) {
+                throw new IllegalArgumentException("The link-relation type is mandatory");
+            }
             this.rel = rel;
             return this;
         }
 
         /**
          * Set the href of the linked resource
+         * <p>
+         *     If href is an URI template, the created link {@link #isTemplated() is templated} and {@link #templated}
+         *     will be true.
+         * </p>
          *
          * @param href href
          * @return this
@@ -556,6 +548,9 @@ public class Link {
          * @since 0.4.0
          */
         public Builder withHref(final String href) {
+            if (rel == null || rel.isEmpty()) {
+                throw new IllegalArgumentException("The href parameter is mandatory");
+            }
             this.href = href;
             return this;
         }
@@ -644,30 +639,6 @@ public class Link {
         }
 
         /**
-         * Set templated attribute to true.
-         *
-         * @return this
-         *
-         * @since 0.1.0
-         */
-        public Builder beeingTemplated() {
-            this.templated = TRUE;
-            return this;
-        }
-
-        /**
-         * Set templated attribute to false.
-         *
-         * @return this
-         *
-         * @since 0.4.0
-         */
-        public Builder notBeeingTemplated() {
-            this.templated = null;
-            return this;
-        }
-
-        /**
          * Builds the Link instance.
          *
          * @return Link
@@ -675,7 +646,7 @@ public class Link {
          * @since 0.1.0
          */
         public Link build() {
-            return new Link(rel, href, templated, type, hrefLang, title, name, profile, deprecation);
+            return new Link(rel, href, type, hrefLang, title, name, profile, deprecation);
         }
     }
 }

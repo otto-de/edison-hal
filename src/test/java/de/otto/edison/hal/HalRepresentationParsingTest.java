@@ -9,7 +9,9 @@ import java.util.List;
 
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
-import static de.otto.edison.hal.Link.*;
+import static de.otto.edison.hal.Link.link;
+import static de.otto.edison.hal.Link.linkBuilder;
+import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -137,8 +139,9 @@ public class HalRepresentationParsingTest {
         Links links = parse(json).as(HalRepresentation.class).getLinks();
         // then
         assertThat(links.getLinksBy("search"), contains(
-                templated("search", "/test{?bar}")
+                link("search", "/test{?bar}")
         ));
+        assertThat(links.getLinksBy("search").get(0).isTemplated(), is(true));
     }
 
     @Test
@@ -152,7 +155,7 @@ public class HalRepresentationParsingTest {
         Links links = parse(json).as(HalRepresentation.class).getLinks();
         // then
         assertThat(links.getLinksBy("search"), contains(
-                templatedBuilder("search", "/test{?bar}")
+                linkBuilder("search", "/test{?bar}")
                         .withType("application/hal+json")
                         .withProfile("http://example.org/profiles/test-profile")
                         .withHrefLang("de-DE")
@@ -170,6 +173,8 @@ public class HalRepresentationParsingTest {
                         .withName("Foo")
                         .build()
         ));
+        assertThat(links.getLinksBy("search").get(0).isTemplated(), is(true));
+        assertThat(links.getLinksBy("foo").get(0).isTemplated(), is(false));
     }
 
     @Test

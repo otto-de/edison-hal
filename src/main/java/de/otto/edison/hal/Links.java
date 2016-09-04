@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
 import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 import static de.otto.edison.hal.Link.linkBuilder;
-import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
@@ -443,9 +442,6 @@ public class Links {
                     .withType((String) value.get("type"))
                     .withProfile((String) value.get("profile"))
                     .withDeprecation((String) value.get("deprecation"));
-            if (TRUE.equals(value.get("templated"))) {
-                builder.beeingTemplated();
-            }
             return builder.build();
         }
     }

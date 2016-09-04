@@ -11,7 +11,6 @@ import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
-import static de.otto.edison.hal.Link.templatedBuilder;
 import static de.otto.edison.hal.Links.linksBuilder;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentRequestUri;
@@ -31,7 +30,7 @@ class ProductsHalJson extends HalRepresentation {
                 linksBuilder()
                         .with(self(fromCurrentRequestUri().toUriString()))
                         .with(curi("ex", REL_EXAMPLE_TEMPLATE))
-                        .with(templatedBuilder(REL_SEARCH, "/api/products{?q,embedded}")
+                        .with(linkBuilder(REL_SEARCH, "/api/products{?q,embedded}")
                                 .withTitle("Search Products")
                                 .withType(APPLICATION_HAL_JSON)
                                 .build())

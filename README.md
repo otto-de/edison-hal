@@ -305,8 +305,17 @@ in different ways.
 
 ### 0.4.0-SNAPSHOT
 
+*Breaking Changes*
+
+* Simplified creation of links by removing unneded factory methods for
+ templated links. Whether or not a link is templated is now automatically
+ identified by the Link.
+* Removed duplicate factory method to create a Link.Builder.
+
 *New Features / API extensions*
+
 * Added first draft of a Traverson API to navigate through HAL resources.
+
 
 ### 0.3.0
 

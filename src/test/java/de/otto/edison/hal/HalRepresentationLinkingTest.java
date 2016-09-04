@@ -4,15 +4,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testng.annotations.Test;
 
-import static de.otto.edison.hal.Link.*;
+import static de.otto.edison.hal.Link.collection;
+import static de.otto.edison.hal.Link.link;
+import static de.otto.edison.hal.Link.linkBuilder;
+import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-/**
- * Created by guido on 05.07.16.
- */
 public class HalRepresentationLinkingTest {
 
     @Test
@@ -91,7 +91,7 @@ public class HalRepresentationLinkingTest {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo(
-                        templated("search", "/test{?bar}"))
+                        link("search", "/test{?bar}"))
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -104,7 +104,7 @@ public class HalRepresentationLinkingTest {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo(
-                        templatedBuilder("search", "/test{?bar}")
+                        linkBuilder("search", "/test{?bar}")
                                 .withType("application/hal+json")
                                 .withHrefLang("de-DE")
                                 .withTitle("Some Title")

@@ -1,7 +1,5 @@
 package de.otto.edison.hal;
 
-import com.damnhandy.uri.template.UriTemplate;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,9 +22,12 @@ import static java.util.stream.Collectors.toList;
 /**
  * A Traverson is a utility that makes it easy to navigate REST APIs using HAL+JSON.
  * <p>
- *     {@link #startWith(String) Starting with} an URI to an initial resource, you can {@link #follow(String)} one or more
- *     links identified by their link-relation type. {@link Link#templated(String, String) Templated links} can be
- *     expanded using template {@link #withVars(String, Object, Object...) variables}.
+ *     {@link #startWith(String) Starting with} an URI to an initial resource, you can {@link #follow(String) follow}
+ *     one or more links identified by their link-relation type.
+ * </p>
+ * <p>
+ *     {@link Link#isTemplated()}  Templated links} can be expanded using template
+ *     {@link #withVars(String, Object, Object...) variables}.
  * </p>
  * <p>
  *     Example:
@@ -366,11 +367,10 @@ public class Traverson {
 
     private Link expand(final Link link, final Map<String,Object> vars) {
         if (link.isTemplated()) {
-            final String href = UriTemplate.fromTemplate(link.getHref()).expand(vars);
+            final String href = fromTemplate(link.getHref()).expand(vars);
             return fromPrototype(link)
                     .withHref(href)
                     .withRel(link.getRel())
-                    .notBeeingTemplated()
                     .build();
         } else {
             return link;
