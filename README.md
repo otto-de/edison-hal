@@ -1,9 +1,7 @@
 # Edison HAL
 
-Library to read and create application/hal+json representations of 
-REST resources using Jackson.
-
-See https://tools.ietf.org/html/draft-kelly-json-hal-08 for details.
+Library to produce and consume [application/hal+json](https://tools.ietf.org/html/draft-kelly-json-hal-08) 
+representations of REST resources using Jackson.
 
 ## Status
 
@@ -26,7 +24,7 @@ At otto.de, microservices should only communicate via REST APIs with other
  of REST. Edison-hal is a simple library, to make it easy to produce
  and consume HAL representations for your REST APIs.
 
-Currently, there are only few libraries supporting HAL and even
+Currently, there are only a couple of libraries supporting HAL and even
  less that support the full media type including all link properties,
  curies (compact URIs) and embedded resources. 
  
@@ -48,9 +46,12 @@ Parsing HAL representations:
 Traversion of HAL representations:
 * Simple client-side navigation through linked and embedded REST resources using
 Traverson API
+* Embedded resources are transparantly used, if present. 
+* Curies are resolved transparantly, too. Clients of the Traverson API do not need to 
+know anything about curies or embedded resources.
 
 ## Open Issues and next steps
-* Missing support for collection resources including paging
+* Improved error-handling
 * Optional support for Apache httpcomponents and/or other HTTP clients.
 * Deep nesting of embedded items is currently not supported: a resource
 that has embedded items, which have embedded items, and so on. It would
@@ -58,7 +59,12 @@ possibly work for simple HalRepresentations, but not for subtypes of
 HalRepresentation. Fixing this might break some of the current APIs.
 
 ## Usage
- 
+
+### 0. Lean about Hypertext Application Language (HAL)
+
+* Read Mike's article about [HAL](http://stateless.co/hal_specification.html) and 
+* the current [draft of the RFC](https://tools.ietf.org/html/draft-kelly-json-hal-08).
+
 ### 1. Include edison-hal into your project:
  
 ```gradle
