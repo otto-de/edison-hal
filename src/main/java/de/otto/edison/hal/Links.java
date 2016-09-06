@@ -413,7 +413,7 @@ public class Links {
          * {@inheritDoc}
          */
         @Override
-        public Links deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+        public Links deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             final Map<String,?> linksMap = p.readValueAs(TYPE_REF_LINK_MAP);
             return new Links(linksMap
                     .entrySet()

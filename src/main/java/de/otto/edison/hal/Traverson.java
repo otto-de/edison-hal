@@ -1,10 +1,6 @@
 package de.otto.edison.hal;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -14,10 +10,17 @@ import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.fromPrototype;
 import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.TraversionError.Type;
+import static de.otto.edison.hal.TraversionError.Type.INVALID_JSON;
+import static de.otto.edison.hal.TraversionError.Type.MISSING_LINK;
+import static de.otto.edison.hal.TraversionError.Type.NOT_FOUND;
+import static de.otto.edison.hal.TraversionError.traversionError;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.empty;
 
 /**
  * A Traverson is a utility that makes it easy to navigate REST APIs using HAL+JSON.
@@ -39,7 +42,7 @@ import static java.util.stream.Collectors.toList;
  *                .follow(
  *                        hops("foo", "bar"),
  *                        withVars("param1", "value1", "param2", "value2"))
- *                .get();
+ *                .getResource();
  * </code></pre>
  * <p>
  *     Embedded resources are used instead of linked resources, if present.
@@ -65,7 +68,7 @@ public class Traverson {
     private final List<Hop> hops = new ArrayList<>();
     private String startWith;
     private List<? extends HalRepresentation> lastResult;
-
+    private TraversionError lastError;
     private Traverson(final Function<Link,String> linkToJsonFunc) {
         this.linkToJsonFunc = linkToJsonFunc;
     }
@@ -98,7 +101,7 @@ public class Traverson {
      *     traverson(this::httpGet)
      *             .startWith("http://example.org")
      *             .follow("foo", withVars("param1", "value1", "param2", "value2"))
-     *             .get();
+     *             .getResource();
      * </code></pre>
      *
      * @param key the first key
@@ -120,6 +123,10 @@ public class Traverson {
         return map;
     }
 
+    public TraversionError getLastError() {
+        return lastError;
+    }
+
     /**
      * Creates a list of link-relation types used to {@link #follow(List) follow} multiple hops, optionally
      * using {@link #follow(List, Map) uri template variables}.
@@ -132,7 +139,7 @@ public class Traverson {
      *             .follow(
      *                     <strong>hops("foo", "bar"),</strong>
      *                     withVars("param1", "value1", "param2", "value2"))
-     *             .get();
+     *             .getResource();
      * </code></pre>
      *
      * @param rel link-relation type
@@ -268,12 +275,19 @@ public class Traverson {
     @SuppressWarnings("unchecked")
     public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type) {
         checkState();
-        if (startWith != null) {
-            lastResult = traverse(type, true);
-        } else if (!hops.isEmpty()) {
-            lastResult = traverse(lastResult.get(0), type, true);
+        try {
+            if (startWith != null) {
+                lastResult = traverse(type, true);
+                lastError = null;
+            } else if (!hops.isEmpty()) {
+                lastResult = traverse(lastResult.get(0), type, true);
+                lastError = null;
+            }
+            return (Stream<T>) lastResult.stream();
+        } catch (final TraversionException e) {
+            lastError = e.getError();
+            return empty();
         }
-        return (Stream<T>) lastResult.stream();
     }
 
     /**
@@ -284,8 +298,8 @@ public class Traverson {
      *
      * @return HalRepresentation
      */
-    public HalRepresentation get() {
-        return getAs(HalRepresentation.class);
+    public Optional<HalRepresentation> getResource() {
+        return getResourceAs(HalRepresentation.class);
     }
 
     /**
@@ -295,14 +309,21 @@ public class Traverson {
      * @param <T> the subtype of HalRepresentation
      * @return HalRepresentation
      */
-    public <T extends HalRepresentation> T getAs(final Class<T> type) {
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) {
         checkState();
-        if (startWith != null) {
-            lastResult = traverse(type, false);
-        } else if (!hops.isEmpty()) {
-            lastResult = traverse(lastResult.get(0), type, false);
+        try {
+            if (startWith != null) {
+                lastResult = traverse(type, false);
+                lastError = null;
+            } else if (!hops.isEmpty()) {
+                lastResult = traverse(lastResult.get(0), type, false);
+                lastError = null;
+            }
+            return Optional.of((T) lastResult.get(0));
+        } catch (final TraversionException e) {
+            lastError = e.getError();
+            return Optional.empty();
         }
-        return (T) lastResult.get(0);
     }
 
     private <T extends HalRepresentation> List<T> traverse(final Class<T> type, final boolean retrieveAll) {
@@ -342,7 +363,10 @@ public class Traverson {
                 .getLinks()
                 .getLinksBy(currentHop.rel);
         if (links.isEmpty()) {
-            throw new IllegalStateException("Can not follow hop " + currentHop.rel + ": no matching links found in resource " + current);
+            throw new TraversionException(traversionError(
+                    MISSING_LINK,
+                    format("Can not follow hop %s: no matching links found in resource %s", currentHop.rel, current))
+            );
         }
         final Link expandedLink = expand(links.get(0), currentHop.vars);
 
@@ -382,16 +406,37 @@ public class Traverson {
      *
      * @param link the Link of the resource to retrieve
      * @return HopResponse
+     * @throws TraversionException thrown if getting or parsing the resource failed for some reason
      */
     private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final EmbeddedTypeInfo<?> embeddedType) {
+        final String json = getJson(link);
         try {
-            final String json = linkToJsonFunc.apply(link);
             return embeddedType != null
                     ? parse(json).as(type, embeddedType)
                     : parse(json).as(type);
-        } catch (IOException e) {
-            throw new IllegalStateException(e.getMessage(), e);
+        } catch (final Exception e) {
+            throw new TraversionException(traversionError(
+                    Type.INVALID_JSON,
+                    format("Document returned from %s is not in application/hal+json format: %s", link.getHref(), e.getMessage()),
+                    e));
         }
+    }
+
+    private String getJson(Link link) {
+        final String json;
+        try {
+            json = linkToJsonFunc.apply(link);
+        } catch (final RuntimeException e) {
+            throw new TraversionException(traversionError(
+                    NOT_FOUND, e.getMessage(), e
+            ));
+        }
+        if (json == null) {
+            throw new TraversionException(traversionError(
+                    INVALID_JSON,
+                    format("Did not get JSON response from %s", linkToJsonFunc.toString())));
+        }
+        return json;
     }
 
     /**

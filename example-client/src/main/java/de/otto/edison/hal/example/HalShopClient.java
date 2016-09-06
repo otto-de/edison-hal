@@ -145,11 +145,7 @@ public class HalShopClient implements AutoCloseable {
      */
     private HalRepresentation getHalRepresentation(final Link link) {
         try {
-            final String json = getHalJson(link);
-
-            System.out.println("|   ------------- Response -------------");
-            System.out.println("|   " + json);
-            return parse(json).as(HalRepresentation.class, withEmbedded(REL_PRODUCT, BookHalJson.class));
+            return parse(getHalJson(link)).as(HalRepresentation.class, withEmbedded(REL_PRODUCT, BookHalJson.class));
         } catch (final IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
@@ -174,8 +170,12 @@ public class HalShopClient implements AutoCloseable {
             System.out.println("|   " + httpget.getRequestLine());
 
             final HttpEntity entity = httpclient.execute(httpget).getEntity();
-            return EntityUtils.toString(entity);
+            final String json = EntityUtils.toString(entity);
+            System.out.println("|   ------------- Response -------------");
+            System.out.println("|   " + json);
+            return json;
         } catch (final IOException e) {
+            System.out.println("\nPlease start example-springboot Server before you are running the Client.\n");
             throw new RuntimeException(e.getMessage(), e);
         }
     }
