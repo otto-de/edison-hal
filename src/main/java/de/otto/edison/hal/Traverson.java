@@ -181,6 +181,18 @@ public class Traverson {
     }
 
     /**
+     * Start traversal at the given HAL resource.
+     *
+     * @param resource the initial HAL resource.
+     * @return Traverson initialized with the specified {@link HalRepresentation}.
+     */
+    public Traverson startWith(final HalRepresentation resource) {
+        startWith = null;
+        lastResult = singletonList(resource);
+        return this;
+    }
+
+    /**
      * Follow the first {@link Link} of the current resource, selected by it's link-relation type.
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},

@@ -71,11 +71,11 @@ that has embedded items, which have embedded items, and so on.
     }
 ```
  
-The current snapshot release is 0.4.0-SNAPSHOT:
+The current snapshot release is 1.0.0-SNAPSHOT:
 
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:0.5.0-SNAPSHOT",
+        compile "de.otto.edison:edison-hal:1.0.0-SNAPSHOT",
         ...
     }
 ```
@@ -300,7 +300,12 @@ in different ways.
 
 ## Version History
 
-### 0.5.0-SNAPSHOT
+### 1.0.0-SNAPSHOT
+
+*New Features / API extensions*
+
+* Added Traverson.startWith(HalRepresentation) to initialize a 
+Traverson from a given resource.
 
 ### 0.4.0
 

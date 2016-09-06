@@ -12,6 +12,7 @@ import java.util.function.Function;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.emptyLinks;
+import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.TraversionError.Type.INVALID_JSON;
 import static de.otto.edison.hal.TraversionError.Type.NOT_FOUND;
 import static de.otto.edison.hal.TraversionError.traversionError;
@@ -78,6 +79,28 @@ public class TraversonTest {
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("/example/foo"));
+    }
+
+    @Test
+    public void shouldFollowLinkStartingWithHalRepresentation() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("search", "/example/foo"))).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
+        // and
+        final HalRepresentation existingRepresentation = new HalRepresentation(
+                linkingTo(link("search", "/example/foo"))
+        );
+
+        // when
+        final Optional<HalRepresentation> hal = traverson(mock)
+                .startWith(existingRepresentation)
+                .follow("search")
+                .getResource();
+        // then
+        final Optional<Link> self = hal.get().getLinks().getLinkBy("self");
         assertThat(self.get().getHref(), is("/example/foo"));
     }
 
