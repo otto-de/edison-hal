@@ -57,7 +57,7 @@ that has embedded items, which have embedded items, and so on.
 
 ## Usage
 
-### 0. Lean about Hypertext Application Language (HAL)
+### 0. Learn about Hypertext Application Language (HAL)
 
 * Read Mike's article about [HAL](http://stateless.co/hal_specification.html) and 
 * the current [draft of the RFC](https://tools.ietf.org/html/draft-kelly-json-hal-08).
