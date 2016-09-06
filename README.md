@@ -52,11 +52,8 @@ know anything about curies or embedded resources.
 
 ## Open Issues and next steps
 * Improved error-handling
-* Optional support for Apache httpcomponents and/or other HTTP clients.
 * Deep nesting of embedded items is currently not supported: a resource
-that has embedded items, which have embedded items, and so on. It would
-possibly work for simple HalRepresentations, but not for subtypes of
-HalRepresentation. Fixing this might break some of the current APIs.
+that has embedded items, which have embedded items, and so on.
 
 ## Usage
 
@@ -69,7 +66,7 @@ HalRepresentation. Fixing this might break some of the current APIs.
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:0.3.0",
+        compile "de.otto.edison:edison-hal:0.4.0",
         ...
     }
 ```
@@ -78,7 +75,7 @@ The current snapshot release is 0.4.0-SNAPSHOT:
 
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:0.4.0-SNAPSHOT",
+        compile "de.otto.edison:edison-hal:0.5.0-SNAPSHOT",
         ...
     }
 ```
@@ -303,18 +300,20 @@ in different ways.
 
 ## Version History
 
-### 0.4.0-SNAPSHOT
+### 0.5.0-SNAPSHOT
+
+### 0.4.0
 
 *Breaking Changes*
 
-* Simplified creation of links by removing unneded factory methods for
+* Simplified creation of links by removing unneeded factory methods for
  templated links. Whether or not a link is templated is now automatically
  identified by the Link.
 * Removed duplicate factory method to create a Link.Builder.
 
 *New Features / API extensions*
 
-* Added first draft of a Traverson API to navigate through HAL resources.
+* Added a Traverson API to navigate through HAL resources.
 
 
 ### 0.3.0
