@@ -300,12 +300,15 @@ in different ways.
 
 ## Version History
 
-### 1.0.0-SNAPSHOT
+### 0.4.1
 
 *New Features / API extensions*
 
-* Added Traverson.startWith(HalRepresentation) to initialize a 
-Traverson from a given resource.
+* Added Traverson.startWith(HalRepresentation) to initialize a Traverson from a given resource.
+
+*Bufixes*
+
+* JsonSerializers and -Deserializers for Links and Embedded are now public to avoid problems with some testing szenarios in Spring.
 
 ### 0.4.0
 
