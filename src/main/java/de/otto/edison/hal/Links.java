@@ -373,7 +373,7 @@ public class Links {
      *
      * @since 0.1.0
      */
-    static class LinksSerializer extends JsonSerializer<Links> {
+    public static class LinksSerializer extends JsonSerializer<Links> {
 
         /**
          * {@inheritDoc}
@@ -405,7 +405,7 @@ public class Links {
      *
      * @since 0.1.0
      */
-    static class LinksDeserializer extends JsonDeserializer<Links> {
+    public static class LinksDeserializer extends JsonDeserializer<Links> {
 
         private static final TypeReference<Map<String, ?>> TYPE_REF_LINK_MAP = new TypeReference<Map<String, ?>>() {};
 

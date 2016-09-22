@@ -361,7 +361,7 @@ public class Embedded {
      *
      * @since 0.1.0
      */
-    static class EmbeddedSerializer extends JsonSerializer<Embedded> {
+    public static class EmbeddedSerializer extends JsonSerializer<Embedded> {
 
         @Override
         public void serialize(Embedded value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
@@ -374,7 +374,7 @@ public class Embedded {
      *
      * @since 0.1.0
      */
-    static class EmbeddedDeserializer extends JsonDeserializer<Embedded> {
+    public static class EmbeddedDeserializer extends JsonDeserializer<Embedded> {
 
         private static final TypeReference<Map<String, List<HalRepresentation>>> TYPE_REF_LIST_OF_HAL_REPRESENTATIONS = new TypeReference<Map<String, List<HalRepresentation>>>() {};
 
