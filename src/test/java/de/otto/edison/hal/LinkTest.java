@@ -1,7 +1,7 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import static de.otto.edison.hal.Link.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -91,7 +91,7 @@ public class LinkTest {
         assertThat(link.isTemplated(), is(true));
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void shouldFailToBuildCuriWithoutRelPlaceholder() throws JsonProcessingException {
         Link.curi("t", "http://example.org/rel");
     }

@@ -2,7 +2,7 @@ package de.otto.edison.hal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import java.util.List;
 
@@ -16,9 +16,6 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-/**
- * Created by guido on 05.07.16.
- */
 public class HalRepresentationEmbeddingTest {
 
     @Test

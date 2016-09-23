@@ -4,7 +4,7 @@ apply plugin: 'signing'
 apply plugin: 'maven'
 apply from: 'dependencies.gradle'
 
-version='0.4.1'
+version='0.4.2-SNAPSHOT'
 group='de.otto.edison'
 
 repositories {
@@ -19,8 +19,12 @@ dependencies {
 }
 
 test {
-    useTestNG()
     println()
+    afterSuite { desc, result ->
+        if (!desc.parent) { // will match the outermost suite
+            println "Test Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+        }
+    }
 }
 
 idea.project {

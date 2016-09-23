@@ -1,7 +1,7 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Optional;

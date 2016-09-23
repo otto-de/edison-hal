@@ -1,6 +1,6 @@
 package de.otto.edison.hal;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import java.util.List;
 
@@ -17,9 +17,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-/**
- * Created by guido on 19.07.16.
- */
+
 public class EmbeddedTest {
 
     @Test

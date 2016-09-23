@@ -3,7 +3,7 @@ package de.otto.edison.hal;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +36,7 @@ public class TraversonTest {
     // Basics:
     ////////////////////////////////////
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void shouldNotCreateParametersWithUnevenNumberOfArguments() {
         withVars("foo", "bar", "foobar");
     }

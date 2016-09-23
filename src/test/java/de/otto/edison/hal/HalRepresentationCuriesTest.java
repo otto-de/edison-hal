@@ -2,7 +2,7 @@ package de.otto.edison.hal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;

@@ -300,6 +300,10 @@ in different ways.
 
 ## Version History
 
+### Current Snapshot
+
+* Replaced TestNG by JUnit
+
 ### 0.4.1
 
 *New Features / API extensions*

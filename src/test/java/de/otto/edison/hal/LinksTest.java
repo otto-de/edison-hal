@@ -1,7 +1,7 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import java.util.List;
 
@@ -16,9 +16,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-/**
- * Created by guido on 21.07.16.
- */
 public class LinksTest {
 
     @Test
