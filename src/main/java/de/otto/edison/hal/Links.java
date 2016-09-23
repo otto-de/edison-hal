@@ -144,6 +144,16 @@ public class Links {
     }
 
     /**
+     * Factory method used to build a Links.Builder that is initialized from a prototype Links instance.
+     *
+     * @param prototype the prototype used to initialize the builder
+     * @return Links.Builder
+     */
+    public static Builder fromPrototype(final Links prototype) {
+        return new Builder().with(prototype);
+    }
+
+    /**
      * Returns a Stream of links.
      *
      * @return Stream of Links
@@ -319,30 +329,10 @@ public class Links {
         final Map<String,List<Link>> links = new LinkedHashMap<>();
 
         /**
-         * Adds one or more Links.
-         *
-         * @param link a Link
-         * @param more more links
-         * @return this
-         */
-        public Builder with(final Link link, final Link... more) {
-            links.put(link.getRel(), new ArrayList<Link>() {{
-                add(link);
-            }});
-            if (more != null) {
-                Arrays.stream(more).forEach(l -> {
-                    if (!links.containsKey(l.getRel())) {
-                        links.put(l.getRel(), new ArrayList<>());
-                    }
-                    links.get(l.getRel()).add(l);
-                });
-            }
-            return this;
-        }
-
-        /**
          * Adds a list of links.
-         *
+         * <p>
+         *     {@link Link#isEquivalentTo(Link) Equivalent} links are NOT added but silently ignored.
+         * </p>
          * @param links the list of links.
          * @return this
          *
@@ -353,8 +343,54 @@ public class Links {
                 if (!this.links.containsKey(l.getRel())) {
                     this.links.put(l.getRel(), new ArrayList<>());
                 }
-                this.links.get(l.getRel()).add(l);
+                final List<Link> linksPerRel = this.links.get(l.getRel());
+                final boolean equivalentLinkExists = linksPerRel
+                        .stream()
+                        .filter(link -> link.isEquivalentTo(l))
+                        .findAny()
+                        .isPresent();
+                if (!equivalentLinkExists) {
+                    linksPerRel.add(l);
+                }
             });
+            return this;
+        }
+
+        /**
+         * Adds one or more Links.
+         * <p>
+         *     {@link Link#isEquivalentTo(Link) Equivalent} links are NOT added but silently ignored.
+         * </p>
+         *
+         * @param link a Link
+         * @param more more links
+         * @return this
+         */
+        public Builder with(final Link link, final Link... more) {
+            with(new ArrayList<Link>() {{
+                add(link);
+                if (more != null) {
+                    addAll(Arrays.asList(more));
+                }
+            }});
+            return this;
+        }
+
+        /**
+         * Addes links from {@link Links}
+         * <p>
+         *     {@link Link#isEquivalentTo(Link) Equivalent} links are NOT added but silently ignored.
+         * </p>
+         *
+         * @param moreLinks the added links.
+         * @return this
+         *
+         * @since 0.4.2
+         */
+        public Builder with(final Links moreLinks) {
+            for (final String rel : moreLinks.getRels()) {
+                with(moreLinks.getLinksBy(rel));
+            }
             return this;
         }
 

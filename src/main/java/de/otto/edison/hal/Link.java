@@ -36,7 +36,6 @@ public class Link {
     @JsonProperty
     private String profile;
 
-
     /**
      * Create a link having only rel and href.
      * <p>
@@ -422,6 +421,21 @@ public class Link {
     @JsonIgnore
     public String getDeprecation() {
         return deprecation != null ? deprecation : "";
+    }
+
+    /**
+     * Two links are considerered equivalent, if they have the same link-relation type and are pointing to the same resource
+     * in the same representation.
+     *
+     * @param other other link
+     * @return true if the links are equivalent, false otherwise.
+     */
+    public boolean isEquivalentTo(final Link other) {
+        return
+                getRel().equals(other.getRel()) &&
+                        getHref().equals(other.getHref()) &&
+                        getType().equals(other.getType()) &&
+                        getProfile().equals(other.getProfile());
     }
 
     /**

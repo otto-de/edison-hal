@@ -304,6 +304,11 @@ in different ways.
 
 * Replaced TestNG by JUnit
 
+*New Features / API extensions*
+
+* Added Link.isEquivalentTo(Link)
+* Link.Builder is not adding equivalent links anymore
+
 ### 0.4.1
 
 *New Features / API extensions*

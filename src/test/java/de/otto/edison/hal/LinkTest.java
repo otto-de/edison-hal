@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
 
 import static de.otto.edison.hal.Link.*;
+import static de.otto.edison.hal.Links.fromPrototype;
+import static de.otto.edison.hal.Links.linkingTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 public class LinkTest {
@@ -94,6 +97,60 @@ public class LinkTest {
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailToBuildCuriWithoutRelPlaceholder() throws JsonProcessingException {
         Link.curi("t", "http://example.org/rel");
+    }
+
+    @Test
+    public void shouldBeEquivalent() {
+        final Link first = linkBuilder("myrel", "/foo")
+                .withType("some type")
+                .withProfile("some profile")
+                .build();
+        final Link other = linkBuilder("myrel", "/foo")
+                .withType("some type")
+                .withProfile("some profile")
+                .withTitle("ignored title")
+                .withDeprecation("ignored deprecation")
+                .withHrefLang("ignored language")
+                .withName("ignored name")
+                .build();
+        assertThat(first.isEquivalentTo(other), is(true));
+
+    }
+
+    @Test
+    public void shouldNotBeEquivalentIfHrefIsDifferent() {
+        final Link first = link("myrel", "/foo");
+        final Link other = link("myrel", "/bar");
+        assertThat(first.isEquivalentTo(other), is(false));
+    }
+
+    @Test
+    public void shouldNotBeEquivalentIfRelIsDifferent() {
+        final Link first = link("myrel", "/foo");
+        final Link other = link("myOtherRel", "/foo");
+        assertThat(first.isEquivalentTo(other), is(false));
+    }
+
+    @Test
+    public void shouldNotBeEquivalentIfTypeIsDifferent() {
+        final Link first = linkBuilder("myrel", "/foo")
+                .withType("some type")
+                .build();
+        final Link other = linkBuilder("myrel", "/foo")
+                .withType("some other type")
+                .build();
+        assertThat(first.isEquivalentTo(other), is(false));
+    }
+
+    @Test
+    public void shouldNotBeEquivalentIfProfileIsDifferent() {
+        final Link first = linkBuilder("myrel", "/foo")
+                .withType("some profile")
+                .build();
+        final Link other = linkBuilder("myrel", "/foo")
+                .withType("some other profile")
+                .build();
+        assertThat(first.isEquivalentTo(other), is(false));
     }
 
 }
