@@ -228,7 +228,7 @@ public class Link {
      *
      * @since 0.1.0
      */
-    public static Builder fromPrototype(final Link prototype) {
+    public static Builder copyOf(final Link prototype) {
         return new Builder(prototype.rel, prototype.href)
                 .withType(prototype.type)
                 .withProfile(prototype.profile)

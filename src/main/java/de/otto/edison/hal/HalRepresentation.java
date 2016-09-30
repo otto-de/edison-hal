@@ -78,6 +78,31 @@ public class HalRepresentation {
     }
 
     /**
+     * Add links to the HalRepresentation.
+     * <p>
+     *     Links are only added if they are not {@link Link#isEquivalentTo(Link) equivalent}
+     *     to already existing links.
+     * </p>
+     * @param link a link
+     * @param moreLinks optionally more links
+     */
+    protected void withLinks(final Link link, final Link... moreLinks) {
+        this.links = Links.copyOf(this.links).with(link, moreLinks).build();
+    }
+
+    /**
+     * Add links to the HalRepresentation.
+     * <p>
+     *     Links are only added if they are not {@link Link#isEquivalentTo(Link) equivalent}
+     *     to already existing links.
+     * </p>
+     * @param links added links
+     */
+    protected void withLinks(final List<Link> links) {
+        this.links = Links.copyOf(this.links).with(links).build();
+    }
+
+    /**
      * Returns the Embedded objects of the HalRepresentation.
      *
      * @return Embedded, possibly beeing {@link Embedded#isEmpty() empty}
@@ -88,18 +113,29 @@ public class HalRepresentation {
     }
 
     /**
-     * This method is used by the HalParser to parse embedded items as a concrete sub-class of HalRepresentation
-     * and replace these embedded items.
+     * Adds embedded items for a link-relation type to the HalRepresentation.
+     * <p>
+     *     If {@code rel} is already present, it is replaced by the new embedded items.
+     * </p>
      *
-     * @param rel the link-relation type of the embedded items that are replaced
-     * @param embeddedValues the new values for the specified link-relation type
+     * @param rel the link-relation type of the embedded items that are added or replaced
+     * @param embeddedItems the new values for the specified link-relation type
      *
-     * @since 0.1.0
+     * @since 0.5.0
      */
-    void withEmbedded(final String rel, final List<HalRepresentation> embeddedValues) {
-        embedded = copyOf(embedded).with(rel, embeddedValues).build();
+    protected void withEmbedded(final String rel, final List<HalRepresentation> embeddedItems) {
+        embedded = copyOf(embedded).with(rel, embeddedItems).build();
     }
 
+    /**
+     * This method is used by embedded HalRepresentations to get the CURIs from the embedding
+     * representation so curied links can be resolved.
+     * <p>
+     *     Only to be used internally.
+     * </p>
+     *
+     * @param curiesFromEmbedding the curies from the embedding representation.
+     */
     void withParentCuries(final List<Link> curiesFromEmbedding) {
         if (links != null) {
             links.withParentCuries(curiesFromEmbedding);

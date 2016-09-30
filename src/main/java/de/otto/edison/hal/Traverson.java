@@ -8,7 +8,7 @@ import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo;
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
-import static de.otto.edison.hal.Link.fromPrototype;
+import static de.otto.edison.hal.Link.copyOf;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.TraversionError.Type;
 import static de.otto.edison.hal.TraversionError.Type.INVALID_JSON;
@@ -404,7 +404,7 @@ public class Traverson {
     private Link expand(final Link link, final Map<String,Object> vars) {
         if (link.isTemplated()) {
             final String href = fromTemplate(link.getHref()).expand(vars);
-            return fromPrototype(link)
+            return copyOf(link)
                     .withHref(href)
                     .withRel(link.getRel())
                     .build();

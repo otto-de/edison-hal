@@ -5,12 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import static de.otto.edison.hal.Link.collection;
+import static de.otto.edison.hal.Link.item;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 public class HalRepresentationLinkingTest {
@@ -130,5 +134,21 @@ public class HalRepresentationLinkingTest {
                 "}}"));
     }
 
-
+    @Test
+    public void shouldBeAbleToAddLinksAfterConstruction() {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        self("/"),
+                        item("/i/1")
+                )
+        );
+        // when
+        representation.withLinks(link("foo", "/foo/1"));
+        representation.withLinks(asList(item("/i/2"),item("/i/3")));
+        // then
+        assertThat(representation.getLinks().getRels(), hasSize(3));
+        assertThat(representation.getLinks().getLinkBy("foo").isPresent(), is(true));
+        assertThat(representation.getLinks().getLinksBy("item"), contains(item("/i/1"),item("/i/2"),item("/i/3")));
+    }
 }

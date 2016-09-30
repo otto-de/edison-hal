@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
 
 import static de.otto.edison.hal.Link.*;
-import static de.otto.edison.hal.Links.fromPrototype;
 import static de.otto.edison.hal.Links.linkingTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;

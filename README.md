@@ -302,12 +302,17 @@ in different ways.
 
 ### Current Snapshot
 
-* Replaced TestNG by JUnit
+*Breaking Changes*
+
+* Renamed Link.Builder.fromPrototype() and Links.Builder.fromPrototype()
+ to copyOf()
 
 *New Features / API extensions*
 
 * Added Link.isEquivalentTo(Link)
 * Link.Builder is not adding equivalent links anymore
+* Added HalRepresentation.withEmbedded() and HalRepresentation.withLinks()
+ so links and embedded items can be added after construction.
 
 ### 0.4.1
 

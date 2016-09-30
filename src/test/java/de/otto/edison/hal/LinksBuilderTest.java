@@ -5,7 +5,7 @@ import org.junit.Test;
 import static de.otto.edison.hal.Link.item;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
-import static de.otto.edison.hal.Links.fromPrototype;
+import static de.otto.edison.hal.Links.copyOf;
 import static de.otto.edison.hal.Links.linkingTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -16,7 +16,7 @@ public class LinksBuilderTest {
     @Test
     public void shouldAddLinksWithNewRel() {
         final Links links = linkingTo(self("/foo"));
-        final Links extendedLinks = fromPrototype(links)
+        final Links extendedLinks = copyOf(links)
                 .with(linkingTo(item("/bar")))
                 .build();
         assertThat(extendedLinks.getLinkBy("self").isPresent(), is(true));
@@ -26,7 +26,7 @@ public class LinksBuilderTest {
     @Test
     public void shouldAddLinkWithNewRel() {
         final Links links = linkingTo(self("/foo"));
-        final Links extendedLinks = fromPrototype(links)
+        final Links extendedLinks = copyOf(links)
                 .with(item("/bar"))
                 .build();
         assertThat(extendedLinks.getLinkBy("self").isPresent(), is(true));
@@ -36,7 +36,7 @@ public class LinksBuilderTest {
     @Test
     public void shouldAddLinkToExistingRel() {
         final Links links = linkingTo(item("/foo"));
-        final Links extendedLinks = fromPrototype(links)
+        final Links extendedLinks = copyOf(links)
                 .with(item("/bar"))
                 .build();
         assertThat(extendedLinks.getLinksBy("item"), hasSize(2));
@@ -45,7 +45,7 @@ public class LinksBuilderTest {
     @Test
     public void shouldAddLinksToExistingRel() {
         final Links links = linkingTo(item("/foo"));
-        final Links extendedLinks = fromPrototype(links)
+        final Links extendedLinks = copyOf(links)
                 .with(linkingTo(item("/bar")))
                 .build();
         assertThat(extendedLinks.getLinksBy("item"), hasSize(2));
@@ -54,7 +54,7 @@ public class LinksBuilderTest {
     @Test
     public void shouldNotDuplicateLink() {
         final Links links = linkingTo(item("/foo"), item("/bar"));
-        final Links extendedLinks = fromPrototype(links)
+        final Links extendedLinks = copyOf(links)
                 .with(item("/bar"))
                 .build();
         assertThat(extendedLinks.getLinksBy("item"), hasSize(2));
@@ -63,7 +63,7 @@ public class LinksBuilderTest {
     @Test
     public void shouldNotDuplicateLinks() {
         final Links links = linkingTo(item("/foo"), item("/bar"));
-        final Links extendedLinks = fromPrototype(links)
+        final Links extendedLinks = copyOf(links)
                 .with(linkingTo(item("/bar")))
                 .build();
         assertThat(extendedLinks.getLinksBy("item"), hasSize(2));
@@ -76,7 +76,7 @@ public class LinksBuilderTest {
                         .withType("some type")
                         .withProfile("some profile")
                         .build());
-        final Links extendedLinks = fromPrototype(links)
+        final Links extendedLinks = copyOf(links)
                 .with(linkingTo(linkBuilder("myrel", "/foo")
                         .withType("some DIFFERENT type")
                         .withProfile("some profile")
@@ -96,7 +96,7 @@ public class LinksBuilderTest {
                         .withType("some type")
                         .withProfile("some profile")
                         .build());
-        final Links extendedLinks = fromPrototype(links)
+        final Links extendedLinks = copyOf(links)
                 .with(linkingTo(linkBuilder("myrel", "/foo")
                         .withType("some type")
                         .withProfile("some profile")
