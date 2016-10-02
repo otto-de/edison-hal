@@ -304,6 +304,17 @@ in different ways.
 
 *Breaking Changes*
 
+* Moved Traverson classes to package de.otto.edison.hal.traverson
+
+*New Features / API extensions*
+
+* Added Link.getHrefAsTemplate() 
+* Added helpers to create links for paged resources: NumberedPaging and SkipLimitPaging
+
+### 0.5.0
+
+*Breaking Changes*
+
 * Renamed Link.Builder.fromPrototype() and Links.Builder.fromPrototype()
  to copyOf()
 

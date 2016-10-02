@@ -7,7 +7,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
 import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,29 +24,29 @@ public class CuriTemplateTest {
     public void shouldFailToCreateCuriTemplateForWrongRel() {
         expectedEx.expect(IllegalArgumentException.class);
         expectedEx.expectMessage(matchesRegex(".*not a CURI link.*"));
-        curiTemplateFor(link("foo", "/bar"));
+        CuriTemplate.curiTemplateFor(link("foo", "/bar"));
     }
 
     @Test
     public void shouldFailToCreateCuriTemplateForWrongHref() {
         expectedEx.expect(IllegalArgumentException.class);
         expectedEx.expectMessage(matchesRegex(".*required.*placeholder.*"));
-        curiTemplateFor(link("curies", "/bar"));
+        CuriTemplate.curiTemplateFor(link("curies", "/bar"));
     }
 
     @Test
     public void shouldMatch() {
-        assertThat(curiTemplateFor(curi).matches(rel), is(true));
+        assertThat(CuriTemplate.curiTemplateFor(curi).matches(rel), is(true));
     }
 
     @Test
     public void shouldExtractCuriedRel() {
-        assertThat(curiTemplateFor(curi).curiedRelFrom(rel), is("x:product"));
+        assertThat(CuriTemplate.curiTemplateFor(curi).curiedRelFrom(rel), is("x:product"));
     }
 
     @Test
     public void shouldExtractPlaceholderValue() {
-       assertThat(curiTemplateFor(curi).relPlaceHolderFrom(rel), is("product"));
+       assertThat(CuriTemplate.curiTemplateFor(curi).relPlaceHolderFrom(rel), is("product"));
     }
 
     private Matcher<String> matchesRegex(final String regex) {

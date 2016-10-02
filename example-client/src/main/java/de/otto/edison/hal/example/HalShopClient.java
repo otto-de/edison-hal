@@ -16,8 +16,8 @@ import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
-import static de.otto.edison.hal.Traverson.traverson;
-import static de.otto.edison.hal.Traverson.withVars;
+import static de.otto.edison.hal.traverson.Traverson.traverson;
+import static de.otto.edison.hal.traverson.Traverson.withVars;
 import static java.lang.String.format;
 import static org.apache.http.impl.client.HttpClients.createDefault;
 

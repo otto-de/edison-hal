@@ -1,6 +1,8 @@
-package de.otto.edison.hal;
+package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.otto.edison.hal.HalRepresentation;
+import de.otto.edison.hal.Link;
 import org.junit.Test;
 
 import java.util.List;
@@ -8,7 +10,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static de.otto.edison.hal.Link.link;
-import static de.otto.edison.hal.Traverson.traverson;
+import static de.otto.edison.hal.traverson.Traverson.traverson;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;

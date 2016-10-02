@@ -1,4 +1,4 @@
-package de.otto.edison.hal;
+package de.otto.edison.hal.traverson;
 
 class TraversionException extends RuntimeException {
 

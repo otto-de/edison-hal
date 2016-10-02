@@ -23,7 +23,7 @@ import java.util.Optional;
  * </code></pre>
  * @since 0.3.0
  */
-public class CuriTemplate {
+class CuriTemplate {
 
     private static final String REL_PLACEHOLDER = "{rel}";
 

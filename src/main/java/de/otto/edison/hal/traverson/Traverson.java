@@ -1,4 +1,8 @@
-package de.otto.edison.hal;
+package de.otto.edison.hal.traverson;
+
+import de.otto.edison.hal.Embedded;
+import de.otto.edison.hal.HalRepresentation;
+import de.otto.edison.hal.Link;
 
 import java.util.*;
 import java.util.function.Function;
@@ -10,11 +14,11 @@ import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.copyOf;
 import static de.otto.edison.hal.Link.self;
-import static de.otto.edison.hal.TraversionError.Type;
-import static de.otto.edison.hal.TraversionError.Type.INVALID_JSON;
-import static de.otto.edison.hal.TraversionError.Type.MISSING_LINK;
-import static de.otto.edison.hal.TraversionError.Type.NOT_FOUND;
-import static de.otto.edison.hal.TraversionError.traversionError;
+import static de.otto.edison.hal.traverson.TraversionError.Type;
+import static de.otto.edison.hal.traverson.TraversionError.Type.INVALID_JSON;
+import static de.otto.edison.hal.traverson.TraversionError.Type.MISSING_LINK;
+import static de.otto.edison.hal.traverson.TraversionError.Type.NOT_FOUND;
+import static de.otto.edison.hal.traverson.TraversionError.traversionError;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;

@@ -1,5 +1,6 @@
 package de.otto.edison.hal;
 
+import com.damnhandy.uri.template.UriTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -256,7 +257,8 @@ public class Link {
      * The "href" property is REQUIRED.
      * </p>
      * <p>
-     * Its value is either a URI [RFC3986] or a URI Template [RFC6570].
+     * Its value is either a URI [RFC3986] or a URI Template [RFC6570]. Templates can
+     * be expanded by creating an {@link com.damnhandy.uri.template.UriTemplate}.
      * </p>
      * <p>
      * If the value is a URI Template then the Link Object SHOULD have a
@@ -271,6 +273,19 @@ public class Link {
     @JsonIgnore
     public String getHref() {
         return href;
+    }
+
+    /**
+     * Returns the href of the link as a {@link UriTemplate} that can be expanded by providing the required template variables.
+     *
+     * @return uri template of the linked resource
+     *
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-5.1">draft-kelly-json-hal-08#section-5.1</a>
+     * @since 0.5.1
+     */
+    @JsonIgnore
+    public UriTemplate getHrefAsTemplate() {
+        return UriTemplate.fromTemplate(href);
     }
 
     /**

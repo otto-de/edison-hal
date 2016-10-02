@@ -1,4 +1,4 @@
-package de.otto.edison.hal;
+package de.otto.edison.hal.traverson;
 
 import java.util.Optional;
 

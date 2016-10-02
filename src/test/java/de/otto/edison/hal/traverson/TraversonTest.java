@@ -1,8 +1,10 @@
-package de.otto.edison.hal;
+package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import de.otto.edison.hal.HalRepresentation;
+import de.otto.edison.hal.Link;
 import org.junit.Test;
 
 import java.util.List;
@@ -13,12 +15,12 @@ import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.TraversionError.Type.INVALID_JSON;
-import static de.otto.edison.hal.TraversionError.Type.NOT_FOUND;
-import static de.otto.edison.hal.TraversionError.traversionError;
-import static de.otto.edison.hal.Traverson.hops;
-import static de.otto.edison.hal.Traverson.traverson;
-import static de.otto.edison.hal.Traverson.withVars;
+import static de.otto.edison.hal.traverson.TraversionError.Type.INVALID_JSON;
+import static de.otto.edison.hal.traverson.TraversionError.Type.NOT_FOUND;
+import static de.otto.edison.hal.traverson.TraversionError.traversionError;
+import static de.otto.edison.hal.traverson.Traverson.hops;
+import static de.otto.edison.hal.traverson.Traverson.traverson;
+import static de.otto.edison.hal.traverson.Traverson.withVars;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;

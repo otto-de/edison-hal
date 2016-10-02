@@ -1,0 +1,242 @@
+package de.otto.edison.hal.paging;
+
+import com.damnhandy.uri.template.UriTemplate;
+import de.otto.edison.hal.Link;
+
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.OptionalInt;
+
+import static de.otto.edison.hal.Link.link;
+import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.paging.PagingRel.*;
+import static java.lang.Integer.MAX_VALUE;
+import static java.lang.Integer.max;
+
+/**
+ * A helper class used to create paging links for paged resources that are using page URIs with skip and limit paramters.
+ * <p>
+ *     Usage:
+ * </p>
+ * <pre><code>
+ * public class MyHalRepresentation extends HalRepresentation {
+ *    public MyHalRepresentation(final SkipLimitPaging page, final List&lt;Stuff&gt; pagedStuff) {
+ *          super(linksBuilder()
+ *                  .with(page.links(
+ *                          fromTemplate(contextPath + "/api/stuff{?skip,limit}"),
+ *                          allOf(PagingRel.class)
+ *                   ))
+ *                   .with(pagedStuff.stream()
+ *                          .limit(page.limit)
+ *                          .map(stuff -&gt; linkBuilder("item", stuff.selfHref)
+ *                                  .withTitle(stuff.title)
+ *                                  .build())
+ *                          .collect(toList()))
+ *                   .build()
+ *          );
+ *    }
+ * </code></pre>
+ */
+public class SkipLimitPaging {
+
+    /**
+     * The default template-variable name used to identify the number of items to skip
+     */
+    public static final String SKIP_VAR = "skip";
+    /**
+     * The default template-variable name used to identify the number of items per page
+     */
+    public static final String LIMIT_VAR = "limit";
+
+    /**
+     * The number of items to skip.
+     */
+    private final int skip;
+    /**
+     * The number of items per page.
+     */
+    private final int limit;
+    /**
+     * There are more items beyond the current page - or not.
+     */
+    private final boolean hasMore;
+    /**
+     * Optional total number of available items. Used to calculate the number of items to skip for the last page.
+     */
+    private final OptionalInt total;
+
+    /**
+     * Creates a NumberedPage instance.
+     *
+     * @param skip the number of items to skip to come to this page.
+     * @param limit the size of a page.
+     * @param hasMore more items beyond this page?
+     */
+    protected SkipLimitPaging(final int skip, final int limit, final boolean hasMore) {
+        if (skip < 0) {
+            throw new IllegalArgumentException("Parameter 'skip' must not be less than zero");
+        }
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Parameter 'limit' must be greater zero");
+        }
+        if (hasMore && limit == MAX_VALUE) {
+            throw new IllegalArgumentException("Unable to calculate next page for unbounded page sizes.");
+        }
+        this.skip = skip;
+        this.limit = limit;
+        this.total = OptionalInt.empty();
+        this.hasMore = hasMore;
+    }
+
+    /**
+     * Creates a NumberedPage instance.
+     *
+     * @param skip the number of items to skip to come to this page.
+     * @param limit the size of a page.
+     * @param totalCount the total number of available items.
+     */
+    protected SkipLimitPaging(final int skip, final int limit, final int totalCount) {
+        if (skip < 0) {
+            throw new IllegalArgumentException("Parameter 'skip' must not be less than zero");
+        }
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Parameter 'limit' must be greater zero");
+        }
+        if (totalCount <= 0) {
+            throw new IllegalArgumentException("Parameter 'totalCount' must be greater zero");
+        }
+        if (totalCount < skip) {
+            throw new IllegalArgumentException("Parameter 'totalCount' must be greater 'skip'");
+        }
+        this.skip = skip;
+        this.limit = limit;
+        this.total = OptionalInt.of(totalCount);
+        this.hasMore = skip + limit < totalCount;
+    }
+
+    /**
+     * Create a NumberedPaging instances for pages where it is known whether or not there are more
+     * items beyond the current page.
+     *
+     * @param skip the number of items to skip before the current page
+     * @param limit the number of items per page.
+     * @param hasMore true if there are more items beyond the current page, false otherwise.
+     * @return created SkipLimitPaging instance
+     */
+    public static SkipLimitPaging skipLimitPage(final int skip, final int limit, final boolean hasMore) {
+        return new SkipLimitPaging(skip, limit, hasMore);
+    }
+
+    /**
+     * Create a NumberedPaging instances for pages where it is known how many items are matching the initial query.
+     *
+     * @param skip the number of items to skip to come to this page.
+     * @param limit the number of items per page.
+     * @param totalCount the total number of items matching the initial query.
+     * @return created SkipLimitPaging instance
+     */
+    public static SkipLimitPaging skipLimitPage(final int skip, final int limit, final int totalCount) {
+        return new SkipLimitPaging(skip, limit, totalCount);
+    }
+
+    /**
+     * Return the requested links for a paged resource were the link's hrefs are created using the given
+     * {@link UriTemplate}.
+     * <p>
+     *     The variables used to identify the number of skipped items and page size must match the values returned
+     *     by {@link #skipVar()} ()} and {@link #limitVar()}. Derive from this class, if other values than
+     *     {@link #SKIP_VAR} or {@link #LIMIT_VAR} are required.
+     * </p>
+     * <p>
+     *     If the provided template does not contain the required variable names. links can not be expanded.
+     * </p>
+     * @param pageUriTemplate the URI template used to create paging links.
+     * @param rels the links expected to be created.
+     * @return List of links
+     */
+    public final List<Link> links(final UriTemplate pageUriTemplate, final EnumSet<PagingRel> rels) {
+        final List<Link> links = new ArrayList<>();
+        if (rels.contains(SELF)) {
+            links.add(
+                    self(pageUri(pageUriTemplate, skip, limit))
+            );
+        }
+        if (rels.contains(FIRST)) {
+            links.add(
+                    link("first", pageUri(pageUriTemplate, 0, limit))
+            );
+        }
+        if (skip > 0 && rels.contains(PREV)) {
+            links.add(
+                    link("prev", pageUri(pageUriTemplate, max(0, skip-limit), limit))
+            );
+        }
+        if (hasMore && rels.contains(NEXT)) {
+            links.add(
+                    link("next", pageUri(pageUriTemplate, skip + limit, limit))
+            );
+        }
+        if (total.isPresent() && rels.contains(LAST)) {
+            final int skip = calcLastPageSkip(total.getAsInt(), this.skip, this.limit);
+            links.add(
+                    link("last", pageUri(pageUriTemplate, skip, limit))
+            );
+        }
+        return links;
+    }
+
+    /**
+     * Return the name of the template variable used to specify the number of skipped items.
+     *
+     * @return template variable for skipped items.
+     */
+    protected String skipVar() {
+        return SKIP_VAR;
+    }
+
+    /**
+     * Return the name of the template variable used to specify the size of the page.
+     *
+     * @return template variable for the page size.
+     */
+    protected String limitVar() {
+        return LIMIT_VAR;
+    }
+
+    /**
+     * Calculate the number of items to skip for the last page.
+     *
+     * @param total total number of items.
+     * @param skip number of items to skip for the current page.
+     * @param limit page size
+     * @return skipped items
+     */
+    private int calcLastPageSkip(int total, int skip, int limit) {
+        if (skip > total - limit) {
+            return skip;
+        }
+        if (total % limit > 0) {
+            return total - total % limit;
+        }
+        return total - limit;
+    }
+
+    /**
+     * Return the URI of the page with N skipped items and a page limitted to pages of size M.
+     * @param uriTemplate the template used to create the link
+     * @param skip the number of skipped items
+     * @param limit the page size
+     * @return href
+     */
+    private String pageUri(final UriTemplate uriTemplate, final int skip, final int limit) {
+        if (skip == 0 && limit == MAX_VALUE) {
+            return uriTemplate.expand();
+        }
+        if (skip > 0 && limit == MAX_VALUE) {
+            return uriTemplate.set(skipVar(), skip).expand();
+        }
+        return uriTemplate.set(skipVar(), skip).set(limitVar(), limit).expand();
+    }
+
+}
