@@ -17,6 +17,12 @@ import static java.lang.Integer.max;
 /**
  * A helper class used to create paging links for paged resources that are using page URIs with skip and limit paramters.
  * <p>
+ *     By default, SkipLimitPaging is expecting an UriTemplate having the template variables
+ *     'skip' and 'limit' to create links to 'self', 'first', 'next', 'prev' and 'last' pages.
+ *     If you want to use different var names, you should derive from this class and override
+ *     {@link #skipVar()} and/or {@link #limitVar()}.
+ * </p>
+ * <p>
  *     Usage:
  * </p>
  * <pre><code>
@@ -187,7 +193,49 @@ public class SkipLimitPaging {
     }
 
     /**
+     * Skipped number of items in the current selection.
+     *
+     * @return the number of skipped items
+     */
+    public int getSkip() {
+        return skip;
+    }
+
+    /**
+     * The limit for the current page size.
+     *
+     * @return number of items per page
+     */
+    public int getLimit() {
+        return limit;
+    }
+
+    /**
+     *
+     * @return true if there are more pages, false otherwise.
+     */
+    public boolean isHasMore() {
+        return hasMore;
+    }
+
+    /**
+     * Optional total number of items in the current selection.
+     * <p>
+     *     This number is used to calculate the link to the last page. If empty(), no
+     *     last page is returned by {@link #links(UriTemplate, EnumSet)}
+     * </p>
+     * @return optional total number of items.
+     */
+    public OptionalInt getTotal() {
+        return total;
+    }
+
+    /**
      * Return the name of the template variable used to specify the number of skipped items.
+     * <p>
+     *     Override this method if you want to use links with a different name than 'skip'
+     *     for the number of skipped items.
+     * </p>
      *
      * @return template variable for skipped items.
      */
@@ -197,6 +245,10 @@ public class SkipLimitPaging {
 
     /**
      * Return the name of the template variable used to specify the size of the page.
+     * <p>
+     *     Override this methode if you want to use links with a different name than 'limit'
+     *     for the number of items per page.
+     * </p>
      *
      * @return template variable for the page size.
      */

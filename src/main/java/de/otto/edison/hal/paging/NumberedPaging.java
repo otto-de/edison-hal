@@ -15,6 +15,12 @@ import static java.lang.Integer.MAX_VALUE;
 /**
  * A helper class used to create paging links for paged resources that are using numbered page URIs.
  * <p>
+ *     By default, NumberedPaging is expecting an UriTemplate having the template variables
+ *     'page' and 'pageSize' to create links to 'self', 'first', 'next', 'prev' and 'last' pages.
+ *     If you want to use different var names, you should derive from this class and override
+ *     {@link #pageNumberVar()} and/or {@link #pageSizeVar()}.
+ * </p>
+ * <p>
  *     Usage:
  * </p>
  * <pre><code>
@@ -184,6 +190,42 @@ public class NumberedPaging {
             );
         }
         return links;
+    }
+
+    /**
+     *
+     * @return the current page number.
+     */
+    public int getPageNumber() {
+        return pageNumber;
+    }
+
+    /**
+     *
+     * @return the current page size.
+     */
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    /**
+     *
+     * @return true, if there are more pages, false otherwise
+     */
+    public boolean hasMore() {
+        return hasMore;
+    }
+
+    /**
+     * The optional total number of available items in the current selection.
+     * <p>
+     *     Used to calculate the 'last' page. If this value is empty(), the link
+     *     to the last page is not returned by {@link #links(UriTemplate, EnumSet)}.
+     * </p>
+     * @return total number of available items
+     */
+    public OptionalInt getTotal() {
+        return total;
     }
 
     /**
