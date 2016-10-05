@@ -11,6 +11,7 @@ import static de.otto.edison.hal.Embedded.embeddedBuilder;
 import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -199,6 +200,34 @@ public class HalRepresentationEmbeddingTest {
                         curi("x", "http://example.org/rels/{rel}")),
                 embedded("http://example.org/rels/foo", items)) {};
         // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is(
+                "{" +
+                        "\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}," +
+                        "\"_embedded\":{\"x:foo\":[" +
+                        "{" +
+                        "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                        "}," +
+                        "{" +
+                        "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                        "}" +
+                        "]}" +
+                        "}"));
+    }
+
+    @Test
+    public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinksAfterConstruction() throws JsonProcessingException {
+        // given
+        final List<HalRepresentation> items = asList(
+                new HalRepresentation(linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/01"))),
+                new HalRepresentation(linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/02")))
+        );
+        final HalRepresentation representation = new HalRepresentation(
+                emptyLinks(),
+                embedded("http://example.org/rels/foo", items)) {};
+        // when
+        representation.withLinks(curi("x", "http://example.org/rels/{rel}"));
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
         assertThat(json, is(

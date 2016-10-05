@@ -149,7 +149,7 @@ public class Links {
      * @param prototype the prototype used to initialize the builder
      * @return Links.Builder
      */
-    public static Builder copyOf/**/(final Links prototype) {
+    public static Builder copyOf(final Links prototype) {
         return new Builder().with(prototype);
     }
 

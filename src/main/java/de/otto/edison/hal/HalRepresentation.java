@@ -11,6 +11,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Links.emptyLinks;
+import static de.otto.edison.hal.Links.linkingTo;
 
 /**
  * Representation used to parse and create HAL+JSON documents from Java classes.
@@ -24,6 +25,7 @@ import static de.otto.edison.hal.Links.emptyLinks;
 @JsonInclude(NON_NULL)
 public class HalRepresentation {
 
+    public static final String CURIES = "curies";
     @JsonProperty(value = "_links")
     private volatile Links links;
     @JsonProperty(value = "_embedded")
@@ -63,7 +65,7 @@ public class HalRepresentation {
      */
     public HalRepresentation(final Links links, final Embedded embedded) {
         this(links);
-        this.embedded = embedded.isEmpty() ? null : embedded.withCuries(getLinks().getLinksBy("curies"));
+        this.embedded = embedded.isEmpty() ? null : embedded.withCuries(getLinks().getLinksBy(CURIES));
     }
 
     /**
@@ -87,7 +89,10 @@ public class HalRepresentation {
      * @param moreLinks optionally more links
      */
     protected void withLinks(final Link link, final Link... moreLinks) {
-        this.links = Links.copyOf(this.links).with(link, moreLinks).build();
+        this.links = this.links != null
+                ? Links.copyOf(this.links).with(link, moreLinks).build()
+                : linkingTo(link, moreLinks);
+        updateCuriesInEmbeddedItems();
     }
 
     /**
@@ -99,7 +104,10 @@ public class HalRepresentation {
      * @param links added links
      */
     protected void withLinks(final List<Link> links) {
-        this.links = Links.copyOf(this.links).with(links).build();
+        this.links = this.links != null
+                ? Links.copyOf(this.links).with(links).build()
+                : linkingTo(links);
+        updateCuriesInEmbeddedItems();
     }
 
     /**
@@ -109,7 +117,7 @@ public class HalRepresentation {
      */
     @JsonIgnore
     public Embedded getEmbedded() {
-        return embedded != null ? embedded.withCuries(getLinks().getLinksBy("curies")) : emptyEmbedded();
+        return embedded != null ? embedded.withCuries(getLinks().getLinksBy(CURIES)) : emptyEmbedded();
     }
 
     /**
@@ -139,6 +147,12 @@ public class HalRepresentation {
     void withParentCuries(final List<Link> curiesFromEmbedding) {
         if (links != null) {
             links.withParentCuries(curiesFromEmbedding);
+        }
+    }
+
+    private void updateCuriesInEmbeddedItems() {
+        if (embedded != null && this.links.getRels().contains(CURIES)) {
+            embedded = embedded.withCuries(getLinks().getLinksBy(CURIES));
         }
     }
 

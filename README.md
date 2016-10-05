@@ -306,6 +306,11 @@ in different ways.
 
 * Moved Traverson classes to package de.otto.edison.hal.traverson
 
+*Bugfixes*
+
+* Fixed shortening of embedded links using curies when adding links to 
+a HalResource after construction.
+
 *New Features / API extensions*
 
 * Added Link.getHrefAsTemplate() 
