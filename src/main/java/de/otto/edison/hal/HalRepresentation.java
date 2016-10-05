@@ -132,7 +132,7 @@ public class HalRepresentation {
      * @since 0.5.0
      */
     protected void withEmbedded(final String rel, final List<HalRepresentation> embeddedItems) {
-        embedded = copyOf(embedded).with(rel, embeddedItems).build();
+        embedded = copyOf(embedded).with(rel, embeddedItems).build().withCuries(getLinks().getLinksBy(CURIES));
     }
 
     /**
