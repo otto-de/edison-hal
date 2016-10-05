@@ -234,6 +234,27 @@ public class TraversonTest {
         assertThat(self.get().getHref(), is("/example/foo"));
     }
 
+    @Test
+    public void shouldFollowToEmbeddedObjectWithMissingLink() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                        "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}]}" +
+                "}");
+        // when
+        final HalRepresentation hal = traverson(mock)
+                .startWith("/example")
+                .follow("foo")
+                .getResource()
+                .get();
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("/example/foo"));
+    }
+
     //////////////////////////
     // Streaming
     //////////////////////////
