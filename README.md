@@ -300,7 +300,7 @@ in different ways.
 
 ## Version History
 
-### Current Snapshot
+### 0.6.0
 
 *Breaking Changes*
 
