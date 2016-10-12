@@ -131,8 +131,8 @@ public class Embedded {
      * @since 0.1.0
      */
     public static Embedded embedded(final String rel,
-                                    final List<HalRepresentation> embeddedRepresentations) {
-        return new Embedded(singletonMap(rel, embeddedRepresentations));
+                                    final List<? extends HalRepresentation> embeddedRepresentations) {
+        return new Embedded(singletonMap(rel, new ArrayList<>(embeddedRepresentations)));
     }
 
     /**
@@ -189,25 +189,6 @@ public class Embedded {
         } else {
             return emptyList();
         }
-    }
-
-    /**
-     * Helper method used to retrieve Embedded items with support for CURIs.
-     *
-     * @param rel a curied or full link-relation type of the embedded items.
-     * @return List of matching items.
-     */
-    private List<HalRepresentation> getCuriedItems(final String rel) {
-        for (final Link curi : curies) {
-            final CuriTemplate curiTemplate = curiTemplateFor(curi);
-            if (curiTemplate.matches(rel)) {
-                final String shortRel = curiTemplate.curiedRelFrom(rel);
-                return items.containsKey(shortRel)
-                        ? items.get(shortRel)
-                        : emptyList();
-            }
-        }
-        return emptyList();
     }
 
     /**
@@ -293,6 +274,25 @@ public class Embedded {
      *
      * @since 0.1.0
      */
+    /**
+     * Helper method used to retrieve Embedded items with support for CURIs.
+     *
+     * @param rel a curied or full link-relation type of the embedded items.
+     * @return List of matching items.
+     */
+    private List<HalRepresentation> getCuriedItems(final String rel) {
+        for (final Link curi : curies) {
+            final CuriTemplate curiTemplate = curiTemplateFor(curi);
+            if (curiTemplate.matches(rel)) {
+                final String shortRel = curiTemplate.curiedRelFrom(rel);
+                return items.containsKey(shortRel)
+                        ? items.get(shortRel)
+                        : emptyList();
+            }
+        }
+        return emptyList();
+    }
+
     public final static class Builder {
         private final Map<String,List<HalRepresentation>> _embedded = new LinkedHashMap<>();
 
@@ -325,8 +325,8 @@ public class Embedded {
          *
          * @since 0.2.0
          */
-        public Builder with(final String rel, final List<HalRepresentation> embeddedRepresentations) {
-            _embedded.put(rel, embeddedRepresentations);
+        public Builder with(final String rel, final List<? extends HalRepresentation> embeddedRepresentations) {
+            _embedded.put(rel, new ArrayList<>(embeddedRepresentations));
             return this;
         }
 
