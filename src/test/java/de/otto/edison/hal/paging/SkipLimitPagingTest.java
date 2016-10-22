@@ -2,15 +2,19 @@ package de.otto.edison.hal.paging;
 
 import com.damnhandy.uri.template.UriTemplate;
 import de.otto.edison.hal.Links;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.EnumSet;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
+import static de.otto.edison.hal.Links.*;
 import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.paging.PagingRel.NEXT;
 import static de.otto.edison.hal.paging.PagingRel.PREV;
 import static de.otto.edison.hal.paging.PagingRel.SELF;
+import static de.otto.edison.hal.paging.SkipLimitPaging.*;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.of;
@@ -24,9 +28,28 @@ public class SkipLimitPagingTest {
 
     public static final EnumSet<PagingRel> ALL_RELS = allOf(PagingRel.class);
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void shouldCreateLinksForEmptyPage() {
+        Links paging = linkingTo(skipLimitPage(0, 3, 0).links(URI_TEMPLATE, ALL_RELS));
+        assertThat(hrefFrom(paging, "self"), is("/?skip=0&limit=3"));
+        assertThat(isAbsent(paging, "prev"), is(true));
+        assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=3"));
+        assertThat(isAbsent(paging, "next"), is(true));
+        assertThat(hrefFrom(paging, "last"), is("/?skip=0&limit=3"));
+    }
+
+    @Test
+    public void shouldNotPageAfterLastPage() {
+        expectedException.expect(IllegalArgumentException.class);
+        skipLimitPage(1, 3, 0);
+    }
+
     @Test
     public void shouldOnlyBuildWantedLinks() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(3, 3, 10).links(URI_TEMPLATE, range(PREV, NEXT)));
+        Links paging = linkingTo(skipLimitPage(3, 3, 10).links(URI_TEMPLATE, range(PREV, NEXT)));
 
         assertThat(isAbsent(paging, "self"), is(true));
         assertThat(isAbsent(paging, "first"), is(true));
@@ -38,7 +61,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUriWithoutParams() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(0, MAX_VALUE, false).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(0, MAX_VALUE, false).links(URI_TEMPLATE, ALL_RELS));
 
         assertThat(hrefFrom(paging, "self"), is("/"));
         assertThat(hrefFrom(paging, "first"), is("/"));
@@ -49,7 +72,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUrisForFirstPage() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(0, 2, true).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(0, 2, true).links(URI_TEMPLATE, ALL_RELS));
 
         assertThat(hrefFrom(paging, "self"), is("/?skip=0&limit=2"));
         assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=2"));
@@ -60,7 +83,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUrisForMiddlePage() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(1, 2, true).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(1, 2, true).links(URI_TEMPLATE, ALL_RELS));
 
         assertThat(hrefFrom(paging, "self"), is("/?skip=1&limit=2"));
         assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=2"));
@@ -71,7 +94,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUrisForLastPage() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(6, 3, false).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(6, 3, false).links(URI_TEMPLATE, ALL_RELS));
         assertThat(hrefFrom(paging, "self"), is("/?skip=6&limit=3"));
         assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=3"));
         assertThat(isAbsent(paging, "next"), is(true));
@@ -81,7 +104,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUrisForFirstPageWithKnownTotalCount() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(0, 3, 10).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(0, 3, 10).links(URI_TEMPLATE, ALL_RELS));
 
         assertThat(hrefFrom(paging, "self"), is("/?skip=0&limit=3"));
         assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=3"));
@@ -92,7 +115,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUrisForMiddlePageWithKnownTotalCount() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(5, 3, 10).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(5, 3, 10).links(URI_TEMPLATE, ALL_RELS));
 
         assertThat(hrefFrom(paging, "self"), is("/?skip=5&limit=3"));
         assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=3"));
@@ -103,7 +126,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUrisForMiddlePageWithKnownTotalCount2() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(4, 3, 10).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(4, 3, 10).links(URI_TEMPLATE, ALL_RELS));
 
         assertThat(hrefFrom(paging, "self"), is("/?skip=4&limit=3"));
         assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=3"));
@@ -114,7 +137,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUrisForMiddlePageWithKnownTotalCount3() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(3, 3, 10).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(3, 3, 10).links(URI_TEMPLATE, ALL_RELS));
 
         assertThat(hrefFrom(paging, "self"), is("/?skip=3&limit=3"));
         assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=3"));
@@ -125,7 +148,7 @@ public class SkipLimitPagingTest {
 
     @Test
     public void shouldBuildUrisForLastPageWithKnownTotalCount() {
-        Links paging = Links.linkingTo(SkipLimitPaging.skipLimitPage(8, 3, 10).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = linkingTo(skipLimitPage(8, 3, 10).links(URI_TEMPLATE, ALL_RELS));
 
         assertThat(hrefFrom(paging, "self"), is("/?skip=8&limit=3"));
         assertThat(hrefFrom(paging, "first"), is("/?skip=0&limit=3"));

@@ -300,6 +300,12 @@ in different ways.
 
 ## Version History
 
+### 0.6.1
+
+*Bugfixes*
+
+* Fixed a bug that prevented the use of paging for empty collections.
+ 
 ### 0.6.0
 
 *Breaking Changes*

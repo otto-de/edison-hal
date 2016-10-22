@@ -113,7 +113,7 @@ public class NumberedPaging {
         if (pageSize <= 0) {
             throw new IllegalArgumentException("Parameter 'pageSize' must be greater zero");
         }
-        if (total <= 0) {
+        if (total < 0) {
             throw new IllegalArgumentException("Parameter 'total' must be greater zero");
         }
         this.pageNumber = pageNumber;

@@ -109,8 +109,8 @@ public class SkipLimitPaging {
         if (limit <= 0) {
             throw new IllegalArgumentException("Parameter 'limit' must be greater zero");
         }
-        if (totalCount <= 0) {
-            throw new IllegalArgumentException("Parameter 'totalCount' must be greater zero");
+        if (totalCount < 0) {
+            throw new IllegalArgumentException("Parameter 'totalCount' must be greater than or equal to zero");
         }
         if (totalCount < skip) {
             throw new IllegalArgumentException("Parameter 'totalCount' must be greater 'skip'");
