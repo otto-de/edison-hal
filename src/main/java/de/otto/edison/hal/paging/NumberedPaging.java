@@ -23,6 +23,9 @@ import static java.util.OptionalInt.of;
  *     {@link #pageNumberVar()} and/or {@link #pageSizeVar()}.
  * </p>
  * <p>
+ *     Both zero- and one-based paging is supported.
+ * </p>
+ * <p>
  *     Usage:
  * </p>
  * <pre><code>
@@ -56,6 +59,11 @@ public class NumberedPaging {
     public static final String PAGE_SIZE_VAR = "pageSize";
 
     /**
+     * The number of the first page. Must be 0 or 1.
+     */
+    private final int firstPage;
+
+    /**
      * The page number of the current page.
      */
     private final int pageNumber;
@@ -75,53 +83,63 @@ public class NumberedPaging {
     /**
      * Creates a NumberedPage instance.
      *
+     * @param firstPage the number of the first page. Must be 0 or 1.
      * @param pageNumber the current page number.
      * @param pageSize the size of a page.
      * @param hasMore more items beyond this page?
      */
-    protected NumberedPaging(final int pageNumber, final int pageSize, final boolean hasMore) {
-        if (pageNumber < 0) {
-            throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than zero");
+    protected NumberedPaging(final int firstPage, final int pageNumber, final int pageSize, final boolean hasMore) {
+        if (firstPage != 0 && firstPage != 1) {
+            throw new IllegalArgumentException("Parameter 'firstPage' must be 0 or 1");
+        }
+        if (pageNumber < firstPage) {
+            throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than " + firstPage);
         }
         if (pageSize <= 0) {
-            throw new IllegalArgumentException("Parameter 'pageSize' must be greater zero");
+            throw new IllegalArgumentException("Parameter 'pageSize' must be greater " + firstPage);
         }
         if (hasMore && pageSize == MAX_VALUE) {
             throw new IllegalArgumentException("Unable to calculate next page for unbounded page sizes.");
         }
-        if (pageNumber < 0) {
-            throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than zero");
+        if (pageNumber < firstPage) {
+            throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than " + firstPage);
         }
         if (pageSize <= 0) {
-            throw new IllegalArgumentException("Parameter 'pageSize' must be greater zero");
+            throw new IllegalArgumentException("Parameter 'pageSize' must be greater 0");
         }
         this.pageNumber = pageNumber;
         this.pageSize = pageSize;
         this.hasMore = hasMore;
         this.total = empty();
+        this.firstPage = firstPage;
     }
 
     /**
      * Creates a NumberedPage instance.
      *
+     * @param firstPage the number of the first page. Must be 0 or 1.
      * @param pageNumber the current page number.
      * @param pageSize the size of a page.
      * @param total the total number of available items.
      */
-    protected NumberedPaging(final int pageNumber, final int pageSize, final int total) {
-        if (pageNumber < 0) {
-            throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than zero");
+    protected NumberedPaging(final int firstPage, final int pageNumber, final int pageSize, final int total) {
+        if (firstPage != 0 && firstPage != 1) {
+            throw new IllegalArgumentException("Parameter 'firstPage' must be 0 or 1");
+        }
+        if (pageNumber < firstPage) {
+            throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than " + firstPage);
         }
         if (pageSize <= 0) {
-            throw new IllegalArgumentException("Parameter 'pageSize' must be greater zero");
+            throw new IllegalArgumentException("Parameter 'pageSize' must be greater 0");
         }
         if (total < 0) {
-            throw new IllegalArgumentException("Parameter 'total' must be greater zero");
+            throw new IllegalArgumentException("Parameter 'total' must be greater or equal 0");
         }
         this.pageNumber = pageNumber;
         this.pageSize = pageSize;
         this.hasMore = pageNumber*pageSize < total;
         this.total = of(total);
+        this.firstPage = firstPage;
     }
 
     /**
@@ -132,9 +150,12 @@ public class NumberedPaging {
      * @param pageSize the number of items per page.
      * @param hasMore true if there are more items beyond the current page, false otherwise.
      * @return created NumberedPaging instance
+     * @deprecated Will be removed soon. Use {@link #zeroBasedNumberedPaging(int, int, boolean)} or
+     * {@link #oneBasedNumberedPaging(int, int, boolean)} instead.
      */
+    @Deprecated
     public static NumberedPaging numberedPaging(final int pageNumber, final int pageSize, final boolean hasMore) {
-        return new NumberedPaging(pageNumber, pageSize, hasMore);
+        return zeroBasedNumberedPaging(pageNumber, pageSize, hasMore);
     }
 
     /**
@@ -144,9 +165,64 @@ public class NumberedPaging {
      * @param pageSize the number of items per page.
      * @param totalCount the total number of items matching the initial query.
      * @return created NumberedPaging instance
+     * @deprecated Will be removed soon. Use {@link #zeroBasedNumberedPaging(int, int, int)} or
+     * {@link #oneBasedNumberedPaging(int, int, int)} instead.
      */
+    @Deprecated
     public static NumberedPaging numberedPaging(final int pageNumber, final int pageSize, final int totalCount) {
-        return new NumberedPaging(pageNumber, pageSize, totalCount);
+        return zeroBasedNumberedPaging(pageNumber, pageSize, totalCount);
+    }
+
+    /**
+     * Create a NumberedPaging instances for pages where paging starts with zero and it is known whether or
+     * not there are more items beyond the current page.
+     *
+     * @param pageNumber the page number of the current page.
+     * @param pageSize the number of items per page.
+     * @param hasMore true if there are more items beyond the current page, false otherwise.
+     * @return created NumberedPaging instance
+     */
+    public static NumberedPaging zeroBasedNumberedPaging(final int pageNumber, final int pageSize, final boolean hasMore) {
+        return new NumberedPaging(0, pageNumber, pageSize, hasMore);
+    }
+
+    /**
+     * Create a NumberedPaging instances for pages where paging starts with zero and it is known
+     * how many items are matching the initial query.
+     *
+     * @param pageNumber the page number of the current page.
+     * @param pageSize the number of items per page.
+     * @param totalCount the total number of items matching the initial query.
+     * @return created NumberedPaging instance
+     */
+    public static NumberedPaging zeroBasedNumberedPaging(final int pageNumber, final int pageSize, final int totalCount) {
+        return new NumberedPaging(0, pageNumber, pageSize, totalCount);
+    }
+
+    /**
+     * Create a NumberedPaging instances for pages where paging starts with one and it is known whether
+     * or not there are more items beyond the current page.
+     *
+     * @param pageNumber the page number of the current page.
+     * @param pageSize the number of items per page.
+     * @param hasMore true if there are more items beyond the current page, false otherwise.
+     * @return created NumberedPaging instance
+     */
+    public static NumberedPaging oneBasedNumberedPaging(final int pageNumber, final int pageSize, final boolean hasMore) {
+        return new NumberedPaging(1, pageNumber, pageSize, hasMore);
+    }
+
+    /**
+     * Create a NumberedPaging instances for pages where paging starts with one and it is known how
+     * many items are matching the initial query.
+     *
+     * @param pageNumber the page number of the current page.
+     * @param pageSize the number of items per page.
+     * @param totalCount the total number of items matching the initial query.
+     * @return created NumberedPaging instance
+     */
+    public static NumberedPaging oneBasedNumberedPaging(final int pageNumber, final int pageSize, final int totalCount) {
+        return new NumberedPaging(1, pageNumber, pageSize, totalCount);
     }
 
     /**
@@ -173,10 +249,10 @@ public class NumberedPaging {
         }
         if (rels.contains(PagingRel.FIRST)) {
             links.add(
-                    link("first", pageUri(pageUriTemplate, 0, pageSize))
+                    link("first", pageUri(pageUriTemplate, firstPage, pageSize))
             );
         }
-        if (pageNumber > 0 && rels.contains(PagingRel.PREV)) {
+        if (pageNumber > firstPage && rels.contains(PagingRel.PREV)) {
             links.add(
                     link("prev", pageUri(pageUriTemplate, pageNumber-1, pageSize))
             );
@@ -270,11 +346,12 @@ public class NumberedPaging {
      */
     private int calcLastPage(int total, int pageSize) {
         if (total == 0) {
-            return 0;
+            return firstPage;
         } else {
-            return total % pageSize > 0
+            final int zeroBasedPageNo = total % pageSize > 0
                     ? total / pageSize
                     : total / pageSize - 1;
+            return firstPage + zeroBasedPageNo;
         }
     }
 
@@ -287,10 +364,10 @@ public class NumberedPaging {
      * @return href of the linked page.
      */
     private String pageUri(final UriTemplate uriTemplate, final int pageNumber, final int pageSize) {
-        if (pageNumber == 0 && pageSize == MAX_VALUE) {
+        if (pageNumber == firstPage && pageSize == MAX_VALUE) {
             return uriTemplate.expand();
         }
-        if (pageNumber > 0 && pageSize == MAX_VALUE) {
+        if (pageNumber > firstPage && pageSize == MAX_VALUE) {
             return uriTemplate.set(pageNumberVar(), pageNumber).expand();
         }
         return uriTemplate.set(pageNumberVar(), pageNumber).set(pageSizeVar(), pageSize).expand();

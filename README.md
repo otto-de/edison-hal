@@ -300,6 +300,18 @@ in different ways.
 
 ## Version History
 
+### 0.7.0
+
+*Breaking Changes*
+
+* Deprecated NumberedPaging.numberedPaging().
+
+*New Features / API extensions*
+
+* Introduced support for 1-based paging.
+* New builder methods NumberedPaging.zeroBasedNumberedPaging() and
+NumberedPaging.oneBasedNumberedPaging()
+
 ### 0.6.2
 
 *Bugfixes*
