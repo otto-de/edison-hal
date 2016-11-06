@@ -307,6 +307,11 @@ in different ways.
 * The constructors of NumberedPaging are now protected instead of final.
 This prevented changing the names of the page/pageSize variables used
 in collection resources.
+* Fixed numbering of last-page links in NumberedPaging.
+
+*New Features / API extensions*
+
+* Added NumberedPaging.getLastPage()
 
 ### 0.6.1
 

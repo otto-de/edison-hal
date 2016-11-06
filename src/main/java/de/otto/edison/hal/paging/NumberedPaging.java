@@ -231,6 +231,19 @@ public class NumberedPaging {
     }
 
     /**
+     * Returns number of the last page, or {@code Optional.empty()} if {@link #getTotal()} is unknown / empty.
+     *
+     * @return the number of the last page.
+     */
+    public OptionalInt getLastPage() {
+        if(total.isPresent()) {
+            return of(calcLastPage(total.getAsInt(), pageSize));
+        } else {
+            return empty();
+        }
+    }
+    
+    /**
      * The name of the uri-template variable used to identify the current page number. By default,
      * 'page' is used.
      * @return uri-template variable for the current page-number.
@@ -256,9 +269,13 @@ public class NumberedPaging {
      * @return page number of the last page
      */
     private int calcLastPage(int total, int pageSize) {
-        return total % pageSize > 0
-                ? total / pageSize + 1
-                : total / pageSize;
+        if (total == 0) {
+            return 0;
+        } else {
+            return total % pageSize > 0
+                    ? total / pageSize
+                    : total / pageSize - 1;
+        }
     }
 
     /**

@@ -26,6 +26,46 @@ public class NumberedPagingTest {
     public static final EnumSet<PagingRel> ALL_RELS = allOf(PagingRel.class);
 
     @Test
+    public void shouldHandleEmptyPage() {
+        final NumberedPaging p = numberedPaging(0, 100, 0);
+
+        assertThat(p.getPageNumber(), is(0));
+        assertThat(p.getPageSize(), is(100));
+        assertThat(p.getTotal().getAsInt(), is(0));
+        assertThat(p.getLastPage().getAsInt(), is(0));
+    }
+
+    @Test
+    public void shouldHandleMostlyEmptySinglePage() {
+        final NumberedPaging p = numberedPaging(0, 100, 1);
+
+        assertThat(p.getPageNumber(), is(0));
+        assertThat(p.getPageSize(), is(100));
+        assertThat(p.getTotal().getAsInt(), is(1));
+        assertThat(p.getLastPage().getAsInt(), is(0));
+    }
+
+    @Test
+    public void shouldHandleFullSinglePage() {
+        final NumberedPaging p = numberedPaging(0, 100, 100);
+
+        assertThat(p.getPageNumber(), is(0));
+        assertThat(p.getPageSize(), is(100));
+        assertThat(p.getTotal().getAsInt(), is(100));
+        assertThat(p.getLastPage().getAsInt(), is(0));
+    }
+
+    @Test
+    public void shouldHandleMultiplePages() {
+        final NumberedPaging p = numberedPaging(0, 100, 201);
+
+        assertThat(p.getPageNumber(), is(0));
+        assertThat(p.getPageSize(), is(100));
+        assertThat(p.getTotal().getAsInt(), is(201));
+        assertThat(p.getLastPage().getAsInt(), is(2));
+    }
+
+    @Test
     public void shouldBuildLinksForEmptyPage() {
         Links paging = linkingTo(numberedPaging(0, 100, 0).links(URI_TEMPLATE, ALL_RELS));
 
@@ -99,7 +139,7 @@ public class NumberedPagingTest {
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=3"));
         assertThat(hrefFrom(paging, "next"), is("/?page=1&pageSize=3"));
         assertThat(isAbsent(paging, "prev"), is(true));
-        assertThat(hrefFrom(paging, "last"), is("/?page=4&pageSize=3"));
+        assertThat(hrefFrom(paging, "last"), is("/?page=3&pageSize=3"));
     }
 
     @Test
@@ -110,7 +150,7 @@ public class NumberedPagingTest {
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=3"));
         assertThat(hrefFrom(paging, "next"), is("/?page=3&pageSize=3"));
         assertThat(hrefFrom(paging, "prev"), is("/?page=1&pageSize=3"));
-        assertThat(hrefFrom(paging, "last"), is("/?page=4&pageSize=3"));
+        assertThat(hrefFrom(paging, "last"), is("/?page=3&pageSize=3"));
     }
 
     @Test
@@ -121,7 +161,7 @@ public class NumberedPagingTest {
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=3"));
         assertThat(isAbsent(paging, "next"), is(true));
         assertThat(hrefFrom(paging, "prev"), is("/?page=3&pageSize=3"));
-        assertThat(hrefFrom(paging, "last"), is("/?page=4&pageSize=3"));
+        assertThat(hrefFrom(paging, "last"), is("/?page=3&pageSize=3"));
     }
 
     static class TestNumberedPaging extends NumberedPaging {
@@ -143,9 +183,9 @@ public class NumberedPagingTest {
 
     @Test
     public void shouldBeAbleToOverrideTemplateVariables() {
-        Links paging = linkingTo(new TestNumberedPaging(8, 3, false).links(fromTemplate("/{?s,num}"), of(SELF)));
+        Links paging = linkingTo(new TestNumberedPaging(8, 3, false).links(fromTemplate("/{?p,num}"), of(SELF)));
 
-        assertThat(hrefFrom(paging, "self"), is("/?s=8&num=3"));
+        assertThat(hrefFrom(paging, "self"), is("/?p=8&num=3"));
     }
 
     private boolean isAbsent(Links links, String rel) {
