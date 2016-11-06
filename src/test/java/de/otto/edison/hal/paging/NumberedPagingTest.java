@@ -7,9 +7,8 @@ import org.junit.Test;
 import java.util.EnumSet;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
-import static de.otto.edison.hal.Links.*;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.paging.NumberedPaging.*;
+import static de.otto.edison.hal.paging.NumberedPaging.numberedPaging;
 import static de.otto.edison.hal.paging.PagingRel.NEXT;
 import static de.otto.edison.hal.paging.PagingRel.PREV;
 import static de.otto.edison.hal.paging.PagingRel.SELF;
@@ -125,26 +124,26 @@ public class NumberedPagingTest {
         assertThat(hrefFrom(paging, "last"), is("/?page=4&pageSize=3"));
     }
 
-    static class TestSkipLimitPaging extends SkipLimitPaging {
+    static class TestNumberedPaging extends NumberedPaging {
 
-        TestSkipLimitPaging(final int page, final int pageSize, final boolean hasMore) {
+        TestNumberedPaging(final int page, final int pageSize, final boolean hasMore) {
             super(page, pageSize, hasMore);
         }
 
         @Override
-        protected String skipVar() {
-            return "s";
+        protected String pageNumberVar() {
+            return "p";
         }
 
         @Override
-        protected String limitVar() {
+        protected String pageSizeVar() {
             return "num";
         }
     }
 
     @Test
     public void shouldBeAbleToOverrideTemplateVariables() {
-        Links paging = linkingTo(new TestSkipLimitPaging(8, 3, false).links(fromTemplate("/{?s,num}"), of(SELF)));
+        Links paging = linkingTo(new TestNumberedPaging(8, 3, false).links(fromTemplate("/{?s,num}"), of(SELF)));
 
         assertThat(hrefFrom(paging, "self"), is("/?s=8&num=3"));
     }

@@ -300,6 +300,14 @@ in different ways.
 
 ## Version History
 
+### 0.6.2
+
+*Bugfixes*
+
+* The constructors of NumberedPaging are now protected instead of final.
+This prevented changing the names of the page/pageSize variables used
+in collection resources.
+
 ### 0.6.1
 
 *Bugfixes*

@@ -11,6 +11,8 @@ import java.util.OptionalInt;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
 import static java.lang.Integer.MAX_VALUE;
+import static java.util.OptionalInt.empty;
+import static java.util.OptionalInt.of;
 
 /**
  * A helper class used to create paging links for paged resources that are using numbered page URIs.
@@ -77,7 +79,7 @@ public class NumberedPaging {
      * @param pageSize the size of a page.
      * @param hasMore more items beyond this page?
      */
-    private NumberedPaging(final int pageNumber, final int pageSize, final boolean hasMore) {
+    protected NumberedPaging(final int pageNumber, final int pageSize, final boolean hasMore) {
         if (pageNumber < 0) {
             throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than zero");
         }
@@ -96,7 +98,7 @@ public class NumberedPaging {
         this.pageNumber = pageNumber;
         this.pageSize = pageSize;
         this.hasMore = hasMore;
-        this.total = OptionalInt.empty();
+        this.total = empty();
     }
 
     /**
@@ -106,7 +108,7 @@ public class NumberedPaging {
      * @param pageSize the size of a page.
      * @param total the total number of available items.
      */
-    private NumberedPaging(final int pageNumber, final int pageSize, final int total) {
+    protected NumberedPaging(final int pageNumber, final int pageSize, final int total) {
         if (pageNumber < 0) {
             throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than zero");
         }
@@ -119,7 +121,7 @@ public class NumberedPaging {
         this.pageNumber = pageNumber;
         this.pageSize = pageSize;
         this.hasMore = pageNumber*pageSize < total;
-        this.total = OptionalInt.of(total);
+        this.total = of(total);
     }
 
     /**
