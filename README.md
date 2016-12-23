@@ -9,13 +9,17 @@ representations of REST resources using Jackson.
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal)
 [![Dependency Status](https://www.versioneye.com/user/projects/5790e6b326c1a40035ecd1e8/badge.svg?style=flat)](https://www.versioneye.com/user/projects/5790e6b326c1a40035ecd1e8)
 
-BETA - work in progress.
+RELEASE CANDIDATE - almost done.
 
 The current implementation is supporting HAL compliant links and
 embedded resources, including curies (compact URIs). 
 
 The full media-type as defined in https://tools.ietf.org/html/draft-kelly-json-hal-08
 is supported by edison-hal.
+
+The current library is already in production at otto.de and should be more or less stable but
+still might have some issues.
+Please provide feedback, if something is not working as expected.
 
 ## About
 
@@ -51,7 +55,6 @@ Traverson API
 know anything about curies or embedded resources.
 
 ## Open Issues and next steps
-* Improved error-handling
 * Deep nesting of embedded items is currently not supported: a resource
 that has embedded items, which have embedded items, and so on.
 
@@ -66,20 +69,11 @@ that has embedded items, which have embedded items, and so on.
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:0.4.0",
+        compile "de.otto.edison:edison-hal:1.0.0.RC1",
         ...
     }
 ```
- 
-The current snapshot release is 1.0.0-SNAPSHOT:
-
-```gradle
-    dependencies {
-        compile "de.otto.edison:edison-hal:1.0.0-SNAPSHOT",
-        ...
-    }
-```
- 
+  
 ### 2. Provide a class for the representation of your REST API
 
 If your representation does not need additional attributes beside of
@@ -299,6 +293,12 @@ It requires the server to be running. The REST resources are traversed
 in different ways. 
 
 ## Version History
+
+### 1.0.0.RC1
+
+*New Features / API extensions*
+
+* New methods to select links matching some given predicate 
 
 ### 0.7.0
 
