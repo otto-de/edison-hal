@@ -6,6 +6,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static de.otto.edison.hal.Link.*;
+import static de.otto.edison.hal.LinkPredicates.*;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.Links.linksBuilder;
@@ -78,6 +79,20 @@ public class LinksTest {
     }
 
     @Test
+    public void shouldGetFirstLinkMatchingTypeAndProfile() {
+        final Links links = linkingTo(
+                linkBuilder("item", "http://example.org/items/42").build(),
+                linkBuilder("item", "http://example.org/items/42").withType("text/plain").withProfile("myprofile").build(),
+                linkBuilder("item", "http://example.org/items/42").withType("text/html").withProfile("THEprofile").build(),
+                linkBuilder("item", "http://example.org/items/42").withType("THEtype").withProfile("THEprofile").build()
+        );
+        assertThat(links.getLinkBy("item", havingType("THEtype").and(havingProfile("THEprofile"))).isPresent(), is(true));
+        assertThat(links.getLinkBy("item", havingType("THEtype").and(havingProfile("THEprofile"))).get().getHref(), is("http://example.org/items/42"));
+        assertThat(links.getLinkBy("item", havingType("text/plain")).get().getProfile(), is("myprofile"));
+        assertThat(links.getLinkBy("item", havingProfile("THEprofile")).get().getType(), is("text/html"));
+    }
+
+    @Test
     public void shouldGetEmptyLinkForUnknownRel() {
         final Links links = emptyLinks();
         assertThat(links.getLinkBy("item").isPresent(), is(false));
@@ -92,6 +107,34 @@ public class LinksTest {
         assertThat(links.getLinksBy("item"), hasSize(2));
         assertThat(links.getLinksBy("item").get(0).getHref(), is("http://example.org/items/42"));
         assertThat(links.getLinksBy("item").get(1).getHref(), is("http://example.org/items/44"));
+    }
+
+    @Test
+    public void shouldGetLinksMatchingName() {
+        final Links links = linkingTo(
+                linkBuilder("item", "http://example.org/items/42").build(),
+                linkBuilder("item", "http://example.org/items/42").withName("Foo").withType("text/html").build(),
+                linkBuilder("item", "http://example.org/items/42").withName("Foo").build(),
+                linkBuilder("item", "http://example.org/items/42").withName("Bar").build()
+        );
+        assertThat(links.getLinksBy("item", havingName("Foo")), contains(
+                linkBuilder("item", "http://example.org/items/42").withName("Foo").withType("text/html").build(),
+                linkBuilder("item", "http://example.org/items/42").withName("Foo").build()));
+        assertThat(links.getLinksBy("item", havingName("Foo").and(havingType("text/html"))), contains(
+                linkBuilder("item", "http://example.org/items/42").withName("Foo").withType("text/html").build()));
+    }
+
+    @Test
+    public void shouldGetAllLinkMatchingTypeAndProfile() {
+        final Links links = linkingTo(
+                linkBuilder("item", "http://example.org/items/42").build(),
+                linkBuilder("item", "http://example.org/items/42").withType("text/plain").withProfile("myprofile").build(),
+                linkBuilder("item", "http://example.org/items/42").withType("text/html").withProfile("THEprofile").build(),
+                linkBuilder("item", "http://example.org/items/42").withType("THEtype").withProfile("THEprofile").build()
+        );
+        assertThat(links.getLinksBy("item", havingType("THEtype").and(havingProfile("THEprofile"))).get(0).getHref(), is("http://example.org/items/42"));
+        assertThat(links.getLinksBy("item", havingType("text/plain")).get(0).getProfile(), is("myprofile"));
+        assertThat(links.getLinksBy("item", havingProfile("THEprofile")).get(0).getType(), is("text/html"));
     }
 
     @Test

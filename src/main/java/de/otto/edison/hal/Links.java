@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
@@ -199,6 +200,34 @@ public class Links {
 
     /**
      * <p>
+     *     Returns the first (if any) link having the specified link-relation type and matching the given predicate.
+     * </p>
+     * <p>
+     *     If CURIs are used to shorten custom link-relation types, it is possible to either use expanded link-relation types,
+     *     or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
+     *     requires that the name of the CURI is known by clients.
+     * </p>
+     * <p>
+     *     The Predicate is used to select one of possibly several links having the same link-relation type. See
+     *     {@link LinkPredicates} for typical selections.
+     * </p>
+     *
+     * @param rel the link-relation type of the retrieved link.
+     * @param selector a predicate used to select one of possibly several links having the same link-relation type
+     * @return optional link
+     *
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
+     * @since 0.1.0
+     */
+    public Optional<Link> getLinkBy(final String rel, final Predicate<Link> selector) {
+        final List<Link> links = getLinksBy(rel, selector);
+        return links.isEmpty()
+                ? Optional.empty()
+                : Optional.of(links.get(0));
+    }
+
+    /**
+     * <p>
      *     Returns the list of links having the specified link-relation type.
      * </p>
      * <p>
@@ -206,6 +235,7 @@ public class Links {
      *     or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
      *     requires that the name of the CURI is known by clients.
      * </p>
+     *
      * @param rel the link-relation type of the retrieved link.
      * @return list of matching link
      *
@@ -221,6 +251,38 @@ public class Links {
             return links;
         }
     }
+
+    /**
+     * <p>
+     *     Returns the list of links having the specified link-relation type and matching the given predicate.
+     * </p>
+     * <p>
+     *     If CURIs are used to shorten custom link-relation types, it is possible to either use expanded link-relation types,
+     *     or the CURI of the link-relation type. Using CURIs to retrieve links is not recommended, because it
+     *     requires that the name of the CURI is known by clients.
+     * </p>
+     * <p>
+     *     The Predicate is used to select some of possibly several links having the same link-relation type. See
+     *     {@link LinkPredicates} for typical selections.
+     * </p>
+     *
+     * @param rel the link-relation type of the retrieved link.
+     * @param selector a predicate used to select some of the links having the specified link-relation type
+     * @return list of matching link
+     *
+     * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
+     * @since 0.1.0
+     */
+    public List<Link> getLinksBy(final String rel, final Predicate<Link> selector) {
+        final List<Link> links = this.links.get(rel).stream().filter(selector).collect(toList());
+
+        if (links == null || links.isEmpty()) {
+            return getCuriedLinks(rel);
+        } else {
+            return links;
+        }
+    }
+
 
     /**
      * Helper method used to retrieve Links with support for CURIs.
