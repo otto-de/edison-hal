@@ -4,6 +4,8 @@ import java.util.function.Predicate;
 
 /**
  * Predicates used to select links matching some criteria.
+ *
+ * @since 1.0.0
  */
 public final class LinkPredicates {
 

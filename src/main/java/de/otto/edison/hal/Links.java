@@ -217,7 +217,7 @@ public class Links {
      * @return optional link
      *
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
-     * @since 0.1.0
+     * @since 1.0.0
      */
     public Optional<Link> getLinkBy(final String rel, final Predicate<Link> selector) {
         final List<Link> links = getLinksBy(rel, selector);
@@ -271,7 +271,7 @@ public class Links {
      * @return list of matching link
      *
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
-     * @since 0.1.0
+     * @since 1.0.0
      */
     public List<Link> getLinksBy(final String rel, final Predicate<Link> selector) {
         final List<Link> links = this.links.get(rel).stream().filter(selector).collect(toList());
