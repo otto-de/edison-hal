@@ -3,3 +3,5 @@ jdk:
   - oraclejdk8
 install: /bin/true # skip gradle assemble
 script: ./bin/gradlew check
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
