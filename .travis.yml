@@ -2,6 +2,6 @@ language: java
 jdk:
   - oraclejdk8
 install: /bin/true # skip gradle assemble
-script: ./bin/gradlew check
+script: ./bin/gradlew check codeCoverageReport
 after_success:
   - bash <(curl -s https://codecov.io/bash)

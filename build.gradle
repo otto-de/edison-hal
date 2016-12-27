@@ -2,6 +2,7 @@ apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'signing'
 apply plugin: 'maven'
+apply plugin: 'jacoco'
 apply from: 'dependencies.gradle'
 
 version='1.0.0.RC1'
@@ -24,6 +25,12 @@ test {
         if (!desc.parent) { // will match the outermost suite
             println "Test Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
         }
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
     }
 }
 
