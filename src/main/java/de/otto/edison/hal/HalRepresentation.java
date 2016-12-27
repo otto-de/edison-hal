@@ -16,8 +16,8 @@ import static de.otto.edison.hal.Links.linkingTo;
 /**
  * Representation used to parse and create HAL+JSON documents from Java classes.
  *
- * @see <a href="http://stateless.co/hal_specification.html"></a>
- * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08"></a>
+ * @see <a href="http://stateless.co/hal_specification.html">hal_specification.html</a>
+ * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08">draft-kelly-json-hal-08</a>
  *
  * @since 0.1.0
  */
