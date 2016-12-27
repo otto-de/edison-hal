@@ -112,7 +112,6 @@ Otherwise, you can derive a class from HalRepresentation to add extra attributes
 ### 3. Serializing HalRepresentations
 
 To convert your representation class into a application/hal+json document, you can use Jackson's ObjectMapper directly:
-
 ```java
     final ObjectMapper mapper = new ObjectMapper();
     
@@ -155,7 +154,28 @@ A HAL document can be parsed using Jackson, too:
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 ```
-
+####4.1 Configuring the ObjectMapper
+There are some special cases, where it is required to configure the ObjectMapper as follows:
+```java    
+    final ObjectMapper mapper = new ObjectMapper();
+    mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+```
+This will be necessary, if there a single embedded items for a link-relation type, instead of an array of items:
+```json
+{
+    "_embedded" : {
+        "item" : {
+            "msg" : "This item can not be parsed without the ObjectMapper configuration",
+            "_links" : { "self" : {"href" : "http://example.com/a-single-embedded-item"}}
+        },
+        "multipleItems": [
+          {"foo" : 42},
+          {"foo" : 4711}
+        ]
+    }
+}
+```
+####4.2 Using the HalParser
 If you want to parse embedded resources into a extended HalRepresentation, you need to use the *HalParser*:
 
 ```java
