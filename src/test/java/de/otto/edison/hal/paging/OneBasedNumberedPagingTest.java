@@ -8,8 +8,8 @@ import java.util.EnumSet;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.paging.NumberedPaging.numberedPaging;
 import static de.otto.edison.hal.paging.NumberedPaging.oneBasedNumberedPaging;
+import static de.otto.edison.hal.paging.PagingRel.LAST;
 import static de.otto.edison.hal.paging.PagingRel.NEXT;
 import static de.otto.edison.hal.paging.PagingRel.PREV;
 import static de.otto.edison.hal.paging.PagingRel.SELF;
@@ -26,6 +26,36 @@ public class OneBasedNumberedPagingTest {
 
     public static final EnumSet<PagingRel> ALL_RELS = allOf(PagingRel.class);
 
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToSkipNegativePageNum1() {
+        oneBasedNumberedPaging(0, 2, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToSkipNegativePageNum2() {
+        oneBasedNumberedPaging(0, 2, 42);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToLimitPageSize1() {
+        oneBasedNumberedPaging(1, 0, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToLimitPageSize2() {
+        oneBasedNumberedPaging(1, 0, 42);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToProvideMoreElements() {
+        oneBasedNumberedPaging(1, Integer.MAX_VALUE, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToHaveTotalCountLessThenZero() {
+        oneBasedNumberedPaging(1, 4, -1);
+    }
+
     @Test
     public void shouldHandleEmptyPage() {
         final NumberedPaging p = oneBasedNumberedPaging(1, 100, 0);
@@ -34,6 +64,20 @@ public class OneBasedNumberedPagingTest {
         assertThat(p.getPageSize(), is(100));
         assertThat(p.getTotal().getAsInt(), is(0));
         assertThat(p.getLastPage().getAsInt(), is(1));
+    }
+
+    @Test
+    public void shouldNotHaveLastPage() {
+        final NumberedPaging p = oneBasedNumberedPaging(1, 100, true);
+
+        assertThat(p.getLastPage().isPresent(), is(false));
+    }
+
+    @Test
+    public void shouldNotMorePages() {
+        final NumberedPaging p = oneBasedNumberedPaging(1, 100, true);
+
+        assertThat(p.hasMore(), is(true));
     }
 
     @Test
@@ -119,6 +163,12 @@ public class OneBasedNumberedPagingTest {
         assertThat(hrefFrom(paging, "first"), is("/?page=1&pageSize=2"));
         assertThat(hrefFrom(paging, "next"), is("/?page=5&pageSize=2"));
         assertThat(hrefFrom(paging, "prev"), is("/?page=3&pageSize=2"));
+        assertThat(isAbsent(paging, "last"), is(true));
+    }
+
+    @Test
+    public void shouldBuildNotBuildUriForLastPage() {
+        Links paging = linkingTo(oneBasedNumberedPaging(1, 3, true).links(URI_TEMPLATE, of(LAST)));
         assertThat(isAbsent(paging, "last"), is(true));
     }
 

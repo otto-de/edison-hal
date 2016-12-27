@@ -8,7 +8,6 @@ import java.util.EnumSet;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.paging.NumberedPaging.numberedPaging;
 import static de.otto.edison.hal.paging.NumberedPaging.zeroBasedNumberedPaging;
 import static de.otto.edison.hal.paging.PagingRel.NEXT;
 import static de.otto.edison.hal.paging.PagingRel.PREV;
@@ -25,6 +24,36 @@ public class ZeroBasedNumberedPagingTest {
     public static final UriTemplate URI_TEMPLATE = fromTemplate("/{?page,pageSize}");
 
     public static final EnumSet<PagingRel> ALL_RELS = allOf(PagingRel.class);
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToSkipNegativePageNum1() {
+        zeroBasedNumberedPaging(-1, 2, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToSkipNegativePageNum2() {
+        zeroBasedNumberedPaging(-1, 2, 42);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToLimitPageSize1() {
+        zeroBasedNumberedPaging(0, 0, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToLimitPageSize2() {
+        zeroBasedNumberedPaging(0, 0, 42);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToProvideMoreElements() {
+        zeroBasedNumberedPaging(0, Integer.MAX_VALUE, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToHaveTotalCountLessThenZero() {
+        zeroBasedNumberedPaging(0, 4, -1);
+    }
 
     @Test
     public void shouldHandleEmptyPage() {

@@ -7,10 +7,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.EnumSet;
+import java.util.OptionalInt;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
-import static de.otto.edison.hal.Links.*;
 import static de.otto.edison.hal.Links.linkingTo;
+import static de.otto.edison.hal.paging.PagingRel.LAST;
 import static de.otto.edison.hal.paging.PagingRel.NEXT;
 import static de.otto.edison.hal.paging.PagingRel.PREV;
 import static de.otto.edison.hal.paging.PagingRel.SELF;
@@ -19,6 +20,7 @@ import static java.lang.Integer.MAX_VALUE;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.of;
 import static java.util.EnumSet.range;
+import static java.util.OptionalInt.*;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -30,6 +32,59 @@ public class SkipLimitPagingTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToSkipNegativeNumElements1() {
+        skipLimitPage(-1, 2, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToSkipNegativeNumElements2() {
+        skipLimitPage(-1, 2, 42);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToLimitNegativeNumElements1() {
+        skipLimitPage(0, -1, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToLimitNegativeNumElements2() {
+        skipLimitPage(0, -1, 42);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToProvideMoreElements() {
+        skipLimitPage(0, Integer.MAX_VALUE, true);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToHaveTotalCountLessThenZero() {
+        skipLimitPage(0, 4, -1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToSkipBehindLastPage() {
+        skipLimitPage(6, 4, 5);
+    }
+
+    @Test
+    public void shouldInitHasMoreFromTotal() {
+        final SkipLimitPaging paging = skipLimitPage(1, 2, 4);
+        assertThat(paging.getLimit(), is(2));
+        assertThat(paging.getSkip(), is(1));
+        assertThat(paging.getTotal(), is(OptionalInt.of(4)));
+        assertThat(paging.hasMore(), is(true));
+    }
+
+    @Test
+    public void shouldInitTotalAsEmpty() {
+        final SkipLimitPaging paging = skipLimitPage(1, 2, true);
+        assertThat(paging.getLimit(), is(2));
+        assertThat(paging.getSkip(), is(1));
+        assertThat(paging.getTotal(), is(empty()));
+        assertThat(paging.hasMore(), is(true));
+    }
 
     @Test
     public void shouldCreateLinksForEmptyPage() {
@@ -111,6 +166,13 @@ public class SkipLimitPagingTest {
         assertThat(hrefFrom(paging, "next"), is("/?skip=3&limit=3"));
         assertThat(isAbsent(paging, "prev"), is(true));
         assertThat(hrefFrom(paging, "last"), is("/?skip=9&limit=3"));
+    }
+
+    @Test
+    public void shouldBuildUrisForLagePageWithTotalAsMultipleOfSkip() {
+        Links paging = linkingTo(skipLimitPage(0, 5, 10).links(URI_TEMPLATE, of(LAST)));
+
+        assertThat(hrefFrom(paging, "last"), is("/?skip=5&limit=5"));
     }
 
     @Test

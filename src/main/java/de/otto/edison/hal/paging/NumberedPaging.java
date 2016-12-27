@@ -96,16 +96,10 @@ public class NumberedPaging {
             throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than " + firstPage);
         }
         if (pageSize <= 0) {
-            throw new IllegalArgumentException("Parameter 'pageSize' must be greater " + firstPage);
+            throw new IllegalArgumentException("Parameter 'pageSize' must be greater 0");
         }
         if (hasMore && pageSize == MAX_VALUE) {
             throw new IllegalArgumentException("Unable to calculate next page for unbounded page sizes.");
-        }
-        if (pageNumber < firstPage) {
-            throw new IllegalArgumentException("Parameter 'pageNumber' must not be less than " + firstPage);
-        }
-        if (pageSize <= 0) {
-            throw new IllegalArgumentException("Parameter 'pageSize' must be greater 0");
         }
         this.pageNumber = pageNumber;
         this.pageSize = pageSize;
@@ -140,37 +134,6 @@ public class NumberedPaging {
         this.hasMore = pageNumber*pageSize < total;
         this.total = of(total);
         this.firstPage = firstPage;
-    }
-
-    /**
-     * Create a NumberedPaging instances for pages where it is known whether or not there are more
-     * items beyond the current page.
-     *
-     * @param pageNumber the page number of the current page.
-     * @param pageSize the number of items per page.
-     * @param hasMore true if there are more items beyond the current page, false otherwise.
-     * @return created NumberedPaging instance
-     * @deprecated Will be removed soon. Use {@link #zeroBasedNumberedPaging(int, int, boolean)} or
-     * {@link #oneBasedNumberedPaging(int, int, boolean)} instead.
-     */
-    @Deprecated
-    public static NumberedPaging numberedPaging(final int pageNumber, final int pageSize, final boolean hasMore) {
-        return zeroBasedNumberedPaging(pageNumber, pageSize, hasMore);
-    }
-
-    /**
-     * Create a NumberedPaging instances for pages where it is known how many items are matching the initial query.
-     *
-     * @param pageNumber the page number of the current page.
-     * @param pageSize the number of items per page.
-     * @param totalCount the total number of items matching the initial query.
-     * @return created NumberedPaging instance
-     * @deprecated Will be removed soon. Use {@link #zeroBasedNumberedPaging(int, int, int)} or
-     * {@link #oneBasedNumberedPaging(int, int, int)} instead.
-     */
-    @Deprecated
-    public static NumberedPaging numberedPaging(final int pageNumber, final int pageSize, final int totalCount) {
-        return zeroBasedNumberedPaging(pageNumber, pageSize, totalCount);
     }
 
     /**
@@ -364,11 +327,8 @@ public class NumberedPaging {
      * @return href of the linked page.
      */
     private String pageUri(final UriTemplate uriTemplate, final int pageNumber, final int pageSize) {
-        if (pageNumber == firstPage && pageSize == MAX_VALUE) {
+        if (pageSize == MAX_VALUE) {
             return uriTemplate.expand();
-        }
-        if (pageNumber > firstPage && pageSize == MAX_VALUE) {
-            return uriTemplate.set(pageNumberVar(), pageNumber).expand();
         }
         return uriTemplate.set(pageNumberVar(), pageNumber).set(pageSizeVar(), pageSize).expand();
     }

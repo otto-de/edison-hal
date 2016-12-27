@@ -214,7 +214,7 @@ public class SkipLimitPaging {
      *
      * @return true if there are more pages, false otherwise.
      */
-    public boolean isHasMore() {
+    public boolean hasMore() {
         return hasMore;
     }
 
@@ -282,11 +282,8 @@ public class SkipLimitPaging {
      * @return href
      */
     private String pageUri(final UriTemplate uriTemplate, final int skip, final int limit) {
-        if (skip == 0 && limit == MAX_VALUE) {
+        if (limit == MAX_VALUE) {
             return uriTemplate.expand();
-        }
-        if (skip > 0 && limit == MAX_VALUE) {
-            return uriTemplate.set(skipVar(), skip).expand();
         }
         return uriTemplate.set(skipVar(), skip).set(limitVar(), limit).expand();
     }
