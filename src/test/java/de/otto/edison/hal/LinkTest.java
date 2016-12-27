@@ -41,10 +41,11 @@ public class LinkTest {
 
     @Test
     public void shouldBuildTemplatedLink() {
-        final Link self = link("myRel", "/test/{foo}");
-        assertThat(self.getRel(), is("myRel"));
-        assertThat(self.getHref(), is("/test/{foo}"));
-        assertThat(self.isTemplated(), is(true));
+        final Link link = link("myRel", "/test/{foo}");
+        assertThat(link.getRel(), is("myRel"));
+        assertThat(link.getHref(), is("/test/{foo}"));
+        assertThat(link.isTemplated(), is(true));
+        assertThat(link.getHrefAsTemplate().set("foo", 42).expand(), is("/test/42"));
     }
 
     @Test
@@ -64,6 +65,7 @@ public class LinkTest {
         assertThat(self.getName(), is("name"));
         assertThat(self.getType(), is("type"));
         assertThat(self.getProfile(), is("my-profile"));
+        assertThat(self.getDeprecation(), is(""));
     }
 
     @Test
@@ -83,6 +85,35 @@ public class LinkTest {
         assertThat(link.getName(), is("name"));
         assertThat(link.getType(), is("type"));
         assertThat(link.getProfile(), is("my-profile"));
+    }
+
+    @Test
+    public void shouldBuildDeprecatedLink() {
+        final Link link = linkBuilder("myRel", "/test/foo")
+                .withDeprecation("http://example.com/whyThisIsDeprecated.html")
+                .build();
+        assertThat(link.getDeprecation(), is("http://example.com/whyThisIsDeprecated.html"));
+    }
+
+    @Test
+    public void shouldHaveProperEqualsAndHashCode() {
+        final Link link1 = linkBuilder("myRel", "/test/foo")
+                .withHrefLang("de_DE")
+                .withTitle("title")
+                .withName("name")
+                .withProfile("my-profile")
+                .withType("type")
+                .build();
+        final Link link2 = linkBuilder("myRel", "/test/foo")
+                .withHrefLang("de_DE")
+                .withTitle("title")
+                .withName("name")
+                .withProfile("my-profile")
+                .withType("type")
+                .build();
+        assertThat(link1, is(link2));
+        assertThat(link2, is(link1));
+        assertThat(link1.hashCode(), is(link2.hashCode()));
     }
 
     @Test
@@ -113,7 +144,6 @@ public class LinkTest {
                 .withName("ignored name")
                 .build();
         assertThat(first.isEquivalentTo(other), is(true));
-
     }
 
     @Test

@@ -151,4 +151,16 @@ public class HalRepresentationLinkingTest {
         assertThat(representation.getLinks().getLinkBy("foo").isPresent(), is(true));
         assertThat(representation.getLinks().getLinksBy("item"), contains(item("/i/1"),item("/i/2"),item("/i/3")));
     }
+
+    @Test
+    public void shouldBeAbleToAddLinksToEmptyLinksAfterConstruction() {
+        // given
+        final HalRepresentation representation = new HalRepresentation();
+        // when
+        representation.withLinks(link("foo", "/foo/1"));
+        // then
+        assertThat(representation.getLinks().getRels(), hasSize(1));
+        assertThat(representation.getLinks().getLinkBy("foo").isPresent(), is(true));
+        assertThat(representation.getLinks().getLinksBy("foo"), contains(link("foo", "/foo/1")));
+    }
 }
