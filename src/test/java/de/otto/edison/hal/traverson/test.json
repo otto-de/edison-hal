@@ -1,0 +1,13 @@
+{
+  "_links": {
+    "item": [
+      {
+        "href": "/example/foo"
+      },
+      {
+        "href": "/example/foo",
+        "type": "text/plain"
+      }
+    ]
+  }
+}

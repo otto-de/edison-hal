@@ -6,7 +6,10 @@ import org.junit.Test;
 import java.util.List;
 
 import static de.otto.edison.hal.Link.*;
-import static de.otto.edison.hal.LinkPredicates.*;
+import static de.otto.edison.hal.LinkPredicates.havingName;
+import static de.otto.edison.hal.LinkPredicates.havingProfile;
+import static de.otto.edison.hal.LinkPredicates.havingType;
+import static de.otto.edison.hal.LinkPredicates.optionallyHavingName;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.Links.linksBuilder;
@@ -99,6 +102,20 @@ public class LinksTest {
     }
 
     @Test
+    public void shouldGetEmptyLinkForFilteredUnknownRel() {
+        final Links links = emptyLinks();
+        assertThat(links.getLinkBy("item", havingType("text/plain")).isPresent(), is(false));
+    }
+
+    @Test
+    public void shouldGetEmptyLinkForFilteredLink() {
+        final Links links = linkingTo(
+                item("http://example.org/items/42")
+        );
+        assertThat(links.getLinkBy("item", havingType("text/plain")).isPresent(), is(false));
+    }
+
+    @Test
     public void shouldGetAllLinks() {
         final Links links = linkingTo(
                 item("http://example.org/items/42"),
@@ -122,6 +139,18 @@ public class LinksTest {
                 linkBuilder("item", "http://example.org/items/42").withName("Foo").build()));
         assertThat(links.getLinksBy("item", havingName("Foo").and(havingType("text/html"))), contains(
                 linkBuilder("item", "http://example.org/items/42").withName("Foo").withType("text/html").build()));
+    }
+
+    @Test
+    public void shouldGetLinksMatchingNameOrEmpty() {
+        final Links links = linkingTo(
+                linkBuilder("item", "http://example.org/items/41").build(),
+                linkBuilder("item", "http://example.org/items/42").withName("Foo").build(),
+                linkBuilder("item", "http://example.org/items/43").withName("Bar").build()
+        );
+        assertThat(links.getLinksBy("item", optionallyHavingName("Foo")), contains(
+                linkBuilder("item", "http://example.org/items/41").build(),
+                linkBuilder("item", "http://example.org/items/42").withName("Foo").build()));
     }
 
     @Test
@@ -176,6 +205,21 @@ public class LinksTest {
     }
 
     @Test
+    public void shouldGetCuriedLinksFromFullRelWithPredicate() throws JsonProcessingException {
+        final Links links = linkingTo(
+                curi("o", "http://spec.otto.de/rels/{rel}"),
+                linkBuilder("o:product", "http://example.org/products/42").withName("First").build(),
+                linkBuilder("o:product", "http://example.org/products/44").withName("Second").build()
+        );
+        final List<String> productHrefs = links.getLinksBy("http://spec.otto.de/rels/product", havingName("Second"))
+                .stream()
+                .map(Link::getHref)
+                .collect(toList());
+        assertThat(productHrefs, contains("http://example.org/products/44"));
+
+    }
+
+    @Test
     public void shouldGetCuriedLinksFromCuriedRel() throws JsonProcessingException {
         final Links links = linkingTo(
                 curi("o", "http://spec.otto.de/rels/{rel}"),
@@ -187,6 +231,21 @@ public class LinksTest {
                 .map(Link::getHref)
                 .collect(toList());
         assertThat(productHrefs, contains("http://example.org/products/42","http://example.org/products/44"));
+    }
+
+    @Test
+    public void shouldGetCuriedLinksFromCuriedRelWithPredicate() throws JsonProcessingException {
+        final Links links = linkingTo(
+                curi("o", "http://spec.otto.de/rels/{rel}"),
+                linkBuilder("o:product", "http://example.org/products/42").withName("First").build(),
+                linkBuilder("o:product", "http://example.org/products/44").withName("Second").build()
+        );
+        final List<String> productHrefs = links.getLinksBy("o:product", havingName("Second"))
+                .stream()
+                .map(Link::getHref)
+                .collect(toList());
+        assertThat(productHrefs, contains("http://example.org/products/44"));
+
     }
 
     @Test

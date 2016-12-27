@@ -6,6 +6,7 @@ import de.otto.edison.hal.Link;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
@@ -58,12 +59,15 @@ public class Traverson {
     private static class Hop {
         /** Link-relation type of the hop. */
         final String rel;
+        final Predicate<Link> predicate;
         /** URI-template variables used when following the hop. */
         final Map<String,Object> vars;
 
         private Hop(final String rel,
+                    final Predicate<Link> predicate,
                     final Map<String, Object> vars) {
             this.rel = rel;
+            this.predicate = predicate;
             this.vars = vars;
         }
     }
@@ -87,7 +91,9 @@ public class Traverson {
      *     Link parameter to be not {@link Link#isTemplated() templated}.
      * </p>
      * <p>
-     *     Typical implementations of the Function will rely on some HTTP client.
+     *     Typical implementations of the Function will rely on some HTTP client. Especially in this case,
+     *     the function should take care of the link's {@link Link#getType() type} and {@link Link#getProfile()},
+     *     so the proper HTTP Accept header is used.
      * </p>
      * @param linkToJsonFunc A Function that gets a ) Link of a resource and returns a HAL+JSON document.
      * @return Traverson
@@ -210,6 +216,22 @@ public class Traverson {
     }
 
     /**
+     * Follow the first {@link Link} of the current resource that is matching the link-relation type and
+     * the predicate.
+     * <p>
+     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
+     *     these items are used instead of following the associated {@link Link}.
+     * </p>
+     * @param rel the link-relation type of the followed link
+     * @param predicate the predicate used to select the link to follow
+     * @return this
+     * @since 1.0.0
+     */
+    public Traverson follow(final String rel, final Predicate<Link> predicate) {
+        return follow(rel, predicate, emptyMap());
+    }
+
+    /**
      * Follow multiple link-relation types, one by one.
      * <p>
      *     Embedded items are used instead of resolving links, if present in the returned HAL documents.
@@ -219,7 +241,22 @@ public class Traverson {
      * @return this
      */
     public Traverson follow(final List<String> rels) {
-        return follow(rels, emptyMap());
+        return follow(rels, (link)->true, emptyMap());
+    }
+
+    /**
+     * Follow multiple link-relation types, one by one, and select the links using the specified predicate.
+     * <p>
+     *     Embedded items are used instead of resolving links, if present in the returned HAL documents.
+     * </p>
+     *
+     * @param rels the link-relation types of the followed links
+     * @param predicate the predicated used to select the link to follow
+     * @return this
+     * @since 1.0.0
+     */
+    public Traverson follow(final List<String> rels, final Predicate<Link> predicate) {
+        return follow(rels, predicate, emptyMap());
     }
 
     /**
@@ -237,7 +274,29 @@ public class Traverson {
      */
     public Traverson follow(final List<String> rels, final Map<String, Object> vars) {
         for (String rel : rels) {
-            follow(rel, vars);
+            follow(rel, (link)->true, vars);
+        }
+        return this;
+    }
+
+    /**
+     * Follow multiple link-relation types, one by one.
+     * <p>
+     *     Templated links are resolved to URIs using the specified template variables.
+     * </p>
+     * <p>
+     *     Embedded items are used instead of resolving links, if present in the returned HAL documents.
+     * </p>
+     *
+     * @param rels the link-relation types of the followed links
+     * @param predicate the predicate used to select the link to follow
+     * @param vars uri-template variables used to build links.
+     * @return this
+     * @since 1.0.0
+     */
+    public Traverson follow(final List<String> rels, final Predicate<Link> predicate, final Map<String, Object> vars) {
+        for (String rel : rels) {
+            follow(rel, predicate, vars);
         }
         return this;
     }
@@ -256,8 +315,26 @@ public class Traverson {
      * @return this
      */
     public Traverson follow(final String rel, final Map<String, Object> vars) {
+        return follow(rel, (link)->true, vars);
+    }
+
+    /**
+     * Follow the first {@link Link} of the current resource, selected by it's link-relation type.
+     * <p>
+     *     Templated links are resolved to URIs using the specified template variables.
+     * </p>
+     * <p>
+     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
+     *     these items are used instead of following the associated {@link Link}.
+     * </p>
+     * @param rel the link-relation type of the followed link
+     * @param predicate the predicate used to select the link to follow.
+     * @param vars uri-template variables used to build links.
+     * @return this
+     */
+    public Traverson follow(final String rel, final Predicate<Link> predicate, final Map<String, Object> vars) {
         checkState();
-        hops.add(new Hop(rel, vars));
+        hops.add(new Hop(rel, predicate, vars));
         return this;
     }
 
@@ -377,7 +454,7 @@ public class Traverson {
 
         final List<Link> links = current
                 .getLinks()
-                .getLinksBy(currentHop.rel);
+                .getLinksBy(currentHop.rel, currentHop.predicate);
         if (links.isEmpty()) {
             throw new TraversionException(traversionError(
                     MISSING_LINK,

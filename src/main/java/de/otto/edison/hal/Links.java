@@ -274,13 +274,7 @@ public class Links {
      * @since 1.0.0
      */
     public List<Link> getLinksBy(final String rel, final Predicate<Link> selector) {
-        final List<Link> links = this.links.get(rel).stream().filter(selector).collect(toList());
-
-        if (links == null || links.isEmpty()) {
-            return getCuriedLinks(rel);
-        } else {
-            return links;
-        }
+        return getLinksBy(rel).stream().filter(selector).collect(toList());
     }
 
 
