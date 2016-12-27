@@ -294,6 +294,13 @@ in different ways.
 
 ## Version History
 
+### 1.0.0.RC2
+
+*Bugfixes*
+
+* Fixed traversion of links using predicates
+* Fixed parsing of embedded items, where a rel has only only a single item instead of a list of items.
+
 ### 1.0.0.RC1
 
 *New Features / API extensions*

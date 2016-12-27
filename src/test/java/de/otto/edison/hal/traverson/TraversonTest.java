@@ -464,7 +464,7 @@ public class TraversonTest {
         final Function<Link,String> mock = mock(Function.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
-                        "\"_embedded\":{\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}}," +
+                        "\"_embedded\":{\"count\":42}" +
                 "}");
         // when
         final Traverson traverson = traverson(mock);

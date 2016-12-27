@@ -5,10 +5,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -56,7 +53,6 @@ import static java.util.stream.Collectors.toList;
 @JsonSerialize(using = Embedded.EmbeddedSerializer.class)
 @JsonDeserialize(using = Embedded.EmbeddedDeserializer.class)
 public class Embedded {
-
     /**
      * The embedded items, mapped by link-relation type.
      */
@@ -380,8 +376,16 @@ public class Embedded {
 
         @Override
         public Embedded deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            final Map<String,List<HalRepresentation>> items = p.readValueAs(TYPE_REF_LIST_OF_HAL_REPRESENTATIONS);
-            return new Embedded(items);
+            try {
+                final Map<String, List<HalRepresentation>> items = p.readValueAs(TYPE_REF_LIST_OF_HAL_REPRESENTATIONS);
+                return new Embedded(items);
+            } catch (final JsonMappingException e) {
+                if (e.getMessage().contains("Can not deserialize instance of java.util.ArrayList out of START_OBJECT token")) {
+                    throw new JsonMappingException(p, "Can not deserialize single embedded items for a link-relation type. Try using the HalParser, or configure your ObjectMapper: 'objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)'.", e);
+                } else {
+                    throw e;
+                }
+            }
         }
     }
 }

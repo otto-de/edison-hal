@@ -7,6 +7,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
+import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.link;
@@ -68,6 +69,34 @@ public class HalRepresentationParsingTest {
         assertThat(links.getLinkBy("self").get(), is(self("http://example.org/test/foo")));
         assertThat(links.getLinkBy("test").get(), is(link("test", "http://example.org/test/bar")));
         assertThat(result.first, is("foo"));
+    }
+
+    @Test
+    public void shouldParseSingleEmbeddedItemForMultipleRelsWithProperlyConfiguredObjectMapper() throws IOException {
+        // given
+        final String json =
+                "{" +
+                    "\"_embedded\":{" +
+                        "\"foo\":{" +
+                            "\"_links\":{\"self\":[{\"href\":\"http://example.org/test/foo\"}]}" +
+                        "}," +
+                        "\"bar\":[{" +
+                            "\"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar\"}]}" +
+                        "}]" +
+                    "}" +
+                "}";
+        // and
+        final ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        // when
+        final SimpleHalRepresentation result = objectMapper.readValue(json.getBytes(), SimpleHalRepresentation.class);
+        // then
+        final List<HalRepresentation> embeddedFoo = result.getEmbedded().getItemsBy("foo");
+        assertThat(embeddedFoo, hasSize(1));
+        assertThat(embeddedFoo.get(0).getLinks().getLinkBy("self").get().getHref(), is("http://example.org/test/foo"));
+        final List<HalRepresentation> embeddedBar = result.getEmbedded().getItemsBy("bar");
+        assertThat(embeddedBar, hasSize(1));
+        assertThat(embeddedBar.get(0).getLinks().getLinkBy("self").get().getHref(), is("http://example.org/test/bar"));
     }
 
     @Test

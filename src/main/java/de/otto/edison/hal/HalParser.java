@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 
 /**
@@ -43,6 +44,9 @@ public final class HalParser {
 
     /** The Jackson ObjectMapper used to parse application/hal+json documents. */
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    static {
+        JSON_MAPPER.configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+    }
 
     /**
      * Type information for embedded items. This is required if more complex embedded items should be parsed
