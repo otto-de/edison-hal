@@ -345,6 +345,12 @@ public class Traverson {
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
      *     these items are used instead of following the associated {@link Link}.
      * </p>
+     * <p>
+     *     Many times, you do not need the HalRepresentations, but subtypes of HalRepresentation,
+     *     so you are able to access custom attributes of your resources. In this case, you need
+     *     to use {@link #streamAs(Class)} instead of this method.
+     * </p>
+     *
      * @return this
      */
     public Stream<HalRepresentation> stream() {
@@ -384,9 +390,14 @@ public class Traverson {
     }
 
     /**
-     * Return the selected HalRepresentation.
+     * Return the selected resource as HalRepresentation.
      * <p>
      *     If there are multiple matching representations, the first node is returned.
+     * </p>
+     * <p>
+     *     Many times, you do not need the HalRepresentation, but a subtype of HalRepresentation,
+     *     so you are able to access custom attributes of your resource. In this case, you need
+     *     to use {@link #getResourceAs(Class)} instead of this method.
      * </p>
      *
      * @return HalRepresentation
@@ -396,8 +407,10 @@ public class Traverson {
     }
 
     /**
-     * Return the selected HalRepresentation and return it in the specified type.
-     *
+     * Return the selected resource and return it in the specified type.
+     * <p>
+     *     If there are multiple matching representations, the first node is returned.
+     * </p>
      * @param type the subtype of the HalRepresentation used to parse the resource.
      * @param <T> the subtype of HalRepresentation
      * @return HalRepresentation
