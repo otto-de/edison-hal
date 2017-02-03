@@ -10,8 +10,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
-import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo;
-import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
+
+import de.otto.edison.hal.EmbeddedTypeInfo;
+import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.copyOf;
 import static de.otto.edison.hal.Link.self;
@@ -354,7 +355,7 @@ public class Traverson {
      * @return this
      */
     public Stream<HalRepresentation> stream() {
-        return streamAs(HalRepresentation.class);
+        return streamAs(HalRepresentation.class, null);
     }
 
     /**
@@ -367,19 +368,42 @@ public class Traverson {
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
      *     these items are used instead of following the associated {@link Link}.
      * </p>
-     * @param type the type of the returned HalRepresentations
+     * @param type the specific type of the returned HalRepresentations
      * @param <T> type of the returned HalRepresentations
      * @return this
      */
-    @SuppressWarnings("unchecked")
     public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type) {
+        return streamAs(type, null);
+    }
+
+    /**
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * containing the returned {@link HalRepresentation HalRepresentations}.
+     * <p>
+     *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
+     * </p>
+     * <p>
+     *     Templated links are resolved to URIs using the specified template variables.
+     * </p>
+     * <p>
+     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
+     *     these items are used instead of following the associated {@link Link}.
+     * </p>
+     * @param type the specific type of the returned HalRepresentations
+     * @param embeddedTypeInfo specification of the type of embedded items
+     * @param <T> type of the returned HalRepresentations
+     * @return this
+     * @since 1.0.0
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo) {
         checkState();
         try {
             if (startWith != null) {
-                lastResult = traverse(type, true);
+                lastResult = traverseInitialResource(type, embeddedTypeInfo, true);
                 lastError = null;
             } else if (!hops.isEmpty()) {
-                lastResult = traverse(lastResult.get(0), type, true);
+                lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfo, true);
                 lastError = null;
             }
             return (Stream<T>) lastResult.stream();
@@ -403,7 +427,7 @@ public class Traverson {
      * @return HalRepresentation
      */
     public Optional<HalRepresentation> getResource() {
-        return getResourceAs(HalRepresentation.class);
+        return getResourceAs(HalRepresentation.class, null);
     }
 
     /**
@@ -412,45 +436,68 @@ public class Traverson {
      *     If there are multiple matching representations, the first node is returned.
      * </p>
      * @param type the subtype of the HalRepresentation used to parse the resource.
-     * @param <T> the subtype of HalRepresentation
+     * @param <T> the subtype of HalRepresentation of the returned resource.
+     * @param <E> the subtype of HalRepresentation expected for embedded resources.
      * @return HalRepresentation
      */
-    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) {
+    public <T extends HalRepresentation, E extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) {
+        return getResourceAs(type, null);
+    }
+
+    /**
+     * Return the selected resource and return it in the specified type.
+     * <p>
+     *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
+     * </p>
+     * <p>
+     *     If there are multiple matching representations, the first node is returned.
+     * </p>
+     * @param type the subtype of the HalRepresentation used to parse the resource.
+     * @param embeddedTypeInfo specification of the type of embedded items
+     * @param <T> the subtype of HalRepresentation of the returned resource.
+     * @return HalRepresentation
+     * @since 1.0.0
+     */
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo) {
         checkState();
         try {
             if (startWith != null) {
-                lastResult = traverse(type, false);
+                lastResult = traverseInitialResource(type, embeddedTypeInfo, false);
                 lastError = null;
             } else if (!hops.isEmpty()) {
-                lastResult = traverse(lastResult.get(0), type, false);
+                lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfo, false);
                 lastError = null;
             }
-            return Optional.of((T) lastResult.get(0));
+            return Optional.of(type.cast(lastResult.get(0)));
         } catch (final TraversionException e) {
             lastError = e.getError();
             return Optional.empty();
         }
     }
 
-    private <T extends HalRepresentation> List<T> traverse(final Class<T> type, final boolean retrieveAll) {
+    private <T extends HalRepresentation> List<T> traverseInitialResource(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo, final boolean retrieveAll) {
         final Link link = self(this.startWith);
         this.startWith = null;
         if (hops.isEmpty()) {
-            return singletonList(getResource(link, type, null));
+            return singletonList(getResource(link, type, embeddedTypeInfo));
         } else {
             final HalRepresentation firstHop;
             if (hops.size() == 1) {
                 final Hop hop = hops.get(0);
-                firstHop = getResource(link, HalRepresentation.class, withEmbedded(hop.rel, type));
+                if (embeddedTypeInfo == null || !hop.rel.equals(embeddedTypeInfo.rel)) {
+                    firstHop = getResource(link, HalRepresentation.class, withEmbedded(hop.rel, type));
+                } else {
+                    firstHop = getResource(link, type, embeddedTypeInfo);
+                }
             } else {
                 firstHop = getResource(link, HalRepresentation.class, null);
             }
-            return traverse(firstHop, type, retrieveAll);
+            return traverseHop(firstHop, type, embeddedTypeInfo, retrieveAll);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends HalRepresentation> List<T> traverse(final HalRepresentation current, final Class<T> resultType, boolean retrieveAll) {
+    private <T extends HalRepresentation> List<T> traverseHop(final HalRepresentation current, final Class<T> resultType, final EmbeddedTypeInfo embeddedTypeInfo, boolean retrieveAll) {
 
         final Hop currentHop = hops.remove(0);
 
@@ -458,11 +505,11 @@ public class Traverson {
         final List<? extends HalRepresentation> items = hops.isEmpty()
                 ? current.getEmbedded().getItemsBy(currentHop.rel, resultType)
                 : current.getEmbedded().getItemsBy(currentHop.rel);
-        if (!items.isEmpty()) {
 
+        if (!items.isEmpty()) {
             return hops.isEmpty()
                     ? (List<T>) items
-                    : traverse(items.get(0), resultType, retrieveAll);
+                    : traverseHop(items.get(0), resultType, embeddedTypeInfo, retrieveAll);
         }
 
         final List<Link> links = current
@@ -480,18 +527,25 @@ public class Traverson {
             if (retrieveAll) {
                 return links
                         .stream()
-                        .map(link-> getResource(expand(link, currentHop.vars), resultType, null))
+                        .map(link-> getResource(expand(link, currentHop.vars), resultType, embeddedTypeInfo))
                         .collect(toList());
             } else {
-                return singletonList(getResource(expandedLink, resultType, null));
+                return singletonList(getResource(expandedLink, resultType, embeddedTypeInfo));
             }
         }
 
         if (hops.size() == 1) { // one before the last hop:
             final Hop nextHop = hops.get(0);
-            return traverse(getResource(expandedLink, HalRepresentation.class, withEmbedded(nextHop.rel, resultType)), resultType, retrieveAll);
+            if (embeddedTypeInfo != null) {
+                final EmbeddedTypeInfo embeddedType = nextHop.rel.equals(embeddedTypeInfo.rel)
+                        ? embeddedTypeInfo
+                        : withEmbedded(nextHop.rel, resultType);
+                return traverseHop(getResource(expandedLink, resultType, embeddedType), resultType, embeddedTypeInfo, retrieveAll);
+            } else {
+                return traverseHop(getResource(expandedLink, resultType, withEmbedded(nextHop.rel, resultType)), resultType, null, retrieveAll);
+            }
         } else { // some more hops
-            return traverse(getResource(expandedLink, HalRepresentation.class, null), resultType, retrieveAll);
+            return traverseHop(getResource(expandedLink, HalRepresentation.class, null), resultType, embeddedTypeInfo, retrieveAll);
         }
     }
 
@@ -514,7 +568,7 @@ public class Traverson {
      * @return HopResponse
      * @throws TraversionException thrown if getting or parsing the resource failed for some reason
      */
-    private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final EmbeddedTypeInfo<?> embeddedType) {
+    private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final EmbeddedTypeInfo embeddedType) {
         final String json = getJson(link);
         try {
             return embeddedType != null

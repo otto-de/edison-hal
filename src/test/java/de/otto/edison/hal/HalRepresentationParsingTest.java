@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
-import static de.otto.edison.hal.HalParser.EmbeddedTypeInfo.withEmbedded;
+import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.linkBuilder;

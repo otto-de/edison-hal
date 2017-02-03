@@ -7,11 +7,13 @@ import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
+import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
@@ -321,27 +323,6 @@ public class TraversonTest {
         assertThat(self.get().getHref(), is("/example/foo"));
     }
 
-    @Test
-    public void shouldFollowToEmbeddedObjectWithMissingLink() {
-        // given
-        @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(any(Link.class))).thenReturn(
-                "{" +
-                        "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}]}" +
-                "}");
-        // when
-        final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
-                .follow("foo")
-                .getResource()
-                .get();
-        // then
-        final Optional<Link> self = hal.getLinks().getLinkBy("self");
-        assertThat(self.isPresent(), is(true));
-        assertThat(self.get().getHref(), is("/example/foo"));
-    }
-
     //////////////////////////
     // Streaming
     //////////////////////////
@@ -527,6 +508,39 @@ public class TraversonTest {
     }
 
     @Test
+    public void shouldGetSingleEmbeddedHalRepresentationAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{\"_embedded\":{\"foo\":[{\"someProperty\":\"bar\"}]}}");
+        // when
+        final HalRepresentation hal = traverson(mock)
+                .startWith("/example")
+                .getResourceAs(HalRepresentation.class, withEmbedded("foo", ExtendedHalRepresentation.class))
+                .get();
+        // then
+        assertThat(hal.getEmbedded().getItemsBy("foo", ExtendedHalRepresentation.class).get(0).someProperty, is("bar"));
+    }
+
+    @Test
+    public void shouldGetSingleExtendedHalWithEmbeddedHalRepresentationAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{\"someProperty\":\"42\", \"_embedded\":{\"foo\":[{\"someOtherProperty\":\"0815\"}]}}");
+        // when
+        final ExtendedHalRepresentation hal = traverson(mock)
+                .startWith("/example")
+                .getResourceAs(ExtendedHalRepresentation.class, withEmbedded("foo", OtherExtendedHalRepresentation.class))
+                .get();
+        // then
+        assertThat(hal.someProperty, is("42"));
+        assertThat(hal.getEmbedded().getItemsBy("foo", OtherExtendedHalRepresentation.class).get(0).someOtherProperty, is("0815"));
+    }
+
+    @Test
     public void shouldStreamLinkedObjectsAsSubtype() {
         // given
         @SuppressWarnings("unchecked")
@@ -555,6 +569,33 @@ public class TraversonTest {
     }
 
     @Test
+    public void shouldStreamLinkedObjectsAsExtendedSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+                "{\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}}");
+        when(mock.apply(link("foo","/example/foo/1"))).thenReturn(
+                "{\"someProperty\":\"first\",\"_embedded\":{\"bar\":{\"someOtherProperty\":\"firstBar\"}}}");
+        when(mock.apply(link("foo","/example/foo/2"))).thenReturn(
+                "{\"someProperty\":\"second\",\"_embedded\":{\"bar\":{\"someOtherProperty\":\"secondBar\"}}}");
+        // when
+        final List<String> hrefs = new ArrayList<>();
+        final List<String> embeddedBars = new ArrayList<>();
+        traverson(mock)
+                .startWith("/example/foo")
+                .follow("foo")
+                .streamAs(ExtendedHalRepresentation.class, withEmbedded("bar", OtherExtendedHalRepresentation.class))
+                .forEach(e -> {
+                    hrefs.add(e.someProperty);
+                    embeddedBars.add(e.getEmbedded().getItemsBy("bar", OtherExtendedHalRepresentation.class).get(0).someOtherProperty);
+                });
+        // then
+        assertThat(hrefs, contains("first","second"));
+        assertThat(embeddedBars, contains("firstBar","secondBar"));
+    }
+
+    @Test
     public void shouldStreamEmbeddedObjectsAsSubtype() {
         // given
         @SuppressWarnings("unchecked")
@@ -577,5 +618,10 @@ public class TraversonTest {
     static class ExtendedHalRepresentation extends HalRepresentation {
         @JsonProperty
         public String someProperty;
+    }
+
+    static class OtherExtendedHalRepresentation extends HalRepresentation {
+        @JsonProperty
+        public String someOtherProperty;
     }
 }

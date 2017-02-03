@@ -48,33 +48,6 @@ public final class HalParser {
         JSON_MAPPER.configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
     }
 
-    /**
-     * Type information for embedded items. This is required if more complex embedded items should be parsed
-     * into sub classes of HalRepresentation.
-     *
-     * @param <T> The type of the HalRepresentation used for a single link-relation type.
-     * @since 0.1.0
-     */
-    public static class EmbeddedTypeInfo<T extends HalRepresentation> {
-
-        /** The link-relation type used to identify items of the embedded type. */
-        final String rel;
-
-        /** The Java class used to deserialize the embedded items for the link-relation type */
-        final Class<T> type;
-
-        /** Creates a new EmbeddedTypeInfo by link-relation type and Java class of embedded items. */
-        EmbeddedTypeInfo(final String rel, final Class<T> type) {
-            this.rel = rel;
-            this.type = type;
-        }
-
-        public static <E extends HalRepresentation> EmbeddedTypeInfo<E> withEmbedded(final String rel, final Class<E> embeddedType) {
-            return new EmbeddedTypeInfo<>(rel, embeddedType);
-        }
-
-    }
-
     /** The JSON documents that is going to be parsed */
     private final String json;
 
@@ -118,20 +91,29 @@ public final class HalParser {
      * @param type the Java class used to map JSON to.
      * @param typeInfo type information of the embedded items.
      * @param <T> The type used to parse the HAL document
-     * @param <E> The type used to parse the embedded HAL documents
      * @return T
      * @throws IOException if parsing the JSON fails for some reason.
      * @since 0.1.0
      */
-    public <T extends HalRepresentation, E extends HalRepresentation> T as(final Class<T> type, final EmbeddedTypeInfo<E> typeInfo) throws IOException {
+    public <T extends HalRepresentation> T as(final Class<T> type, final EmbeddedTypeInfo typeInfo) throws IOException {
         final JsonNode jsonNode = JSON_MAPPER.readTree(json);
         final T halRepresentation = JSON_MAPPER.convertValue(jsonNode, type);
 
         final List<HalRepresentation> embeddedValues = new ArrayList<>();
-        final JsonNode listOfHalRepresentations = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.rel);
-        for (int i = 0; i < listOfHalRepresentations.size(); i++) {
-            JsonNode embeddedRepresentation = listOfHalRepresentations.get(i);
-            embeddedValues.add(JSON_MAPPER.convertValue(embeddedRepresentation, typeInfo.type));
+        final JsonNode embeddedNodeForRel = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.rel);
+        if (embeddedNodeForRel.isArray()) {
+            for (int i = 0; i < embeddedNodeForRel.size(); i++) {
+                final JsonNode embeddedNode = embeddedNodeForRel.get(i);
+                final HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNode, typeInfo.type);
+                if (embedded != null) {
+                    embeddedValues.add(embedded);
+                }
+            }
+        } else {
+            HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNodeForRel, typeInfo.type);
+            if (embedded != null) {
+                embeddedValues.add(embedded);
+            }
         }
         halRepresentation.withEmbedded(typeInfo.rel, embeddedValues);
         return halRepresentation;
