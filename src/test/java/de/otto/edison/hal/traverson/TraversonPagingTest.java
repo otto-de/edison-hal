@@ -5,6 +5,7 @@ import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -244,8 +245,52 @@ public class TraversonPagingTest {
         assertThat(hrefs, contains("/example/foo/1","/example/foo/2"));
     }
 
+    @Test
+    public void shouldIterateOverAllItemsOfMultiplePages() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+                "{\"someProperty\":\"firstPage\",\"_links\":{" +
+                        "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
+                        "\"next\":{\"href\":\"/example/foo?page=2\"}}}");
+        when(mock.apply(link("next", "/example/foo?page=2"))).thenReturn(
+                "{\"someProperty\":\"secondPage\"," +
+                        "\"_links\":{" +
+                        "\"item\":[{\"href\":\"/example/foo/3\"},{\"href\":\"/example/foo/4\"}]," +
+                        "\"prev\":{\"href\":\"/example/foo\"}}" +
+                        "}");
+        when(mock.apply(link("item", "/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
+        when(mock.apply(link("item", "/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
+        when(mock.apply(link("item", "/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
+        when(mock.apply(link("item", "/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
+
+        // when
+        final List<String> values = new ArrayList<>();
+        final Traverson pager = traverson(mock);
+        Optional<ExtendedHalRepresentation> currentPage = pager
+                .startWith("/example/foo")
+                .getResourceAs(ExtendedHalRepresentation.class);
+        while (currentPage.isPresent()) {
+            traverson(mock)
+                    .startWith(currentPage.get())
+                    .follow("item")
+                    .streamAs(OtherExtendedHalRepresentation.class)
+                    .forEach(x -> values.add(x.someOtherProperty));
+            currentPage = pager
+                    .follow("next")
+                    .getResourceAs(ExtendedHalRepresentation.class);
+        }
+        // then
+        assertThat(values, contains("one", "two", "three", "four"));
+    }
+
     static class ExtendedHalRepresentation extends HalRepresentation {
         @JsonProperty
         public String someProperty;
+    }
+    static class OtherExtendedHalRepresentation extends HalRepresentation {
+        @JsonProperty
+        public String someOtherProperty;
     }
 }
