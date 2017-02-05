@@ -437,10 +437,9 @@ public class Traverson {
      * </p>
      * @param type the subtype of the HalRepresentation used to parse the resource.
      * @param <T> the subtype of HalRepresentation of the returned resource.
-     * @param <E> the subtype of HalRepresentation expected for embedded resources.
      * @return HalRepresentation
      */
-    public <T extends HalRepresentation, E extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) {
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) {
         return getResourceAs(type, null);
     }
 
@@ -472,6 +471,314 @@ public class Traverson {
         } catch (final TraversionException e) {
             lastError = e.getError();
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Iterates over pages by following 'next' links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                              next
+     *     ... --&gt; HalRepresentation --&gt; HalRepresentation
+     *                     |                     |
+     *                     v N item              v N item
+     *              HalRepresentation     HalRepresentation
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a {@link HalRepresentation} with no type information. If pages may contain
+     *     embedded items, and if a specific sub-type of HalRepresentation is required for items,
+     *     {@link #paginateNext(EmbeddedTypeInfo,Function)} or {@link #paginateNextAs(Class,EmbeddedTypeInfo,Function)}
+     *     should be used instead of this method.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param pageCallback the callback used to process pages of items.
+     * @since 1.0.0
+     */
+    public void paginateNext(final Function<Traverson, Boolean> pageCallback) {
+        paginate("next", HalRepresentation.class, null, pageCallback);
+    }
+
+    /**
+     * Iterates over pages by following 'next' links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                              next
+     *     ... --&gt; HalRepresentation --&gt; HalRepresentation
+     *                     |                     |
+     *                     v N item              v N item
+     *               &lt;embedded type&gt;      &lt;embedded type&gt;
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a {@link HalRepresentation} with {@link EmbeddedTypeInfo}. This way it
+     *     is possible to access items embedded into the page resources as specific subtypes of HalRepresentation.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param embeddedTypeInfo type information about possibly embedded items.
+     * @param pageCallback the callback used to process pages of items.
+     * @since 1.0.0
+     */
+    public void paginateNext(final EmbeddedTypeInfo embeddedTypeInfo,
+                             final Function<Traverson, Boolean> pageCallback) {
+        paginate("next", HalRepresentation.class, embeddedTypeInfo, pageCallback);
+    }
+
+    /**
+     * Iterates over pages by following 'next' links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                            next
+     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
+     *                    |                   |
+     *                    v N item            v N item
+     *             HalRepresentation   HalRepresentation
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a representation of {@code pageType}, but without
+     *     {@link EmbeddedTypeInfo}. This way it
+     *     is possible to access special attributes of the page by calling {@code pageTraverson.getResourceAs(pageType)}
+     *     in the callback function. If the paged items need to be accessed as a subtype of HalRepresentation, you
+     *     can call pageTraverson.follow(rel).streamAs(MyItemType.class) - but ONLY if the items are not embedded into
+     *     the page.
+     * </p>
+     *
+     * <p>
+     *     For embedded items having a subtype of HalRepresentation, {@link #paginateNextAs(Class, EmbeddedTypeInfo, Function)}
+     *     must be used instead of this method, otherwise a {@code ClassCastException} will be thrown.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param pageType the subtype of HalRepresentation of the page resources
+     * @param pageCallback callback function called for every page
+     * @param <T> subtype of HalRepresentation
+     * @since 1.0.0
+     */
+    public <T extends HalRepresentation> void paginateNextAs(final Class<T> pageType,
+                                                             final Function<Traverson, Boolean> pageCallback) {
+        paginate("next", pageType, null, pageCallback);
+    }
+
+    /**
+     * Iterates over pages by following 'next' links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                            next
+     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
+     *                    |                   |
+     *                    v N item            v N item
+     *             &lt;embedded type&gt;     &lt;embedded type&gt;
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a representation of {@code pageType} with {@link EmbeddedTypeInfo}.
+     *     This way it is possible to access items embedded into the page resources as specific subtypes of
+     *     HalRepresentation.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     *
+     * @param pageType the subtype of HalRepresentation of the page resources
+     * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
+     * @param pageCallback callback function called for every page
+     * @param <T> subtype of HalRepresentation
+     * @since 1.0.0
+     */
+    public <T extends HalRepresentation> void paginateNextAs(final Class<T> pageType,
+                                                             final EmbeddedTypeInfo embeddedTypeInfo,
+                                                             final Function<Traverson, Boolean> pageCallback) {
+        paginate("next", pageType, embeddedTypeInfo, pageCallback);
+    }
+
+    /**
+     * Iterates over pages by following 'prev' links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                              prev
+     *     ... --&gt; HalRepresentation --&gt; HalRepresentation
+     *                     |                     |
+     *                     v N item              v N item
+     *              HalRepresentation     HalRepresentation
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a {@link HalRepresentation} with no type information. If pages may contain
+     *     embedded items, and if a specific sub-type of HalRepresentation is required for items,
+     *     {@link #paginateNext(EmbeddedTypeInfo,Function)} or {@link #paginateNextAs(Class,EmbeddedTypeInfo,Function)}
+     *     should be used instead of this method.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param pageCallback the callback used to process pages of items.
+     * @since 1.0.0
+     */
+    public void paginatePrev(final Function<Traverson, Boolean> pageCallback) {
+        paginate("prev", HalRepresentation.class, null, pageCallback);
+    }
+
+    /**
+     * Iterates over pages by following 'prev' links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                              prev
+     *     ... --&gt; HalRepresentation --&gt; HalRepresentation
+     *                     |                     |
+     *                     v N item              v N item
+     *               &lt;embedded type&gt;      &lt;embedded type&gt;
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a {@link HalRepresentation} with {@link EmbeddedTypeInfo}. This way it
+     *     is possible to access items embedded into the page resources as specific subtypes of HalRepresentation.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
+     * @param pageCallback callback function called for every page
+     * @since 1.0.0
+     */
+    public void paginatePrev(final EmbeddedTypeInfo embeddedTypeInfo,
+                             final Function<Traverson, Boolean> pageCallback) {
+        paginate("prev", HalRepresentation.class, embeddedTypeInfo, pageCallback);
+    }
+
+    /**
+     * Iterates over pages by following 'prev' links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                            prev
+     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
+     *                    |                   |
+     *                    v N item            v N item
+     *             HalRepresentation   HalRepresentation
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a representation of {@code pageType}, but without
+     *     {@link EmbeddedTypeInfo}. This way it is possible to access special attributes of the page by
+     *     calling {@code pageTraverson.getResourceAs(pageType)} in the callback function. If the paged items need to
+     *     be accessed as a subtype of HalRepresentation, you can call pageTraverson.follow(rel).streamAs(MyItemType.class)
+     *     - but ONLY if the items are not embedded into the page.
+     * </p>
+     *
+     * <p>
+     *     For embedded items having a subtype of HalRepresentation, {@link #paginatePrevAs(Class, EmbeddedTypeInfo, Function)}
+     *     must be used instead of this method, otherwise a {@code ClassCastException} will be thrown.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param pageType the subtype of HalRepresentation of the page resources
+     * @param pageCallback callback function called for every page
+     * @param <T> subtype of HalRepresentation
+     * @since 1.0.0
+     */
+    public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
+                                                             final Function<Traverson, Boolean> pageCallback) {
+        paginate("next", pageType, null, pageCallback);
+    }
+
+    /**
+     * Iterates over pages by following 'prev' links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                            prev
+     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
+     *                    |                   |
+     *                    v N item            v N item
+     *             &lt;embedded type&gt;     &lt;embedded type&gt;
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a representation of {@code pageType} with {@link EmbeddedTypeInfo}.
+     *     This way it is possible to access items embedded into the page resources as specific subtypes of
+     *     HalRepresentation.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     *
+     * @param pageType the subtype of HalRepresentation of the page resources
+     * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
+     * @param pageCallback callback function called for every page
+     * @param <T> subtype of HalRepresentation
+     * @since 1.0.0
+     */
+    public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
+                                                             final EmbeddedTypeInfo embeddedTypeInfo,
+                                                             final Function<Traverson, Boolean> pageCallback) {
+        paginate("next", pageType, null, pageCallback);
+    }
+
+    /**
+     * Iterates over pages by following {code rel} links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the callback function.
+     *
+     * <pre>
+     *                            &lt;rel&gt;
+     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
+     *                    |                   |
+     *                    v N item            v N item
+     *             &lt;embedded type&gt;     &lt;embedded type&gt;
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a representation of {@code pageType} with {@link EmbeddedTypeInfo}.
+     *     This way it is possible to access items embedded into the page resources as specific subtypes of
+     *     HalRepresentation.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param rel link-relation type of the links used to traverse pages
+     * @param pageType the subtype of HalRepresentation of the page resources
+     * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
+     * @param pageCallback callback function called for every page
+     * @param <T> subtype of HalRepresentation
+     * @since 1.0.0
+     */
+    private <T extends HalRepresentation> void paginate(final String rel,
+                                                        final Class<T> pageType,
+                                                        final EmbeddedTypeInfo embeddedTypeInfo,
+                                                        final Function<Traverson, Boolean> pageCallback) {
+        Optional<T> currentPage = getResourceAs(pageType, embeddedTypeInfo);
+        while (currentPage.isPresent() && pageCallback.apply(traverson(linkToJsonFunc).startWith(currentPage.get()))) {
+            currentPage = follow(rel).getResourceAs(pageType, embeddedTypeInfo);
         }
     }
 

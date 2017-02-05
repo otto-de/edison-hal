@@ -264,6 +264,72 @@ Traverson is a utility to make it easy to traverse linked and/or embedded resour
     }
 ```
 
+## Paging over HAL resources:
+
+Iterating over pages of items is supported by the Traverson, too. `Traverson.paginateNext()` can be used
+to iterate pages by following 'next' links. The callback function provided to `paginateNext()` is
+called for every page, until either `false` is returned from the callback, or the last page is reached.
+
+The `Traverson` parameter of the callback function is then used to traverse the items of the page.
+
+```java
+        traverson(this::getHalJson)
+                .startWith("/example/products")
+                // Page of products by following link-relation type 'next':
+                .paginateNext((Traverson pageTraverson) -> {
+                    // Follow all 'item' links
+                    pageTraverson
+                            .follow("item")
+                            .streamAs(ProductHalRepresentation.class)
+                            .forEach(product->{
+                                System.out.println(product.title + ": " + product.price);
+                            };
+                    // proceed to next page of products:
+                    return true;
+                });
+
+```
+
+It is also possible to page by following other link-relation types using `Traverson.paginatePrev` (for 'prev') or
+`Traverson.paginate()`.
+
+If the page is needed as a subtype of `HalRepresentation` (for example, if it contains required extra attributes),
+`paginateNextAs()` or `paginatePrevAs()` can be used:
+
+```java
+        traverson(this::getHalJson)
+                .startWith("/example/products")
+                // Paginate using next. Pages are parsed as ProductPageHalRepresentation:
+                .paginateNextAs(ProductPageHalRepresentation.class, (Traverson pageTraverson) -> {
+                    // Fetch the page resource:
+                    pageTraverson
+                            .getResourceAs(ProductPageHalRepresentation.class)
+                            .ifPresent((page) -> {
+                                System.out.println(productPage.pageTitle);
+                            });
+                    // Process linked items of the page:
+                    pageTraverson
+                            .follow("item")
+                            .streamAs(ProductHalRepresentation.class)
+                            .forEach(product->{
+                                System.out.println(product.title + ": " + product.price);
+                            };
+                    return true;
+                });
+
+```
+
+If the paged items may be embedded into the page, it is necessary to specify the type of the embedded
+items:
+```java
+        traverson(this::getHalJson)
+                .startWith("/example/products")
+                .paginateNext(
+                        withEmbedded("item", ProductHalRepresentation.class),
+                        (Traverson pageTraverson) -> { ... }
+                );
+```
+
 ## Building edison-hal
 
 If you want to build edison-hal using Gradle, you might want to use
@@ -316,6 +382,20 @@ in different ways.
 
 ## Version History
 
+### 1.0.0.RC3
+
+*New Features / API extensions*
+
+* Added `Traverson.getResourceAs(Class<T>, EmbeddedTypeInfo)` and `Traverson.streamAs(Class<T>, EmbeddedTypeInfo>
+so it is possible to specify the type of embedded items of a resource using Traversons.
+* Added support for client-side traversal of paged resources using
+    - `Traverson.paginateNext()`
+    - `Traverson.paginateNextAs()`
+    - `Traverson.paginatePrev()`
+    - `Traverson.paginatePrevAs()`
+    - `Traverson.paginate()`
+    - `Traverson.paginateAs()`
+
 ### 1.0.0.RC2
 
 *Bugfixes*
@@ -328,7 +408,7 @@ in different ways.
 
 *New Features / API extensions*
 
-* New methods to select links matching some given predicate 
+* New Traverson methods to select links matching some given predicate.
 
 ### 0.7.0
 
