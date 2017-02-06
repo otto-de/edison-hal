@@ -539,11 +539,11 @@ public class Traverson {
      * parameter to the callback function.
      *
      * <pre>
-     *                            next
-     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
-     *                    |                   |
-     *                    v N item            v N item
-     *             HalRepresentation   HalRepresentation
+     *                        next
+     *     ... --&gt; &lt;page type&gt; --&gt; &lt;page type&gt;
+     *                 |                 |
+     *                 v N item          v N item
+     *         HalRepresentation  HalRepresentation
      * </pre>
      *
      * <p>
@@ -579,11 +579,11 @@ public class Traverson {
      * parameter to the callback function.
      *
      * <pre>
-     *                            next
-     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
-     *                    |                   |
-     *                    v N item            v N item
-     *             &lt;embedded type&gt;     &lt;embedded type&gt;
+     *                        next
+     *     ... --&gt; &lt;page type&gt; --&gt; &lt;page type&gt;
+     *                  |               |
+     *                  v N item        v N item
+     *           &lt;embedded type&gt;  &lt;embedded type&gt;
      * </pre>
      *
      * <p>
@@ -674,11 +674,11 @@ public class Traverson {
      * parameter to the callback function.
      *
      * <pre>
-     *                            prev
-     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
-     *                    |                   |
-     *                    v N item            v N item
-     *             HalRepresentation   HalRepresentation
+     *                         prev
+     *     ... --&gt; &lt;page type&gt; --&gt; &lt;page type&gt;
+     *                 |                 |
+     *                 v N item          v N item
+     *          HalRepresentation   HalRepresentation
      * </pre>
      *
      * <p>
@@ -713,11 +713,11 @@ public class Traverson {
      * parameter to the callback function.
      *
      * <pre>
-     *                            prev
-     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
-     *                    |                   |
-     *                    v N item            v N item
-     *             &lt;embedded type&gt;     &lt;embedded type&gt;
+     *                         prev
+     *     ... --&gt; &lt;page type&gt; --&gt; &lt;page type&gt;
+     *                  |               |
+     *                  v N item        v N item
+     *           &lt;embedded type&gt;  &lt;embedded type&gt;
      * </pre>
      *
      * <p>
@@ -748,11 +748,11 @@ public class Traverson {
      * parameter to the callback function.
      *
      * <pre>
-     *                            &lt;rel&gt;
-     *     ... --&gt; &lt;embedded type&gt; --&gt; &lt;embedded type&gt;
-     *                    |                   |
-     *                    v N item            v N item
-     *             &lt;embedded type&gt;     &lt;embedded type&gt;
+     *                         &lt;rel&gt;
+     *     ... --&gt; &lt;page type&gt; --&gt; &lt;page type&gt;
+     *                  |                |
+     *                  v N item         v N item
+     *           &lt;embedded type&gt;   &lt;embedded type&gt;
      * </pre>
      *
      * <p>
@@ -783,7 +783,7 @@ public class Traverson {
     }
 
     private <T extends HalRepresentation> List<T> traverseInitialResource(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo, final boolean retrieveAll) {
-        final Link link = self(this.startWith);
+        final Link link = self(this.startWith.toString());
         this.startWith = null;
         if (hops.isEmpty()) {
             return singletonList(getResource(link, type, embeddedTypeInfo));

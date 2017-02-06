@@ -118,7 +118,7 @@ public class LinkTest {
 
     @Test
     public void shouldBuildCuri() throws JsonProcessingException {
-        final Link link = Link.curi("t", "http://example.org/{rel}");
+        final Link link = curi("t", "http://example.org/{rel}");
         assertThat(link.getName(), is("t"));
         assertThat(link.getRel(), is("curies"));
         assertThat(link.isTemplated(), is(true));
@@ -126,7 +126,7 @@ public class LinkTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailToBuildCuriWithoutRelPlaceholder() throws JsonProcessingException {
-        Link.curi("t", "http://example.org/rel");
+        curi("t", "http://example.org/rel");
     }
 
     @Test
