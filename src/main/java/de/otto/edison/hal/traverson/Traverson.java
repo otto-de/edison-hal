@@ -1,17 +1,18 @@
 package de.otto.edison.hal.traverson;
 
 import de.otto.edison.hal.Embedded;
+import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
-
-import de.otto.edison.hal.EmbeddedTypeInfo;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.copyOf;
@@ -25,6 +26,7 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.empty;
 
@@ -75,9 +77,11 @@ public class Traverson {
 
     private final Function<Link, String> linkToJsonFunc;
     private final List<Hop> hops = new ArrayList<>();
-    private String startWith;
+    private URL startWith;
+    private URL contextUrl;
     private List<? extends HalRepresentation> lastResult;
     private TraversionError lastError;
+
     private Traverson(final Function<Link,String> linkToJsonFunc) {
         this.linkToJsonFunc = linkToJsonFunc;
     }
@@ -186,7 +190,8 @@ public class Traverson {
      * @return Traverson initialized with the {@link HalRepresentation} identified by {@code uri}.
      */
     public Traverson startWith(final String uri) {
-        startWith = uri;
+        startWith = hrefToUrl(uri);
+        contextUrl = startWith;
         lastResult = null;
         return this;
     }
@@ -194,12 +199,49 @@ public class Traverson {
     /**
      * Start traversal at the given HAL resource.
      *
+     * <p>
+     *     It is expected, that the HalRepresentation has an absolute 'self' link, or that all links to other
+     *     resources are absolute links. If this is not assured, {@link #startWith(URL, HalRepresentation)} must
+     *     be used, so relative links can be resolved.
+     * </p>
+     *
      * @param resource the initial HAL resource.
      * @return Traverson initialized with the specified {@link HalRepresentation}.
      */
     public Traverson startWith(final HalRepresentation resource) {
-        startWith = null;
-        lastResult = singletonList(resource);
+        this.startWith = null;
+        this.lastResult = singletonList(requireNonNull(resource));
+        Optional<Link> self = resource.getLinks().getLinkBy("self");
+        if (self.isPresent()) {
+                this.contextUrl = linkToUrl(self.get());
+        } else {
+            resource
+                    .getLinks()
+                    .stream()
+                    .filter(link -> !link.getHref().matches("http.*//.*"))
+                    .findAny()
+                    .ifPresent(link -> {throw new IllegalArgumentException("Unable to construct Traverson from HalRepresentation w/o self link but containing relative links. Please try Traverson.startWith(URL, HalRepresentation)");});
+        }
+        return this;
+    }
+
+    /**
+     * Start traversal at the given HAL resource, using the {@code contextUrl} to resolve relative links.
+     *
+     * <p>
+     *     If the {@code resource} is obtained from another Traverson, {@link Traverson#getCurrentContextUrl()}
+     *     can be called to get this URL.
+     * </p>
+     *
+     * @param contextUrl URL of the Traverson's current context, used to resolve relative links
+     * @param resource the initial HAL resource.
+     * @return Traverson initialized with the specified {@link HalRepresentation} and {@code contextUrl}.
+     * @since 1.0.0
+     */
+    public Traverson startWith(final URL contextUrl, final HalRepresentation resource) {
+        this.startWith = null;
+        this.contextUrl = requireNonNull(contextUrl);
+        this.lastResult = singletonList(requireNonNull(resource));
         return this;
     }
 
@@ -744,6 +786,19 @@ public class Traverson {
     }
 
     /**
+     * Returns the current contextUrl of the Traverson.
+     * <p>
+     *     The contextUrl is used to resolve relative links / HREFs to other resources.
+     * </p>
+     *
+     * @return URL of the Traverson's current context.
+     * @since 1.0.0
+     */
+    public URL getCurrentContextUrl() {
+        return contextUrl;
+    }
+
+    /**
      * Iterates over pages by following {code rel} links. For every page, a {@code Traverson} is created and provided as a
      * parameter to the callback function.
      *
@@ -777,46 +832,54 @@ public class Traverson {
                                                         final EmbeddedTypeInfo embeddedTypeInfo,
                                                         final Function<Traverson, Boolean> pageCallback) {
         Optional<T> currentPage = getResourceAs(pageType, embeddedTypeInfo);
-        while (currentPage.isPresent() && pageCallback.apply(traverson(linkToJsonFunc).startWith(currentPage.get()))) {
+        while (currentPage.isPresent() && pageCallback.apply(traverson(linkToJsonFunc).startWith(contextUrl, currentPage.get()))) {
             currentPage = follow(rel).getResourceAs(pageType, embeddedTypeInfo);
         }
     }
 
-    private <T extends HalRepresentation> List<T> traverseInitialResource(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo, final boolean retrieveAll) {
-        final Link link = self(this.startWith.toString());
+    private <T extends HalRepresentation> List<T> traverseInitialResource(final Class<T> pageType,
+                                                                          final EmbeddedTypeInfo embeddedTypeInfo,
+                                                                          final boolean retrieveAll) {
+        final Link current = self(startWith.toString());
         this.startWith = null;
         if (hops.isEmpty()) {
-            return singletonList(getResource(link, type, embeddedTypeInfo));
+            return singletonList(getResource(current, pageType, embeddedTypeInfo));
         } else {
             final HalRepresentation firstHop;
+            // Follow startWith URL, but have a look at the next hop, so we can parse the resource
+            // with respect to pageType and embeddedTypeInfo:
             if (hops.size() == 1) {
                 final Hop hop = hops.get(0);
                 if (embeddedTypeInfo == null || !hop.rel.equals(embeddedTypeInfo.rel)) {
-                    firstHop = getResource(link, HalRepresentation.class, withEmbedded(hop.rel, type));
+                    firstHop = getResource(current, HalRepresentation.class, withEmbedded(hop.rel, pageType));
                 } else {
-                    firstHop = getResource(link, type, embeddedTypeInfo);
+                    firstHop = getResource(current, pageType, embeddedTypeInfo);
                 }
             } else {
-                firstHop = getResource(link, HalRepresentation.class, null);
+                // the next hop is not the last one - so we do not need to use type information yet:
+                firstHop = getResource(current, HalRepresentation.class, null);
             }
-            return traverseHop(firstHop, type, embeddedTypeInfo, retrieveAll);
+            return traverseHop(firstHop, pageType, embeddedTypeInfo, retrieveAll);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends HalRepresentation> List<T> traverseHop(final HalRepresentation current, final Class<T> resultType, final EmbeddedTypeInfo embeddedTypeInfo, boolean retrieveAll) {
+    private <T extends HalRepresentation> List<T> traverseHop(final HalRepresentation current,
+                                                              final Class<T> resultType,
+                                                              final EmbeddedTypeInfo embeddedTypeInfo,
+                                                              boolean retrieveAll) {
 
         final Hop currentHop = hops.remove(0);
 
         // the next hop could possibly be already available as an embedded object:
-        final List<? extends HalRepresentation> items = hops.isEmpty()
+        final List<? extends HalRepresentation> embeddedItems = hops.isEmpty()
                 ? current.getEmbedded().getItemsBy(currentHop.rel, resultType)
                 : current.getEmbedded().getItemsBy(currentHop.rel);
 
-        if (!items.isEmpty()) {
+        if (!embeddedItems.isEmpty()) {
             return hops.isEmpty()
-                    ? (List<T>) items
-                    : traverseHop(items.get(0), resultType, embeddedTypeInfo, retrieveAll);
+                    ? (List<T>) embeddedItems
+                    : traverseHop(embeddedItems.get(0), resultType, embeddedTypeInfo, retrieveAll);
         }
 
         final List<Link> links = current
@@ -828,15 +891,16 @@ public class Traverson {
                     format("Can not follow hop %s: no matching links found in resource %s", currentHop.rel, current))
             );
         }
-        final Link expandedLink = expand(links.get(0), currentHop.vars);
+        final Link expandedLink = resolve(this.contextUrl, expand(links.get(0), currentHop.vars));
 
         if (hops.isEmpty()) { // last hop
             if (retrieveAll) {
                 return links
                         .stream()
-                        .map(link-> getResource(expand(link, currentHop.vars), resultType, embeddedTypeInfo))
+                        .map(link-> getResource(resolve(this.contextUrl, expand(link, currentHop.vars)), resultType, embeddedTypeInfo))
                         .collect(toList());
             } else {
+                this.contextUrl = linkToUrl(expandedLink);
                 return singletonList(getResource(expandedLink, resultType, embeddedTypeInfo));
             }
         }
@@ -847,12 +911,18 @@ public class Traverson {
                 final EmbeddedTypeInfo embeddedType = nextHop.rel.equals(embeddedTypeInfo.rel)
                         ? embeddedTypeInfo
                         : withEmbedded(nextHop.rel, resultType);
-                return traverseHop(getResource(expandedLink, resultType, embeddedType), resultType, embeddedTypeInfo, retrieveAll);
+                this.contextUrl = linkToUrl(expandedLink);
+                final T resource = getResource(expandedLink, resultType, embeddedType);
+                return traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
             } else {
-                return traverseHop(getResource(expandedLink, resultType, withEmbedded(nextHop.rel, resultType)), resultType, null, retrieveAll);
+                this.contextUrl = linkToUrl(expandedLink);
+                final T resource = getResource(expandedLink, resultType, withEmbedded(nextHop.rel, resultType));
+                return traverseHop(resource, resultType, null, retrieveAll);
             }
         } else { // some more hops
-            return traverseHop(getResource(expandedLink, HalRepresentation.class, null), resultType, embeddedTypeInfo, retrieveAll);
+            this.contextUrl = linkToUrl(expandedLink);
+            final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, null);
+            return traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
         }
     }
 
@@ -871,8 +941,11 @@ public class Traverson {
     /**
      * Retrieve the HAL resource identified by {@code uri} and return the representation as a HopResponse.
      *
-     * @param link the Link of the resource to retrieve
+     * @param link the Link of the resource to retrieve, or null, if the contextUrl should be resolved.
+     * @param type the expected type of the returned resource
+     * @param embeddedType type information to specify the type of embedded resources.
      * @return HopResponse
+     * @throws IllegalArgumentException if resolving URLs is failing
      * @throws TraversionException thrown if getting or parsing the resource failed for some reason
      */
     private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final EmbeddedTypeInfo embeddedType) {
@@ -889,6 +962,25 @@ public class Traverson {
         }
     }
 
+    /**
+     * Resolved a link using the URL of the current resource and returns it as an absolute Link.
+     *
+     * @param contextUrl the URL of the current context
+     * @param link optional link to follow
+     * @return absolute Link
+     * @throws IllegalArgumentException if resolving the link is failing
+     */
+    private static Link resolve(final URL contextUrl, final Link link) {
+        if (link != null && link.isTemplated()) {
+            throw new IllegalStateException("link must not be templated");
+        }
+        if (link == null) {
+            return self(contextUrl.toString());
+        } else {
+            return copyOf(link).withHref(resolveHref(contextUrl, link.getHref()).toString()).build();
+        }
+    }
+
     private String getJson(Link link) {
         final String json;
         try {
@@ -901,9 +993,32 @@ public class Traverson {
         if (json == null) {
             throw new TraversionException(traversionError(
                     INVALID_JSON,
-                    format("Did not get JSON response from %s", linkToJsonFunc.toString())));
+                    format("Did not get JSON response from %s", link.getHref())));
         }
         return json;
+    }
+
+    private static URL linkToUrl(final Link link) {
+        if (link.isTemplated()) {
+            throw new IllegalArgumentException(format("Unable to create URL from templated link %s", link));
+        }
+        return hrefToUrl(link.getHref());
+    }
+
+    private static URL hrefToUrl(final String href) {
+        try {
+            return new URL(href);
+        } catch (final MalformedURLException e) {
+            throw new IllegalArgumentException(format("Unable to create URL from href '%s': %s", href, e.getMessage()), e);
+        }
+    }
+
+    private static URL resolveHref(final URL contextUrl, final String href) {
+        try {
+            return contextUrl == null ? new URL(href) : new URL(contextUrl, href);
+        } catch (final MalformedURLException e) {
+            throw new IllegalArgumentException(format("Unable to resolve URL from contextUrl %s and href '%s': %s", contextUrl, href, e.getMessage()), e);
+        }
     }
 
     /**

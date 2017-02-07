@@ -1,17 +1,16 @@
 package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
-import de.otto.edison.hal.paging.PagingRel;
 import org.junit.Test;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.Link.link;
@@ -30,7 +29,7 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -40,7 +39,7 @@ public class TraversonPagingTest {
                                 "{\"href\":\"/example/foo?page=2\"}" +
                         "}" +
                 "}");
-        when(mock.apply(link("next", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("next", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -53,7 +52,7 @@ public class TraversonPagingTest {
 
         // when
         Optional<HalRepresentation> optionalPage = traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .follow("next")
                 .getResource();
 
@@ -66,7 +65,7 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -76,7 +75,7 @@ public class TraversonPagingTest {
                                 "{\"href\":\"/example/foo?page=2\"}" +
                         "}" +
                 "}");
-        when(mock.apply(link("next", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("next", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -86,19 +85,19 @@ public class TraversonPagingTest {
                                 "{\"href\":\"/example/foo\"}" +
                         "}" +
                 "}");
-        when(mock.apply(link("foo", "/example/foo/3"))).thenReturn(
+        when(mock.apply(link("foo", "http://example.com/example/foo/3"))).thenReturn(
                 "{" +
                         "\"_links\":{\"self\":{\"href\":\"/example/foo/3\"}}" +
                 "}");
-        when(mock.apply(link("foo", "/example/foo/4"))).thenReturn(
+        when(mock.apply(link("foo", "http://example.com/example/foo/4"))).thenReturn(
                 "{" +
                         "\"_links\":{\"self\":{\"href\":\"/example/foo/4\"}}" +
                 "}");
 
         // when
         final Traverson traverson = traverson(mock);
-        final Optional<HalRepresentation> optionalPage = traverson
-                .startWith("/example/foo")
+        traverson
+                .startWith("http://example.com/example/foo")
                 .follow("next")
                 .getResource();
         // then
@@ -110,7 +109,7 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -121,7 +120,7 @@ public class TraversonPagingTest {
 
         // when we getResource the next page
         final Optional<HalRepresentation> optionalPage = traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .follow("next")
                 .getResource();
 
@@ -133,7 +132,7 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -143,7 +142,7 @@ public class TraversonPagingTest {
                                 "{\"href\":\"/example/foo\"}" +
                         "}" +
                 "}");
-        when(mock.apply(link("prev", "/example/foo"))).thenReturn(
+        when(mock.apply(link("prev", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -156,7 +155,7 @@ public class TraversonPagingTest {
 
         // when
         final Optional<HalRepresentation> optionalPage = traverson(mock)
-                .startWith("/example/foo?page=2")
+                .startWith("http://example.com/example/foo?page=2")
                 .follow("prev")
                 .getResource();
 
@@ -169,7 +168,7 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -180,7 +179,7 @@ public class TraversonPagingTest {
 
         // when
         final Optional<HalRepresentation> optionalPage = traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .follow("prev")
                 .getResource();
         // then
@@ -192,7 +191,7 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -202,7 +201,7 @@ public class TraversonPagingTest {
                                 "{\"href\":\"/example/foo?page=2\"}" +
                         "}" +
                 "}");
-        when(mock.apply(link("first", "/example/foo"))).thenReturn(
+        when(mock.apply(link("first", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -212,7 +211,7 @@ public class TraversonPagingTest {
                                 "{\"href\":\"/example/foo?page=2\"}" +
                         "}" +
                 "}");
-        when(mock.apply(link("last", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("last", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                             "\"foo\":[" +
@@ -227,7 +226,7 @@ public class TraversonPagingTest {
 
         // when we getResource the next page
         Optional<HalRepresentation> optionalPage = traverson
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .follow("last")
                 .getResource();
 
@@ -254,30 +253,31 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\",\"_links\":{" +
+                        "\"self\":{\"href\":\"http://example.com/example/foo?page=1\"}," +
                         "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
                         "\"next\":{\"href\":\"/example/foo?page=2\"}}}");
-        when(mock.apply(link("next", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("next", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{\"someProperty\":\"secondPage\"," +
                         "\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/3\"},{\"href\":\"/example/foo/4\"}]," +
                         "\"prev\":{\"href\":\"/example/foo\"}}" +
                         "}");
-        when(mock.apply(link("item", "/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
-        when(mock.apply(link("item", "/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
-        when(mock.apply(link("item", "/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
-        when(mock.apply(link("item", "/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
 
         // when
         final List<String> values = new ArrayList<>();
         final Traverson pager = traverson(mock);
         Optional<ExtendedHalRepresentation> currentPage = pager
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .getResourceAs(ExtendedHalRepresentation.class);
         while (currentPage.isPresent()) {
             traverson(mock)
-                    .startWith(currentPage.get())
+                    .startWith(pager.getCurrentContextUrl(), currentPage.get())
                     .follow("item")
                     .streamAs(OtherExtendedHalRepresentation.class)
                     .forEach(x -> values.add(x.someOtherProperty));
@@ -290,30 +290,30 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginate() {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginate() throws MalformedURLException {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
                         "\"next\":{\"href\":\"/example/foo?page=2\"}}}");
-        when(mock.apply(link("next", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("next", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/3\"},{\"href\":\"/example/foo/4\"}]," +
                         "\"prev\":{\"href\":\"/example/foo\"}}" +
                         "}");
-        when(mock.apply(link("item", "/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
-        when(mock.apply(link("item", "/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
-        when(mock.apply(link("item", "/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
-        when(mock.apply(link("item", "/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
 
         // when
         final List<String> values = new ArrayList<>();
-        traverson(mock)
-                .startWith("/example/foo")
+        final Traverson traverson = traverson(mock);
+                traverson.startWith("http://example.com/example/foo")
                 .paginateNext((Traverson pageTraverson) -> {
                     pageTraverson
                             .follow("item")
@@ -324,6 +324,7 @@ public class TraversonPagingTest {
 
         // then
         assertThat(values, contains("one", "two", "three", "four"));
+        assertThat(traverson.getCurrentContextUrl(), is(new URL("http://example.com/example/foo?page=2")));
     }
 
     @Test
@@ -331,12 +332,12 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
-                        "\"_links\":{\"next\":{\"href\":\"/example/foo?page=2\"}}," +
+                        "\"_links\":{\"next\":{\"href\":\"http://example.com/example/foo?page=2\"}}," +
                         "\"_embedded\":{\"item\":[{\"someProperty\":\"one\"},{\"someProperty\":\"two\"}]" +
                         "}}");
-        when(mock.apply(link("next", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("next", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{" +
                         "\"_links\":{\"prev\":{\"href\":\"/example/foo\"}}," +
                         "\"_embedded\":{\"item\":[{\"someProperty\":\"three\"},{\"someProperty\":\"four\"}]" +
@@ -345,7 +346,7 @@ public class TraversonPagingTest {
         // when
         final List<String> values = new ArrayList<>();
         traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .paginateNext(withEmbedded("item", ExtendedHalRepresentation.class), (Traverson pageTraverson) -> {
                     pageTraverson
                             .follow("item")
@@ -363,17 +364,17 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\",\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
                         "\"next\":{\"href\":\"/example/foo?page=2\"}}}");
-        when(mock.apply(link("item", "/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
-        when(mock.apply(link("item", "/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
 
         // when
         final List<String> values = new ArrayList<>();
         traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .paginateNext((Traverson pageTraverson) -> {
                     pageTraverson
                             .follow("item")
@@ -391,26 +392,26 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\",\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
                         "\"next\":{\"href\":\"/example/foo?page=2\"}}}");
-        when(mock.apply(link("next", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("next", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{\"someProperty\":\"secondPage\"," +
                         "\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/3\"},{\"href\":\"/example/foo/4\"}]," +
                         "\"prev\":{\"href\":\"/example/foo\"}}" +
                         "}");
-        when(mock.apply(link("item", "/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
-        when(mock.apply(link("item", "/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
-        when(mock.apply(link("item", "/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
-        when(mock.apply(link("item", "/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
 
         // when
         final List<String> pageValues = new ArrayList<>();
         final List<String> values = new ArrayList<>();
         traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .paginateNextAs(ExtendedHalRepresentation.class, (Traverson pageTraverson) -> {
                     pageTraverson
                             .getResourceAs(ExtendedHalRepresentation.class)
@@ -432,12 +433,12 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\"," +
                         "\"_links\":{\"next\":{\"href\":\"/example/foo?page=2\"}}," +
                         "\"_embedded\":{\"item\":[{\"someOtherProperty\":\"one\"},{\"someOtherProperty\":\"two\"}]" +
                         "}}");
-        when(mock.apply(link("next", "/example/foo?page=2"))).thenReturn(
+        when(mock.apply(link("next", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{\"someProperty\":\"secondPage\"," +
                         "\"_links\":{\"prev\":{\"href\":\"/example/foo\"}}," +
                         "\"_embedded\":{\"item\":[{\"someOtherProperty\":\"three\"},{\"someOtherProperty\":\"four\"}]" +
@@ -447,7 +448,7 @@ public class TraversonPagingTest {
         final List<String> pageValues = new ArrayList<>();
         final List<String> values = new ArrayList<>();
         traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .paginateNextAs(ExtendedHalRepresentation.class, withEmbedded("item", OtherExtendedHalRepresentation.class), (Traverson pageTraverson) -> {
                     pageTraverson
                             .getResourceAs(ExtendedHalRepresentation.class)

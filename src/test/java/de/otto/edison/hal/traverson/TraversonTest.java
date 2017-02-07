@@ -7,6 +7,8 @@ import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
 import org.junit.Test;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -62,10 +65,78 @@ public class TraversonTest {
 
     @Test
     public void shouldGetEmptyHalRepresentation() {
-        final Traverson t = traverson(s->"{}").startWith("/");
+        final Traverson t = traverson(s->"{}").startWith("http://example.com/");
         assertThat(t.getResource().get().getLinks(), is(emptyLinks()));
         assertThat(t.getResource().get().getEmbedded(), is(emptyEmbedded()));
     }
+
+    ////////////////////////////////////
+    // Creating Traversons:
+    ////////////////////////////////////
+
+    @Test(expected = IllegalArgumentException.class)
+    @SuppressWarnings("unchecked")
+    public void shouldNotCreateTraversonFromHalRepresentationWithoutSelfLinkButWithRelativeLinks() {
+        // given
+        final HalRepresentation existingRepresentation = new HalRepresentation(
+                linkingTo(link("search", "/example/foo"))
+        );
+
+        // when
+        traverson(mock(Function.class))
+                .startWith(existingRepresentation);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldCreateTraversonFromContextUrlAndHalRepresentationWithoutSelfLinkButWithRelativeLinks() throws MalformedURLException {
+        // given
+        final HalRepresentation existingRepresentation = new HalRepresentation(
+                linkingTo(link("search", "/example/foo"))
+        );
+
+        // when
+        Traverson traverson = traverson(mock(Function.class))
+                .startWith(new URL("http://example.com"), existingRepresentation);
+
+        // then
+        assertThat(traverson.getCurrentContextUrl(), is(new URL("http://example.com")));
+
+        // and when
+        Optional<HalRepresentation> resource = traverson.getResource();
+
+        // then
+        assertThat(resource.isPresent(), is(true));
+        assertThat(traverson.getCurrentContextUrl(), is(new URL("http://example.com")));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldCreateTraversonFromHalRepresentationWithoutSelfLinkButWithAbsoluteLinks() throws MalformedURLException {
+        // given
+        final HalRepresentation existingRepresentation = new HalRepresentation(
+                linkingTo(link("search", "http://example.com/example/"))
+        );
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("search", "http://example.com/example/"))).thenReturn(
+                "{\"_links\":{\"foo\":{\"href\":\"http://example.com/example/foo\"}}}");
+
+        // when
+        final Traverson traverson = traverson(mock)
+                .startWith(existingRepresentation)
+                .follow("search");
+
+        // then
+        assertThat(traverson.getCurrentContextUrl(), is(nullValue()));
+
+        // and when
+        Optional<HalRepresentation> resource = traverson.getResource();
+
+        // then
+        assertThat(resource.isPresent(), is(true));
+        assertThat(traverson.getCurrentContextUrl(), is(new URL("http://example.com/example/")));
+    }
+
 
     ////////////////////////////////////
     // Following and getting resources:
@@ -76,20 +147,41 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(self("/example"))).thenReturn(
-                "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}");
-        when(mock.apply(link("foo", "/example/foo"))).thenReturn(
-                "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
+        when(mock.apply(self("http://example.com/example"))).thenReturn(
+                "{\"_links\":{\"foo\":{\"href\":\"http://example.com/example/foo\"}}}");
+        when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .getResource()
                 .get();
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
-        assertThat(self.get().getHref(), is("/example/foo"));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
+    }
+
+    @Test
+    public void shouldFollowRelativeLink() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(self("http://example.com/example/"))).thenReturn(
+                "{\"_links\":{\"foo\":{\"href\":\"foo\"}}}");
+        when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
+        // when
+        final HalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example/")
+                .follow("foo")
+                .getResource()
+                .get();
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
     }
 
     @Test
@@ -97,33 +189,52 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(self("/example"))).thenReturn(
-                "{\"_links\":{\"item\":[{\"href\":\"/example/foo\"},{\"href\":\"/example/foo\",\"type\":\"text/plain\"}]}}");
-        when(mock.apply(linkBuilder("item", "/example/foo").withType("text/plain").build())).thenReturn(
-                "{\"_links\":{\"self\":{\"href\":\"/example/foo?type=text\"}}}");
+        when(mock.apply(self("http://example.com/example"))).thenReturn(
+                "{\"_links\":{\"item\":[{\"href\":\"http://example.com/example/foo\"},{\"href\":\"http://example.com/example/foo\",\"type\":\"text/plain\"}]}}");
+        when(mock.apply(linkBuilder("item", "http://example.com/example/foo").withType("text/plain").build())).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo?type=text\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("item", havingType("text/plain"))
                 .getResource()
                 .get();
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
-        assertThat(self.get().getHref(), is("/example/foo?type=text"));
-
+        assertThat(self.get().getHref(), is("http://example.com/example/foo?type=text"));
     }
 
     @Test
-    public void shouldFollowLinkStartingWithHalRepresentation() {
+    public void shouldFollowRelativeLinkMatchingPredicate() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(self("http://example.com/example"))).thenReturn(
+                "{\"_links\":{\"item\":[{\"href\":\"/example/foo\"},{\"href\":\"/example/foo\",\"type\":\"text/plain\"}]}}");
+        when(mock.apply(linkBuilder("item", "http://example.com/example/foo").withType("text/plain").build())).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo?type=text\"}}}");
+        // when
+        final HalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .follow("item", havingType("text/plain"))
+                .getResource()
+                .get();
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.get().getHref(), is("http://example.com/example/foo?type=text"));
+    }
+
+    @Test
+    public void shouldFollowLinkStartingWithHalRepresentationHavingAbsoluteLinks() {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
-                linkingTo(link("search", "/example/foo"))
+                linkingTo(link("search", "http://example.com/example/foo"))
         );
         // and
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("search", "/example/foo"))).thenReturn(
-                "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
+        when(mock.apply(link("search", "http://example.com/example/foo"))).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
 
         // when
         final Optional<HalRepresentation> hal = traverson(mock)
@@ -132,7 +243,53 @@ public class TraversonTest {
                 .getResource();
         // then
         final Optional<Link> self = hal.get().getLinks().getLinkBy("self");
-        assertThat(self.get().getHref(), is("/example/foo"));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
+    }
+
+    @Test
+    public void shouldFollowLinkStartingWithHalRepresentationHavingSelfLink() {
+        // given
+        final HalRepresentation existingRepresentation = new HalRepresentation(
+                linkingTo(
+                        link("search", "/example/foo"),
+                        self("http://example.com")
+                )
+        );
+        // and
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("search", "http://example.com/example/foo"))).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
+
+        // when
+        final Optional<HalRepresentation> hal = traverson(mock)
+                .startWith(existingRepresentation)
+                .follow("search")
+                .getResource();
+        // then
+        final Optional<Link> self = hal.get().getLinks().getLinkBy("self");
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
+    }
+
+    @Test
+    public void shouldFollowLinkStartingWithHalRepresentationAndContextUrl() throws MalformedURLException {
+        // given
+        final HalRepresentation existingRepresentation = new HalRepresentation(
+                linkingTo(link("search", "/example/foo")));
+        // and
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("search", "http://example.com/example/foo"))).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
+
+        // when
+        final Optional<HalRepresentation> hal = traverson(mock)
+                .startWith(new URL("http://example.com"), existingRepresentation)
+                .follow("search")
+                .getResource();
+        // then
+        final Optional<Link> self = hal.get().getLinks().getLinkBy("self");
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
     }
 
     @Test
@@ -140,26 +297,26 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(self("/example"))).thenReturn(
-                "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}");
-        when(mock.apply(link("foo", "/example/foo"))).thenReturn(
+        when(mock.apply(self("http://example.com/example"))).thenReturn(
+                "{\"_links\":{\"foo\":{\"href\":\"http://example.com/example/foo\"}}}");
+        when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"bar\":{\"href\":\"/example/bar\"}}}");
-        when(mock.apply(link("bar", "/example/bar"))).thenReturn(
+        when(mock.apply(link("bar", "http://example.com/example/bar"))).thenReturn(
                 "{\"_links\":{\"foobar\":{\"href\":\"/example/foobar\"}}}");
-        when(mock.apply(link("foobar", "/example/foobar"))).thenReturn(
-                "{\"_links\":{\"barbar\":{\"href\":\"/example/barbar\"}}}");
-        when(mock.apply(link("barbar", "/example/barbar"))).thenReturn(
-                "{\"_links\":{\"self\":{\"href\":\"/example/barbar\"}}}");
+        when(mock.apply(link("foobar", "http://example.com/example/foobar"))).thenReturn(
+                "{\"_links\":{\"barbar\":{\"href\":\"http://example.com/example/barbar\"}}}");
+        when(mock.apply(link("barbar", "http://example.com/example/barbar"))).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/barbar\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow(hops("foo", "bar", "foobar", "barbar"))
                 .getResource()
                 .get();
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
-        assertThat(self.get().getHref(), is("/example/barbar"));
+        assertThat(self.get().getHref(), is("http://example.com/example/barbar"));
     }
 
     @Test
@@ -167,15 +324,15 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(self("/example"))).thenReturn(
+        when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}");
-        when(mock.apply(link("foo", "/example/foo"))).thenReturn(
+        when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"bar\":[{\"href\":\"/example/bar1\",\"name\":\"First\"},{\"href\":\"/example/bar2\",\"name\":\"Second\"}]}}");
-        when(mock.apply(linkBuilder("bar", "/example/bar2").withName("Second").build())).thenReturn(
-                "{\"_links\":{\"self\":{\"href\":\"/example/bar2\"}}}");
+        when(mock.apply(linkBuilder("bar", "http://example.com/example/bar2").withName("Second").build())).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/bar2\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .follow("bar", havingName("Second"))
                 .getResource()
@@ -183,7 +340,7 @@ public class TraversonTest {
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
-        assertThat(self.get().getHref(), is("/example/bar2"));
+        assertThat(self.get().getHref(), is("http://example.com/example/bar2"));
     }
 
     @Test
@@ -191,16 +348,16 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(self("/example"))).thenReturn(
-                "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}");
-        when(mock.apply(link("foo", "/example/foo"))).thenReturn(
+        when(mock.apply(self("http://example.com/example"))).thenReturn(
+                "{\"_links\":{\"foo\":{\"href\":\"http://example.com/example/foo\"}}}");
+        when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"bar\":{\"href\":\"/example/bar\"}}}");
-        when(mock.apply(link("bar", "/example/bar"))).thenReturn(
+        when(mock.apply(link("bar", "http://example.com/example/bar"))).thenReturn(
                 "{\"_links\":{\"self\":{\"href\":\"/example/bar\"}}}");
 
         // when
         final Traverson traverson = traverson(mock)
-                .startWith("/example");
+                .startWith("http://example.com/example");
         traverson.getResource();
         // and
         traverson.follow("foo");
@@ -220,13 +377,13 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(self("/example"))).thenReturn(
+        when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}");
-        when(mock.apply(link("foo", "/example/foo"))).thenReturn(
+        when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
         // when
         final Traverson traverson = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo");
 
         // then
@@ -238,18 +395,18 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self","/example"))).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?test}\"}}}");
-        when(mock.apply(link("foo", "/example/foo?test=bar"))).thenReturn("{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}");
+        when(mock.apply(link("self","http://example.com/example"))).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?test}\"}}}");
+        when(mock.apply(link("foo", "http://example.com/example/foo?test=bar"))).thenReturn("{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo", withVars("test", "bar"))
                 .getResource()
                 .get();
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
-        assertThat(self.get().getHref(), is("/example/foo"));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
     }
 
     @Test
@@ -257,12 +414,12 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example"))).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?param1}\"}}}");
-        when(mock.apply(link("foo", "/example/foo?param1=value1"))).thenReturn("{\"_links\":{\"bar\":{\"templated\":true,\"href\":\"/example/bar{?param2}\"}}}");
-        when(mock.apply(link("bar", "/example/bar?param2=value2"))).thenReturn("{\"_links\":{\"self\":{\"href\":\"/example/bar\"}}}");
+        when(mock.apply(link("self", "http://example.com/example"))).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?param1}\"}}}");
+        when(mock.apply(link("foo", "http://example.com/example/foo?param1=value1"))).thenReturn("{\"_links\":{\"bar\":{\"templated\":true,\"href\":\"/example/bar{?param2}\"}}}");
+        when(mock.apply(link("bar", "http://example.com/example/bar?param2=value2"))).thenReturn("{\"_links\":{\"self\":{\"href\":\"http://example.com/example/bar\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow(
                         hops("foo", "bar"),
                         withVars("param1", "value1", "param2", "value2"))
@@ -271,7 +428,7 @@ public class TraversonTest {
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
-        assertThat(self.get().getHref(), is("/example/bar"));
+        assertThat(self.get().getHref(), is("http://example.com/example/bar"));
     }
 
     @Test
@@ -279,17 +436,17 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example")))
+        when(mock.apply(link("self", "http://example.com/example")))
                 .thenReturn("{\"_links\":{\"foo\":[" +
                         "{\"templated\":true,\"type\":\"text/plain\",\"href\":\"/example/foo1{?param1}\"}," +
                         "{\"templated\":true,\"type\":\"text/html\",\"href\":\"/example/foo2{?param1}\"}]}}");
-        when(mock.apply(linkBuilder("foo", "/example/foo2?param1=value1").withType("text/html").build()))
+        when(mock.apply(linkBuilder("foo", "http://example.com/example/foo2?param1=value1").withType("text/html").build()))
                 .thenReturn("{\"_links\":{\"bar\":{\"templated\":true,\"href\":\"/example/bar{?param2}\"}}}");
-        when(mock.apply(link("bar", "/example/bar?param2=value2")))
-                .thenReturn("{\"_links\":{\"self\":{\"href\":\"/example/bar\"}}}");
+        when(mock.apply(link("bar", "http://example.com/example/bar?param2=value2")))
+                .thenReturn("{\"_links\":{\"self\":{\"href\":\"http://example.com/example/bar\"}}}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow(
                         hops("foo", "bar"),
                         optionallyHavingType("text/html"),
@@ -299,7 +456,7 @@ public class TraversonTest {
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
-        assertThat(self.get().getHref(), is("/example/bar"));
+        assertThat(self.get().getHref(), is("http://example.com/example/bar"));
     }
 
     @Test
@@ -309,18 +466,18 @@ public class TraversonTest {
         final Function<Link,String> mock = mock(Function.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
-                        "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}]}" +
+                        "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}]}" +
                 "}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .getResource()
                 .get();
         // then
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
-        assertThat(self.get().getHref(), is("/example/foo"));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
     }
 
     //////////////////////////
@@ -332,21 +489,21 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}" +
                 "}");
-        when(mock.apply(link("foo", "/example/foo/1"))).thenReturn(
+        when(mock.apply(link("foo", "http://example.com/example/foo/1"))).thenReturn(
                 "{" +
                         "\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}" +
                 "}");
-        when(mock.apply(link("foo", "/example/foo/2"))).thenReturn(
+        when(mock.apply(link("foo", "http://example.com/example/foo/2"))).thenReturn(
                 "{" +
                         "\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}" +
                 "}");
         // when
         final List<String> hrefs = traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .follow("foo")
                 .stream()
                 .map(r->r.getLinks().getLinkBy("self").get().getHref())
@@ -367,7 +524,7 @@ public class TraversonTest {
                 "}");
         // when
         final List<String> hrefs = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .stream()
                 .map(r->r.getLinks().getLinkBy("self").get().getHref())
@@ -390,7 +547,7 @@ public class TraversonTest {
         // when
         final Traverson traverson = traverson(mock);
         final Optional<HalRepresentation> hal = traverson
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .getResource();
         // then
@@ -407,13 +564,13 @@ public class TraversonTest {
         // when
         final Traverson traverson = traverson(mock);
         final Optional<HalRepresentation> hal = traverson
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .getResource();
         // then
         assertThat(hal.isPresent(), is(false));
         assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from /example is not in application/hal+json format"));
+        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from http://example.com/example is not in application/hal+json format"));
         assertThat(traverson.getLastError().getCause().get(), instanceOf(JsonParseException.class));
     }
 
@@ -429,12 +586,12 @@ public class TraversonTest {
         // when
         final Traverson traverson = traverson(mock);
         final Optional<HalRepresentation> hal = traverson
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .getResource();
         // then
         assertThat(hal.isPresent(), is(false));
         assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from /example is not in application/hal+json format"));
+        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from http://example.com/example is not in application/hal+json format"));
         assertThat(traverson.getLastError().getCause().get(), instanceOf(JsonMappingException.class));
     }
 
@@ -450,12 +607,12 @@ public class TraversonTest {
         // when
         final Traverson traverson = traverson(mock);
         final Optional<HalRepresentation> hal = traverson
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .getResource();
         // then
         assertThat(hal.isPresent(), is(false));
         assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from /example is not in application/hal+json format"));
+        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from http://example.com/example is not in application/hal+json format"));
         assertThat(traverson.getLastError().getCause().get(), instanceOf(JsonMappingException.class));
     }
 
@@ -473,7 +630,7 @@ public class TraversonTest {
                 "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}, \"someProperty\":\"bar\"}");
         // when
         final ExtendedHalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .getResourceAs(ExtendedHalRepresentation.class)
                 .get();
@@ -496,7 +653,7 @@ public class TraversonTest {
                         "}");
         // when
         final ExtendedHalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .getResourceAs(ExtendedHalRepresentation.class)
                 .get();
@@ -516,7 +673,7 @@ public class TraversonTest {
                 "{\"_embedded\":{\"foo\":[{\"someProperty\":\"bar\"}]}}");
         // when
         final HalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .getResourceAs(HalRepresentation.class, withEmbedded("foo", ExtendedHalRepresentation.class))
                 .get();
         // then
@@ -532,7 +689,7 @@ public class TraversonTest {
                 "{\"someProperty\":\"42\", \"_embedded\":{\"foo\":[{\"someOtherProperty\":\"0815\"}]}}");
         // when
         final ExtendedHalRepresentation hal = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .getResourceAs(ExtendedHalRepresentation.class, withEmbedded("foo", OtherExtendedHalRepresentation.class))
                 .get();
         // then
@@ -545,21 +702,21 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}" +
                         "}");
-        when(mock.apply(link("foo","/example/foo/1"))).thenReturn(
+        when(mock.apply(link("foo","http://example.com/example/foo/1"))).thenReturn(
                 "{" +
-                        "\"someProperty\":\"first\",\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}" +
+                        "\"someProperty\":\"first\",\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo/1\"}}" +
                         "}");
-        when(mock.apply(link("foo","/example/foo/2"))).thenReturn(
+        when(mock.apply(link("foo","http://example.com/example/foo/2"))).thenReturn(
                 "{" +
-                        "\"someProperty\":\"second\",\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}" +
+                        "\"someProperty\":\"second\",\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo/2\"}}" +
                         "}");
         // when
         final List<String> hrefs = traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .follow("foo")
                 .streamAs(ExtendedHalRepresentation.class)
                 .map(r->r.someProperty)
@@ -573,17 +730,17 @@ public class TraversonTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "/example/foo"))).thenReturn(
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}}");
-        when(mock.apply(link("foo","/example/foo/1"))).thenReturn(
+        when(mock.apply(link("foo","http://example.com/example/foo/1"))).thenReturn(
                 "{\"someProperty\":\"first\",\"_embedded\":{\"bar\":{\"someOtherProperty\":\"firstBar\"}}}");
-        when(mock.apply(link("foo","/example/foo/2"))).thenReturn(
+        when(mock.apply(link("foo","http://example.com/example/foo/2"))).thenReturn(
                 "{\"someProperty\":\"second\",\"_embedded\":{\"bar\":{\"someOtherProperty\":\"secondBar\"}}}");
         // when
         final List<String> hrefs = new ArrayList<>();
         final List<String> embeddedBars = new ArrayList<>();
         traverson(mock)
-                .startWith("/example/foo")
+                .startWith("http://example.com/example/foo")
                 .follow("foo")
                 .streamAs(ExtendedHalRepresentation.class, withEmbedded("bar", OtherExtendedHalRepresentation.class))
                 .forEach(e -> {
@@ -606,7 +763,7 @@ public class TraversonTest {
                         "}");
         // when
         final List<String> hrefs = traverson(mock)
-                .startWith("/example")
+                .startWith("http://example.com/example")
                 .follow("foo")
                 .streamAs(ExtendedHalRepresentation.class)
                 .map(r->r.someProperty)

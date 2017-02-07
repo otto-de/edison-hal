@@ -382,6 +382,12 @@ in different ways.
 
 ## Version History
 
+### 1.0.0.RC4
+
+*New Features / API extensions*
+
+* Added support for traversal auf HAL documents with relative hrefs.
+
 ### 1.0.0.RC3
 
 *New Features / API extensions*
