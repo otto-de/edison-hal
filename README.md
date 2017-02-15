@@ -382,6 +382,13 @@ in different ways.
 
 ## Version History
 
+### 1.0.0.RC5
+
+*Bugfixes*
+
+* Fixed signature of HalRepresentation.withEmbedded(): using List<? extends HalRepresentation
+instead of List<HalRepresentation
+
 ### 1.0.0.RC4
 
 *New Features / API extensions*
