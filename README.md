@@ -156,7 +156,7 @@ A HAL document can be parsed using Jackson, too:
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 ```
-####4.1 Configuring the ObjectMapper
+#### 4.1 Configuring the ObjectMapper
 There are some special cases, where it is required to configure the ObjectMapper as follows:
 ```java    
     final ObjectMapper mapper = new ObjectMapper();
@@ -177,7 +177,7 @@ This will be necessary, if there a single embedded items for a link-relation typ
     }
 }
 ```
-####4.2 Using the HalParser
+#### 4.2 Using the HalParser
 If you want to parse embedded resources into a extended HalRepresentation, you need to use the *HalParser*:
 
 ```java
