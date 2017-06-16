@@ -71,7 +71,7 @@ that has embedded items, which have embedded items, and so on.
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:1.0.0.RC3",
+        compile "de.otto.edison:edison-hal:1.0.0.RC5",
         ...
     }
 ```
