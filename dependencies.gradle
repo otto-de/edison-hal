@@ -2,9 +2,9 @@ ext.libraries = [
         test: [
                 "junit:junit:4.12",
                 "org.hamcrest:hamcrest-all:1.3",
-                "org.mockito:mockito-core:2.3.0"],
+                "org.mockito:mockito-core:2.10.0"],
         jackson: [
-                "com.fasterxml.jackson.core:jackson-databind:2.8.5"],
+                "com.fasterxml.jackson.core:jackson-databind:2.9.1"],
         uritemplates: [
                 'com.damnhandy:handy-uri-templates:2.1.6']
 ]
