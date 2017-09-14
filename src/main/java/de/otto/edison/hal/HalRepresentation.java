@@ -5,13 +5,18 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
+import static de.otto.edison.hal.Links.DEFAULT_ARRAY_LINK_RELATIONS;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
+import static java.util.Collections.unmodifiableSet;
 
 /**
  * Representation used to parse and create HAL+JSON documents from Java classes.
@@ -37,7 +42,7 @@ public class HalRepresentation {
      */
     public HalRepresentation() {
         this.links = null;
-        embedded = null;
+        this.embedded = null;
     }
 
     /**
@@ -48,7 +53,7 @@ public class HalRepresentation {
      */
     public HalRepresentation(final Links links) {
         this.links = links.isEmpty() ? null : links;
-        embedded = null;
+        this.embedded = null;
     }
 
     /**
@@ -64,7 +69,7 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     public HalRepresentation(final Links links, final Embedded embedded) {
-        this(links);
+        this.links = links.isEmpty() ? null : links;
         this.embedded = embedded.isEmpty() ? null : embedded.withCuries(getLinks().getLinksBy(CURIES));
     }
 
@@ -88,11 +93,12 @@ public class HalRepresentation {
      * @param link a link
      * @param moreLinks optionally more links
      */
-    protected void withLinks(final Link link, final Link... moreLinks) {
+    protected HalRepresentation withLinks(final Link link, final Link... moreLinks) {
         this.links = this.links != null
                 ? Links.copyOf(this.links).with(link, moreLinks).build()
                 : linkingTo(link, moreLinks);
         updateCuriesInEmbeddedItems();
+        return this;
     }
 
     /**
@@ -103,11 +109,12 @@ public class HalRepresentation {
      * </p>
      * @param links added links
      */
-    protected void withLinks(final List<Link> links) {
+    protected HalRepresentation withLinks(final List<Link> links) {
         this.links = this.links != null
                 ? Links.copyOf(this.links).with(links).build()
                 : linkingTo(links);
         updateCuriesInEmbeddedItems();
+        return this;
     }
 
     /**
@@ -131,8 +138,9 @@ public class HalRepresentation {
      *
      * @since 0.5.0
      */
-    protected void withEmbedded(final String rel, final List<? extends HalRepresentation> embeddedItems) {
+    protected HalRepresentation withEmbedded(final String rel, final List<? extends HalRepresentation> embeddedItems) {
         embedded = copyOf(embedded).with(rel, embeddedItems).build().withCuries(getLinks().getLinksBy(CURIES));
+        return this;
     }
 
     /**
@@ -144,10 +152,11 @@ public class HalRepresentation {
      *
      * @param curiesFromEmbedding the curies from the embedding representation.
      */
-    void withParentCuries(final List<Link> curiesFromEmbedding) {
+    HalRepresentation withParentCuries(final List<Link> curiesFromEmbedding) {
         if (links != null) {
             links.withParentCuries(curiesFromEmbedding);
         }
+        return this;
     }
 
     private void updateCuriesInEmbeddedItems() {

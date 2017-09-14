@@ -13,7 +13,7 @@ import static org.hamcrest.Matchers.is;
 public class HalRepresentationCuriesTest {
 
     @Test
-    public void shouldRenderSingleCuri() throws JsonProcessingException {
+    public void shouldRenderSingleCuriAsArray() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo(

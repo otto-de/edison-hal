@@ -97,7 +97,7 @@ public class Embedded {
         items.keySet().forEach(rel->{
             final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
             final List<HalRepresentation> itemsForRel = items.get(rel);
-            itemsForRel.stream().forEach(item->item.withParentCuries(curies));
+            itemsForRel.forEach(item->item.withParentCuries(curies));
             if (curiTemplate.isPresent()) {
                 this.items.put(curiTemplate.get().curiedRelFrom(rel), itemsForRel);
             } else {

@@ -5,7 +5,7 @@ apply plugin: 'maven'
 apply plugin: 'jacoco'
 apply from: 'dependencies.gradle'
 
-version='1.0.0.RC5'
+version='1.0.0.RC6-SNAPSHOT'
 group='de.otto.edison'
 
 repositories {

@@ -14,11 +14,13 @@ import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.Links.linksBuilder;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.internal.util.collections.Sets.newSet;
 
 public class LinksTest {
 
@@ -34,6 +36,22 @@ public class LinksTest {
         assertThat(links.getLinkBy("self").isPresent(), is(true));
         assertThat(links.getLinkBy("self").get().getRel(), is("self"));
         assertThat(links.getLinkBy("self").get().getHref(), is("http://example.org"));
+    }
+
+    @Test
+    public void shouldCreateLinksWithDefaultArrayRels() {
+        final Links links = linkingTo(self("http://example.org"));
+
+        assertThat(links.getArrayRels(), contains("curies", "item", "items"));
+    }
+
+    @Test
+    public void shouldCreateLinksWithConfiguredArrayRels() {
+        final Links linksUsingLinkingTo = linkingTo(singletonList(self("http://example.org")), newSet("foo", "bar"));
+        final Links linksUsingWithArrayRels = linkingTo(self("http://example.org")).withArrayRels(newSet("foobar", "barbar"));
+
+        assertThat(linksUsingLinkingTo.getArrayRels(), contains("foo", "bar"));
+        assertThat(linksUsingWithArrayRels.getArrayRels(), contains("foobar", "barbar"));
     }
 
     @Test

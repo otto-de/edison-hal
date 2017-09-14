@@ -4,11 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
-import static de.otto.edison.hal.Link.collection;
-import static de.otto.edison.hal.Link.item;
-import static de.otto.edison.hal.Link.link;
-import static de.otto.edison.hal.Link.linkBuilder;
-import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.Link.*;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
@@ -60,6 +56,48 @@ public class HalRepresentationLinkingTest {
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"test\":\"foo\",\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}}}"));
+    }
+
+    @Test
+    public void shouldRenderSingleCuriAsArray() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        curi("x", "http://example.org/rels/{rel}")
+                )
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}}"));
+    }
+
+    @Test
+    public void shouldRenderSingleItemAsArray() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        item("http://example.org/items/1"))
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{\"_links\":{\"item\":[{\"href\":\"http://example.org/items/1\"}]}}"));
+    }
+
+    @Test
+    public void shouldRenderConfiguredRelAsArray() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        link("foo", "http://example.org/items/1"),
+                        link("bar", "http://example.org/items/2"))
+                .withArrayRels("foo")
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{\"_links\":{\"foo\":[{\"href\":\"http://example.org/items/1\"}],\"bar\":{\"href\":\"http://example.org/items/2\"}}}"));
     }
 
     @Test

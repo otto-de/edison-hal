@@ -111,16 +111,55 @@ Otherwise, you can derive a class from HalRepresentation to add extra attributes
 
 ```
 
-### 3. Serializing HalRepresentations
+### 3. Multiple Links
 
-To convert your representation class into a application/hal+json document, you can use Jackson's ObjectMapper directly:
+A resource may have multiple links that share the same link relation.
+
+For link relations that may have multiple links, we use an array of links.
+```
+{
+    "_links": {
+        "item": [
+            { "href": "http://example.com/items/foo" },
+            { "href": "http://example.com/items/bar" }
+        ]
+    }
+}
+```
+
+>Note: If you're unsure whether the link should be singular, assume it will be multiple.
+>If you pick singular and find you need to change it, you will need to create a new link
+>relation or face breaking existing clients.
+
+_[text + example taken from http://stateless.co/hal_specification.html)_
+
+By default, links with link-relation type `curies`, `item`, and `items` are serialized as 
+an array of links.
+
+Using Edison HAL, you can override this default behaviour when you build the ```Links``` 
+object of a ```HalRepresentation```:
+```java
+    final HalRepresentation representation = new HalRepresentation(
+            linkingTo(
+                    self("http://example.org/test/bar")
+            ).withArrayRels("item", "foo", "bar")
+    );
+```
+
+Instead of calling ```Links#withArrayRels()```, you can also configure this using ```Links#linkingTo(List<Link>, Set<String>)```
+or using ```Links.Builder```
+
+### 4. Serializing HalRepresentations
+
+To convert your representation class into a application/hal+json document, you can use Jackson's 
+ObjectMapper directly:
 ```java
     final ObjectMapper mapper = new ObjectMapper();
     
     final String json = mapper.writeValueAsString(representation);
 ```
 
-### 4. Parsing application/hal+json documents
+### 5. Parsing application/hal+json documents
 
 A HAL document can be parsed using Jackson, too:
 
@@ -156,7 +195,7 @@ A HAL document can be parsed using Jackson, too:
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 ```
-#### 4.1 Configuring the ObjectMapper
+#### 5.1 Configuring the ObjectMapper
 There are some special cases, where it is required to configure the ObjectMapper as follows:
 ```java    
     final ObjectMapper mapper = new ObjectMapper();
@@ -177,7 +216,7 @@ This will be necessary, if there a single embedded items for a link-relation typ
     }
 }
 ```
-#### 4.2 Using the HalParser
+#### 5.2 Using the HalParser
 If you want to parse embedded resources into a extended HalRepresentation, you need to use the *HalParser*:
 
 ```java
@@ -211,7 +250,7 @@ If you want to parse embedded resources into a extended HalRepresentation, you n
     }
 ```
 
-### 5. Using HAL in Spring controllers
+### 6. Using HAL in Spring controllers
 
 Using Spring MVC, you can directly return HalRepresentations from you controller methods:
 
@@ -228,7 +267,7 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
     }
 ```
 
-### 6. Using the Traverson:
+### 7. Using the Traverson:
 
 Traverson is a utility to make it easy to traverse linked and/or embedded resources using link-relation types:
 
@@ -381,6 +420,11 @@ It requires the server to be running. The REST resources are traversed
 in different ways. 
 
 ## Version History
+
+### 1.0.0
+
+*New Features / API extensions* 
+* It is now possible to configure the link-relation types that are serialized as an array of links.
 
 ### 1.0.0.RC5
 
