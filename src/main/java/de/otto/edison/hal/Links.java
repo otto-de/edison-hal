@@ -3,7 +3,6 @@ package de.otto.edison.hal;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -182,7 +181,7 @@ public class Links {
      * @return Links.Builder
      */
     public static Builder copyOf(final Links prototype) {
-        return new Builder().with(prototype).serializeAsArray(prototype.arrayRels);
+        return new Builder().with(prototype).withArrayRels(prototype.arrayRels);
     }
 
     /**
@@ -528,8 +527,20 @@ public class Links {
          * @return this
          * @since 1.0.0
          */
-        public Builder serializeAsArray(final Set<String> arrayRels) {
+        public Builder withArrayRels(final Set<String> arrayRels) {
             this.arrayRels = arrayRels;
+            return this;
+        }
+
+        /**
+         * Configures the set of link-relation types that are always rendered as an array of links.
+         *
+         * @param arrayRels link-relation types
+         * @return this
+         * @since 1.0.0
+         */
+        public Builder withArrayRels(final String... arrayRels) {
+            this.arrayRels = arrayRels != null ? new HashSet<>(asList(arrayRels)) : emptySet();
             return this;
         }
 
