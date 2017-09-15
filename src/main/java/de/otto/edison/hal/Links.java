@@ -370,6 +370,7 @@ public class Links {
      *
      * @param arrayRels zero or more link-relation types
      * @return this
+     * @since 1.0.0
      */
     public Links withArrayRels(final String... arrayRels) {
         this.arrayRels = arrayRels != null ? new HashSet<>(asList(arrayRels)) : emptySet();
@@ -381,6 +382,7 @@ public class Links {
      *
      * @param arrayRels a set of link-relation types
      * @return this
+     * @since 1.0.0
      */
     public Links withArrayRels(final Set<String> arrayRels) {
         this.arrayRels = arrayRels != null ? arrayRels : emptySet();

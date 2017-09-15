@@ -68,7 +68,7 @@ public class Embedded {
      * @since 0.1.0
      */
     Embedded() {
-        items =null;
+        items = null;
         curies = emptyList();
     }
 

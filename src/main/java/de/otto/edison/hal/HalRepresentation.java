@@ -5,18 +5,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
-import static de.otto.edison.hal.Links.DEFAULT_ARRAY_LINK_RELATIONS;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
-import static java.util.Collections.unmodifiableSet;
 
 /**
  * Representation used to parse and create HAL+JSON documents from Java classes.
@@ -70,7 +65,9 @@ public class HalRepresentation {
      */
     public HalRepresentation(final Links links, final Embedded embedded) {
         this.links = links.isEmpty() ? null : links;
-        this.embedded = embedded.isEmpty() ? null : embedded.withCuries(getLinks().getLinksBy(CURIES));
+        this.embedded = embedded.isEmpty()
+                ? null
+                : embedded.withCuries(getLinks().getLinksBy(CURIES));
     }
 
     /**
