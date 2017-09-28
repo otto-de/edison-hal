@@ -3,16 +3,16 @@ package de.otto.edison.hal;
 import org.junit.Test;
 
 import static de.otto.edison.hal.Link.curi;
-import static de.otto.edison.hal.LinkRelations.emptyLinkRelations;
+import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class LinkRelationsTest {
+public class RelRegistryTest {
 
     @Test
     public void shouldResolveFullUri() {
         // given
-        final LinkRelations registry = emptyLinkRelations();
+        final RelRegistry registry = defaultRelRegistry();
         registry.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
         final String resolved = registry.resolve("http://spec.otto.de/rels/foo");
@@ -23,7 +23,7 @@ public class LinkRelationsTest {
     @Test
     public void shouldResolveCuriedUri() {
         // given
-        final LinkRelations registry = emptyLinkRelations();
+        final RelRegistry registry = defaultRelRegistry();
         registry.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
         final String resolved = registry.resolve("o:foo");
@@ -34,7 +34,7 @@ public class LinkRelationsTest {
     @Test
     public void shouldResolveUnknownFullUri() {
         // given
-        final LinkRelations registry = emptyLinkRelations();
+        final RelRegistry registry = defaultRelRegistry();
         registry.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
         final String resolved = registry.resolve("http://www.otto.de/some/other");
@@ -45,7 +45,7 @@ public class LinkRelationsTest {
     @Test
     public void shouldResolveUnknownCuriedUri() {
         // given
-        final LinkRelations registry = emptyLinkRelations();
+        final RelRegistry registry = defaultRelRegistry();
         registry.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
         final String resolved = registry.resolve("x:other");
@@ -56,12 +56,12 @@ public class LinkRelationsTest {
     @Test
     public void shouldMergeRegistries() {
         // given
-        final LinkRelations registry = emptyLinkRelations();
+        final RelRegistry registry = defaultRelRegistry();
         registry.register(curi("x", "http://x.otto.de/rels/{rel}"));
-        final LinkRelations other = emptyLinkRelations();
+        final RelRegistry other = defaultRelRegistry();
         other.register(curi("u", "http://u.otto.de/rels/{rel}"));
         // when
-        final LinkRelations merged = registry.mergeWith(other);
+        final RelRegistry merged = registry.mergeWith(other);
         // then
         assertThat(merged.resolve("http://x.otto.de/rels/foo"), is("x:foo"));
         assertThat(merged.resolve("http://u.otto.de/rels/foo"), is("u:foo"));
@@ -70,12 +70,12 @@ public class LinkRelationsTest {
     @Test
     public void shouldMergeByReplacingExistingWithOther() {
         // given
-        final LinkRelations registry = emptyLinkRelations();
+        final RelRegistry registry = defaultRelRegistry();
         registry.register(curi("x", "http://x.otto.de/rels/{rel}"));
-        final LinkRelations other = emptyLinkRelations();
+        final RelRegistry other = defaultRelRegistry();
         other.register(curi("x", "http://spec.otto.de/rels/{rel}"));
         // when
-        final LinkRelations merged = registry.mergeWith(other);
+        final RelRegistry merged = registry.mergeWith(other);
         // then
         assertThat(merged.resolve("http://spec.otto.de/rels/foo"), is("x:foo"));
     }
@@ -83,13 +83,13 @@ public class LinkRelationsTest {
     @Test
     public void shouldMergeEmptyRegistryWithNonEmpty() {
         // given
-        final LinkRelations empty = emptyLinkRelations();
-        final LinkRelations other = emptyLinkRelations();
+        final RelRegistry empty = defaultRelRegistry();
+        final RelRegistry other = defaultRelRegistry();
         other.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
-        final LinkRelations merged = empty.mergeWith(other);
+        final RelRegistry merged = empty.mergeWith(other);
         // then
-        assertThat(empty, is(emptyLinkRelations()));
+        assertThat(empty, is(defaultRelRegistry()));
         assertThat(merged.resolve("http://spec.otto.de/rels/foo"), is("o:foo"));
     }
 }

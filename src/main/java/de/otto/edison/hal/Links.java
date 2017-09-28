@@ -17,13 +17,12 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static de.otto.edison.hal.Link.linkBuilder;
-import static de.otto.edison.hal.LinkRelations.emptyLinkRelations;
-import static de.otto.edison.hal.LinkRelations.linkRelations;
+import static de.otto.edison.hal.RelRegistry.DEFAULT_ARRAY_LINK_RELATIONS;
+import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
+import static de.otto.edison.hal.RelRegistry.relRegistry;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -37,27 +36,20 @@ import static java.util.stream.Collectors.toMap;
 @JsonDeserialize(using = Links.LinksDeserializer.class)
 public class Links {
 
-    public static final Set<String> DEFAULT_ARRAY_LINK_RELATIONS = unmodifiableSet(new HashSet<String>() {{
-        add("curies");
-        add("item");
-        add("items");
-    }});
-
     private static final String CURIES_REL = "curies";
 
     private static final Links EMPTY_LINKS = new Links();
 
     private final Map<String, List<Link>> links = new LinkedHashMap<>();
-    private final LinkRelations linkRelations;
+    private final RelRegistry relRegistry;
 
-    private volatile Set<String> arrayRels = DEFAULT_ARRAY_LINK_RELATIONS;
 
     /**
      *
      * @since 0.1.0
      */
     Links() {
-        this.linkRelations = emptyLinkRelations();
+        this.relRegistry = defaultRelRegistry();
     }
 
     /**
@@ -71,40 +63,38 @@ public class Links {
      *     The list of links for a link-relation type must have the same {@link Link#rel}
      * </p>
      * <p>
-     *     The {@link #arrayRels} Set contains the link-relation types that are serialized as an array event if
+     *     The {@link RelRegistry} contains the link-relation types that are serialized as an array event if
      *     there is only a single link. CURIs, for example, should always be contained in arrayRels.
      * </p>
      *
      * @param links a map with link-relation types as key and the list of links as value.
-     * @param arrayRels the set of link-relation types that is rendered as an array of links.
-     * @param linkRelations the LinkRelations used to CURI the link-relation types of the links.
+     * @param relRegistry the RelRegistry used to CURI the link-relation types of the links.
      * @since 1.0.0
      */
     private Links(final Map<String, List<Link>> links,
-                  final Set<String> arrayRels,
-                  final LinkRelations linkRelations) {
-        this.linkRelations = linkRelations;
-        this.arrayRels = arrayRels;
+                  final RelRegistry relRegistry) {
+        this.relRegistry = relRegistry;
         final List<Link> curies = links.getOrDefault(CURIES_REL, emptyList());
-        curies.forEach(this.linkRelations::register);
+        curies.forEach(this.relRegistry::register);
         links.keySet().forEach(rel -> {
-                this.links.put(linkRelations.resolve(rel), links.get(rel));
+                this.links.put(relRegistry.resolve(rel), links.get(rel));
         });
     }
 
     /**
-     * Applies LinkRelations to the links and replaces link-relation types with CURIed form, if applicable.
+     * Applies RelRegistry to the links and replaces link-relation types with CURIed form, if applicable.
      * <p>
-     *     All CURIes are registered in the given LinkRelations, so the HalRepresentation can forward these
+     *     All CURIes are registered in the given RelRegistry, so the HalRepresentation can forward these
      *     CURIes to embedded items.
      * </p>
-     * @param linkRelations LinkRelations used to replace CURIed rels
-     * @return Links having a reference to the given LinkRelations.
+     * @param relRegistry RelRegistry used to replace CURIed rels
+     * @return Links having a reference to the given RelRegistry.
      */
-    Links using(final LinkRelations linkRelations) {
-        final List<Link> curies = links.getOrDefault(CURIES_REL, emptyList());
-        curies.forEach(linkRelations::register);
-        return new Links(links, arrayRels, linkRelations);
+    Links using(final RelRegistry relRegistry) {
+        final RelRegistry copy = RelRegistry.copyOf(relRegistry);
+        links.getOrDefault(CURIES_REL, emptyList()).forEach(copy::register);
+        copy.withArrayRels(this.relRegistry.getArrayRels());
+        return new Links(links, copy);
     }
 
     /**
@@ -137,8 +127,8 @@ public class Links {
     }
 
     /**
-     * Creates a Links object from a list of links with {@link #DEFAULT_ARRAY_LINK_RELATIONS} used to serialize _links
-     * for a link-relation type as an array.
+     * Creates a Links object from a list of links with {@link RelRegistry#defaultRelRegistry()} used
+     * to serialize _links for a link-relation type as an array.
      *
      * @param links the list of links.
      * @return Links
@@ -150,7 +140,7 @@ public class Links {
     }
 
     /**
-     * Creates a Links object from a list of links with {@link #DEFAULT_ARRAY_LINK_RELATIONS} used to serialize _links
+     * Creates a Links object from a list of links with arrayRels used to serialize _links
      * for a link-relation type as an array.
      *
      * @param links the list of links.
@@ -162,7 +152,7 @@ public class Links {
      * @since 1.0.0
      */
     public static Links linkingTo(final List<Link> links,
-                                  final Set<String> arrayRels) {
+                                  final Collection<String> arrayRels) {
         final Map<String,List<Link>> allLinks = new LinkedHashMap<>();
         links.forEach(l -> {
             if (!allLinks.containsKey(l.getRel())) {
@@ -170,7 +160,7 @@ public class Links {
             }
             allLinks.get(l.getRel()).add(l);
         });
-        return new Links(allLinks, arrayRels, emptyLinkRelations());
+        return new Links(allLinks, RelRegistry.relRegistry(arrayRels));
     }
 
     /**
@@ -189,7 +179,11 @@ public class Links {
      * @return Links.Builder
      */
     public static Builder copyOf(final Links prototype) {
-        return new Builder().with(prototype).withArrayRels(prototype.arrayRels);
+        return new Builder().with(prototype);
+    }
+
+    public RelRegistry getRelRegistry() {
+        return relRegistry;
     }
 
     /**
@@ -211,22 +205,6 @@ public class Links {
     @JsonIgnore
     public Set<String> getRels() {
         return links.keySet();
-    }
-
-    /**
-     * Returns the set of link-relation types that are always rendered as an array of links, event if there is only
-     * a single link.
-     * <p>
-     *     The returned set only contains the configured 'arrayRels', not the set of link-relation types that actually
-     *     contains an array as there are multiple links.
-     * </p>
-     *
-     * @return set of link-relation types
-     * @since 1.0.0
-     */
-    @JsonIgnore
-    public Set<String> getArrayRels() {
-        return arrayRels;
     }
 
     /**
@@ -297,7 +275,7 @@ public class Links {
      * @since 0.1.0
      */
     public List<Link> getLinksBy(final String rel) {
-        final String curiedRel = linkRelations.resolve(rel);
+        final String curiedRel = relRegistry.resolve(rel);
         final List<Link> links = this.links.get(curiedRel);
 
         return links != null ? links : emptyList();
@@ -336,30 +314,6 @@ public class Links {
      */
     public boolean isEmpty() {
         return links.isEmpty();
-    }
-
-    /**
-     * Configures the link-relation types that are always serialized as an array of links.
-     *
-     * @param arrayRels zero or more link-relation types
-     * @return this
-     * @since 1.0.0
-     */
-    public Links withArrayRels(final String... arrayRels) {
-        this.arrayRels = arrayRels != null ? new HashSet<>(asList(arrayRels)) : emptySet();
-        return this;
-    }
-
-    /**
-     * Configures the link-relation types that are always serialized as an array of links.
-     *
-     * @param arrayRels a set of link-relation types
-     * @return this
-     * @since 1.0.0
-     */
-    public Links withArrayRels(final Set<String> arrayRels) {
-        this.arrayRels = arrayRels != null ? arrayRels : emptySet();
-        return this;
     }
 
     /**
@@ -407,8 +361,7 @@ public class Links {
      */
     public static class Builder {
         private final Map<String,List<Link>> links = new LinkedHashMap<>();
-        private LinkRelations linkRelations = emptyLinkRelations();
-        private Set<String> arrayRels = DEFAULT_ARRAY_LINK_RELATIONS;
+        private RelRegistry relRegistry = defaultRelRegistry();
 
 
         /**
@@ -462,9 +415,6 @@ public class Links {
          * <p>
          *     {@link Link#isEquivalentTo(Link) Equivalent} links are NOT added but silently ignored.
          * </p>
-         * <p>
-         *     The set of {@link #arrayRels} is <em>not</em> copied from 'moreLinks'.
-         * </p>
          *
          * @param moreLinks the added links.
          * @return this
@@ -475,35 +425,12 @@ public class Links {
             for (final String rel : moreLinks.getRels()) {
                 with(moreLinks.getLinksBy(rel));
             }
+            this.relRegistry = moreLinks.relRegistry;
             return this;
         }
 
-        /**
-         * Configures the set of link-relation types that are always rendered as an array of links.
-         *
-         * @param arrayRels Set of link-relation types
-         * @return this
-         * @since 1.0.0
-         */
-        public Builder withArrayRels(final Set<String> arrayRels) {
-            this.arrayRels = arrayRels;
-            return this;
-        }
-
-        /**
-         * Configures the set of link-relation types that are always rendered as an array of links.
-         *
-         * @param arrayRels link-relation types
-         * @return this
-         * @since 1.0.0
-         */
-        public Builder withArrayRels(final String... arrayRels) {
-            this.arrayRels = arrayRels != null ? new HashSet<>(asList(arrayRels)) : emptySet();
-            return this;
-        }
-
-        public Builder using(final LinkRelations linkRelations) {
-            this.linkRelations = linkRelations;
+        public Builder using(final RelRegistry relRegistry) {
+            this.relRegistry = relRegistry;
             return this;
         }
 
@@ -513,7 +440,7 @@ public class Links {
          * @return Links
          */
         public Links build() {
-            return new Links(links, arrayRels, linkRelations);
+            return new Links(links, relRegistry);
         }
     }
 
@@ -533,7 +460,7 @@ public class Links {
             gen.writeStartObject();
             for (final String rel : value.links.keySet()) {
                 final List<Link> links = value.links.get(rel);
-                if (links.size() > 1 || value.arrayRels.contains(rel)) {
+                if (links.size() > 1 || value.relRegistry.isArrayRel(rel)) {
                     gen.writeArrayFieldStart(rel);
                     for (final Link link : links) {
                         gen.writeObject(link);
@@ -569,8 +496,7 @@ public class Links {
                     .collect(toMap(Map.Entry::getKey, e -> asListOfLinks(e.getKey(), e.getValue())));
             return new Links(
                     links,
-                    DEFAULT_ARRAY_LINK_RELATIONS,
-                    LinkRelations.linkRelations(links.getOrDefault(CURIES_REL, emptyList()))
+                    defaultRelRegistry()
             );
         }
 

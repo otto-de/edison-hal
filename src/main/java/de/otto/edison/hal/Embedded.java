@@ -12,12 +12,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.util.*;
 
-import static de.otto.edison.hal.LinkRelations.emptyLinkRelations;
+import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -61,7 +60,7 @@ public class Embedded {
     /**
      * The RelRegistry used to resolve curies
      */
-    private final LinkRelations linkRelations;
+    private final RelRegistry relRegistry;
 
     /**
      * Used by Jackson to parse/create Embedded instances.
@@ -70,7 +69,7 @@ public class Embedded {
      */
     Embedded() {
         items = null;
-        linkRelations = emptyLinkRelations();
+        relRegistry = defaultRelRegistry();
     }
 
     /**
@@ -82,19 +81,19 @@ public class Embedded {
      */
     private Embedded(final Map<String, List<HalRepresentation>> items) {
         this.items = items;
-        this.linkRelations = emptyLinkRelations();
+        this.relRegistry = defaultRelRegistry();
     }
 
-    private Embedded(final Map<String, List<HalRepresentation>> items, final LinkRelations linkRelations) {
+    private Embedded(final Map<String, List<HalRepresentation>> items, final RelRegistry relRegistry) {
         final Map<String, List<HalRepresentation>> curiedItems = new LinkedHashMap<>();
         for (final String rel : items.keySet()) {
-            curiedItems.put(linkRelations.resolve(rel), items.get(rel)
+            curiedItems.put(relRegistry.resolve(rel), items.get(rel)
                     .stream()
-                    .map(halRepresentation -> halRepresentation.using(linkRelations))
+                    .map(halRepresentation -> halRepresentation.using(relRegistry))
                     .collect(toList()));
         }
         this.items = curiedItems;
-        this.linkRelations = linkRelations;
+        this.relRegistry = relRegistry;
     }
 
     /**
@@ -133,8 +132,8 @@ public class Embedded {
         return new Builder();
     }
 
-    protected Embedded using(final LinkRelations linkRelations) {
-        return new Embedded(items, linkRelations);
+    protected Embedded using(final RelRegistry relRegistry) {
+        return new Embedded(items, relRegistry);
     }
 
     /**
@@ -161,7 +160,7 @@ public class Embedded {
     @JsonIgnore
     public List<HalRepresentation> getItemsBy(final String rel) {
         if (items != null) {
-            return items.getOrDefault(linkRelations.resolve(rel), emptyList());
+            return items.getOrDefault(relRegistry.resolve(rel), emptyList());
         } else {
             return emptyList();
         }
@@ -247,7 +246,7 @@ public class Embedded {
 
     public final static class Builder {
         private final Map<String,List<HalRepresentation>> _embedded = new LinkedHashMap<>();
-        private LinkRelations linkRelations = emptyLinkRelations();
+        private RelRegistry relRegistry = defaultRelRegistry();
 
         /**
          * <p>
@@ -296,8 +295,8 @@ public class Embedded {
             return this;
         }
 
-        public Builder using(final LinkRelations linkRelations) {
-            this.linkRelations = linkRelations;
+        public Builder using(final RelRegistry relRegistry) {
+            this.relRegistry = relRegistry;
             return this;
         }
 
@@ -309,7 +308,7 @@ public class Embedded {
          * @since 0.1.0
          */
         public Embedded build() {
-            return _embedded.isEmpty() ? emptyEmbedded() : new Embedded(_embedded, linkRelations);
+            return _embedded.isEmpty() ? emptyEmbedded() : new Embedded(_embedded, relRegistry);
         }
     }
 

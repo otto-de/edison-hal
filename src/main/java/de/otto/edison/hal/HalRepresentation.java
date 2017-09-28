@@ -2,7 +2,6 @@ package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,8 +26,6 @@ import static de.otto.edison.hal.Links.linksBuilder;
 @JsonInclude(NON_NULL)
 public class HalRepresentation {
 
-    private final LinkRelations linkRelations;
-
     @JsonProperty(value = "_links")
     private volatile Links links;
     @JsonProperty(value = "_embedded")
@@ -41,7 +38,7 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     public HalRepresentation() {
-        this(null, null, null);
+        this(null, null);
     }
 
     /**
@@ -51,7 +48,7 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     public HalRepresentation(final Links links) {
-        this(null, links, null);
+        this(links, null);
     }
 
     /**
@@ -69,35 +66,12 @@ public class HalRepresentation {
     @JsonCreator
     public HalRepresentation(final @JsonProperty("_links") Links links,
                              final @JsonProperty("_embedded") Embedded embedded) {
-        this(null, links, embedded);
-    }
-
-    /**
-     * <p>
-     *     Creates a HalRepresentation with {@link Links} and {@link Embedded} objects.
-     * </p>
-     * <p>
-     *     If the Links do contain CURIs, the link-relation types of the embedded objects are shortened.
-     * </p>
-     * <p>
-     *     The RelRegistry is used to resolve CURIed link-relations in links and embedded resources.
-     * </p>
-     *
-     * @param linkRelations the link-relation registry used to resolve curied rels in links and embedded resources.
-     * @param links the Links of the HalRepresentation
-     * @param embedded the Embedded items of the HalRepresentation
-     * @since 0.1.0
-     */
-    public HalRepresentation(final LinkRelations linkRelations, final Links links, final Embedded embedded) {
-        this.linkRelations = linkRelations != null
-                ? linkRelations.mergeWith(links)
-                : LinkRelations.linkRelations(links);
         this.links = links == null || links.isEmpty()
                 ? null
-                : links.using(this.linkRelations);
+                : links;
         this.embedded = embedded == null || embedded.isEmpty()
                 ? null
-                : embedded.using(this.linkRelations);
+                : embedded.using(getLinks().getRelRegistry());
     }
 
     /**
@@ -123,10 +97,10 @@ public class HalRepresentation {
      */
     protected HalRepresentation withLinks(final Link link, final Link... moreLinks) {
         this.links = this.links != null
-                ? copyOf(this.links).with(link, moreLinks).using(this.linkRelations).build()
-                : linksBuilder().with(link, moreLinks).using(this.linkRelations).build();
+                ? copyOf(this.links).with(link, moreLinks).build()
+                : linksBuilder().with(link, moreLinks).build();
         if (embedded != null) {
-            embedded = embedded.using(linkRelations);
+            embedded = embedded.using(this.links.getRelRegistry());
         }
         return this;
     }
@@ -142,10 +116,10 @@ public class HalRepresentation {
      */
     protected HalRepresentation withLinks(final List<Link> links) {
         this.links = this.links != null
-                ? copyOf(this.links).with(links).using(linkRelations).build()
-                : linksBuilder().with(links).using(linkRelations).build();
+                ? copyOf(this.links).with(links).build()
+                : linksBuilder().with(links).build();
         if (embedded != null) {
-            embedded = embedded.using(linkRelations);
+            embedded = embedded.using(this.links.getRelRegistry());
         }
         return this;
     }
@@ -193,16 +167,20 @@ public class HalRepresentation {
      * @since 0.5.0
      */
     protected HalRepresentation withEmbedded(final String rel, final List<? extends HalRepresentation> embeddedItems) {
-        embedded = copyOf(embedded).with(rel, embeddedItems).using(linkRelations).build();
+        embedded = copyOf(embedded).with(rel, embeddedItems).using(getLinks().getRelRegistry()).build();
         return this;
     }
 
-    protected HalRepresentation using(final LinkRelations linkRelations) {
+    protected HalRepresentation using(final RelRegistry relRegistry) {
         if (links != null) {
-            links = links.using(linkRelations);
-        }
-        if (embedded != null) {
-            embedded = embedded.using(linkRelations);
+            links = links.using(relRegistry);
+            if (embedded != null) {
+                embedded = embedded.using(links.getRelRegistry());
+            }
+        } else {
+            if (embedded != null) {
+                embedded = embedded.using(relRegistry);
+            }
         }
         return this;
     }

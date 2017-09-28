@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
+import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Link.*;
+import static de.otto.edison.hal.RelRegistry.relRegistry;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
@@ -92,12 +94,104 @@ public class HalRepresentationLinkingTest {
                 linkingTo(
                         link("foo", "http://example.org/items/1"),
                         link("bar", "http://example.org/items/2"))
-                .withArrayRels("foo")
+                .using(RelRegistry.relRegistry(asList("foo")))
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"foo\":[{\"href\":\"http://example.org/items/1\"}],\"bar\":{\"href\":\"http://example.org/items/2\"}}}"));
+    }
+
+    @Test
+    public void shouldRenderConfiguredCuriedRelAsArray() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        curi("ex", "http://example.org/rels/{rel}"),
+                        link("ex:foo", "http://example.org/items/1"),
+                        link("http://example.org/rels/bar", "http://example.org/items/2"))
+                .using(RelRegistry.relRegistry(asList("http://example.org/rels/foo", "ex:bar")))
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{\"_links\":{" +
+                "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]," +
+                "\"ex:foo\":[{\"href\":\"http://example.org/items/1\"}]," +
+                "\"ex:bar\":[{\"href\":\"http://example.org/items/2\"}]}}"));
+    }
+
+    @Test
+    public void shouldRenderNestedConfiguredCuriedRelAsArray() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                emptyLinks(),
+                embedded("http://example.org/rels/nested", asList(new HalRepresentation(
+                        linkingTo(
+                                curi("ex", "http://example.org/rels/{rel}"),
+                                link("ex:foo", "http://example.org/items/1"),
+                                link("http://example.org/rels/bar", "http://example.org/items/2"))
+                                .using(RelRegistry.relRegistry(asList("http://example.org/rels/foo", "ex:bar")))
+                )))
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{" +
+                "\"_embedded\":{\"http://example.org/rels/nested\":[{\"_links\":{" +
+                "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]," +
+                "\"ex:foo\":[{\"href\":\"http://example.org/items/1\"}]," +
+                "\"ex:bar\":[{\"href\":\"http://example.org/items/2\"}]}}" +
+                "]}}"));
+    }
+
+    @Test
+    public void shouldRenderNestedConfiguredCuriedRelAsArrayWithCuriAtTopLevel() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(
+                        asList(curi("ex", "http://example.org/rels/{rel}")),
+                        asList("http://example.org/rels/foo", "ex:bar")),
+                embedded("http://example.org/rels/nested", asList(new HalRepresentation(
+                        linkingTo(
+                                link("ex:foo", "http://example.org/items/1"),
+                                link("http://example.org/rels/bar", "http://example.org/items/2"))
+                )))
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{" +
+                "\"_links\":{" +
+                "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]}," +
+                "\"_embedded\":{\"ex:nested\":[{\"_links\":{" +
+                "\"ex:foo\":[{\"href\":\"http://example.org/items/1\"}]," +
+                "\"ex:bar\":[{\"href\":\"http://example.org/items/2\"}]}}" +
+                "]}}"));
+    }
+
+    @Test
+    public void shouldRenderNestedConfiguredCuriedRelAsArrayWithCuriAtTopLevelWithUsing() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo(curi("ex", "http://example.org/rels/{rel}"))
+                        .using(RelRegistry.relRegistry(asList("http://example.org/rels/foo", "ex:bar"))),
+                embedded("http://example.org/rels/nested", asList(new HalRepresentation(
+                        linkingTo(
+                                link("ex:foo", "http://example.org/items/1"),
+                                link("http://example.org/rels/bar", "http://example.org/items/2"))
+                )))
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{" +
+                "\"_links\":{" +
+                "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]}," +
+                "\"_embedded\":{\"ex:nested\":[{\"_links\":{" +
+                "\"ex:foo\":[{\"href\":\"http://example.org/items/1\"}]," +
+                "\"ex:bar\":[{\"href\":\"http://example.org/items/2\"}]}}" +
+                "]}}"));
     }
 
     @Test
