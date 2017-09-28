@@ -106,7 +106,7 @@ public final class HalParser {
     private <T extends HalRepresentation> void resolveEmbeddedTypeInfo(EmbeddedTypeInfo typeInfo, JsonNode jsonNode, T halRepresentation) {
         if (!jsonNode.isMissingNode()) {
             final List<HalRepresentation> embeddedValues = new ArrayList<>();
-            final JsonNode embeddedNodeForRel = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.rel);
+            final JsonNode embeddedNodeForRel = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.getRel());
             if (!embeddedNodeForRel.isMissingNode()) {
                 resolveEmbeddedTypeInfo(typeInfo, halRepresentation, embeddedValues, embeddedNodeForRel);
             } else {
@@ -128,18 +128,18 @@ public final class HalParser {
         if (embeddedNodeForRel.isArray()) {
             for (int i = 0; i < embeddedNodeForRel.size(); i++) {
                 final JsonNode embeddedNode = embeddedNodeForRel.get(i);
-                final HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNode, typeInfo.type);
+                final HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNode, typeInfo.getType());
                 if (embedded != null) {
                     embeddedValues.add(embedded);
                 }
             }
         } else {
-            HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNodeForRel, typeInfo.type);
+            HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNodeForRel, typeInfo.getType());
             if (embedded != null) {
                 embeddedValues.add(embedded);
             }
         }
-        halRepresentation.withEmbedded(typeInfo.rel, embeddedValues);
+        halRepresentation.withEmbedded(typeInfo.getRel(), embeddedValues);
     }
 
     /**

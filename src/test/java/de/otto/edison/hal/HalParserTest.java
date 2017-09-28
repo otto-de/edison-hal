@@ -12,7 +12,6 @@ import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -104,7 +103,8 @@ public class HalParserTest {
                         "]}" +
                         "}";
         // when
-        final SimpleHalRepresentation result = parse(json).as(SimpleHalRepresentation.class, withEmbedded("bar", EmbeddedHalRepresentation.class));
+        final SimpleHalRepresentation result = parse(json)
+                .as(SimpleHalRepresentation.class, withEmbedded("bar", EmbeddedHalRepresentation.class));
         // then
         final List<EmbeddedHalRepresentation> embeddedItems = result.getEmbedded().getItemsBy("bar", EmbeddedHalRepresentation.class);
         assertThat(embeddedItems, hasSize(1));

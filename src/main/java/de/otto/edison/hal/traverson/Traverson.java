@@ -850,7 +850,7 @@ public class Traverson {
             // with respect to pageType and embeddedTypeInfo:
             if (hops.size() == 1) {
                 final Hop hop = hops.get(0);
-                if (embeddedTypeInfo == null || !hop.rel.equals(embeddedTypeInfo.rel)) {
+                if (embeddedTypeInfo == null || !hop.rel.equals(embeddedTypeInfo.getRel())) {
                     firstHop = getResource(current, HalRepresentation.class, withEmbedded(hop.rel, pageType));
                 } else {
                     firstHop = getResource(current, pageType, embeddedTypeInfo);
@@ -908,7 +908,7 @@ public class Traverson {
         if (hops.size() == 1) { // one before the last hop:
             final Hop nextHop = hops.get(0);
             if (embeddedTypeInfo != null) {
-                final EmbeddedTypeInfo embeddedType = nextHop.rel.equals(embeddedTypeInfo.rel)
+                final EmbeddedTypeInfo embeddedType = nextHop.rel.equals(embeddedTypeInfo.getRel())
                         ? embeddedTypeInfo
                         : withEmbedded(nextHop.rel, resultType);
                 this.contextUrl = linkToUrl(expandedLink);
