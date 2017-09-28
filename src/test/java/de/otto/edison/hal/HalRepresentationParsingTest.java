@@ -19,6 +19,7 @@ import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -309,5 +310,21 @@ public class HalRepresentationParsingTest {
                 .getItemsBy("http://example.org/rels/bar", EmbeddedHalRepresentation.class);
         assertThat(items, hasSize(1));
         assertThat(items.get(0).value, is("Hello World"));
+    }
+
+    @Test
+    public void shouldParseExtraAttributes() throws IOException {
+        // given
+        final String json = "{" +
+                "\"foo\":\"Hello World\"," +
+                "\"bar\":[\"Hello\", \"World\"]" +
+                "}";
+        // when
+        HalRepresentation resource = parse(json).as(HalRepresentation.class);
+        // then
+        assertThat(resource.getAttributes().keySet(), containsInAnyOrder("foo", "bar"));
+        assertThat(resource.getAttribute("foo").asText(), is("Hello World"));
+        assertThat(resource.getAttribute("bar").at("/0").asText(), is("Hello"));
+        assertThat(resource.getAttribute("bar").at("/1").asText(), is("World"));
     }
 }

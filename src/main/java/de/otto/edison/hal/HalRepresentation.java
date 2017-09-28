@@ -1,8 +1,12 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static de.otto.edison.hal.Embedded.Builder.copyOf;
@@ -29,10 +33,8 @@ public class HalRepresentation {
     private volatile Links links;
     @JsonProperty(value = "_embedded")
     private volatile Embedded embedded;
-    /*
     @JsonAnySetter
-    public Map<String,JsonNode> other = new LinkedHashMap<>();
-    */
+    public Map<String,JsonNode> attributes = new LinkedHashMap<>();
 
     /**
      *
@@ -156,6 +158,27 @@ public class HalRepresentation {
     @JsonIgnore
     public Embedded getEmbedded() {
         return embedded != null ? embedded : emptyEmbedded();
+    }
+
+    /**
+     * Returns extra attributes that were not mapped to properties of the HalRepresentation.
+     *
+     * @return map containing unmapped attributes
+     */
+    @JsonIgnore
+    public Map<String, JsonNode> getAttributes() {
+        return attributes;
+    }
+
+    /**
+     * Returns the value of an extra attribute as a JsonNode, or null if no such attribute is present.
+     *
+     * @param name the name of the attribute
+     * @return JsonNode or null
+     */
+    @JsonIgnore
+    public JsonNode getAttribute(final String name) {
+        return attributes.get(name);
     }
 
     /**

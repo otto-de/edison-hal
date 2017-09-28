@@ -389,6 +389,42 @@ If you want to parse embedded resources into a extended HalRepresentation, you n
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 ```
+
+### 4.6.3 Unmapped attributes
+
+HalRepresentation supports access to attributes, that could not be mapped to properties. For example:
+```json
+{
+  "foo" : "Hello World",
+  "bar" : [
+    "Hello",
+    "World"
+  ]
+}
+```
+Using HalParser or Jackson's ObjectMapper, this plain json document can be parsed into a HalRepresentation:
+```java
+        HalRepresentation resource = HalParser.parse(json).as(HalRepresentation.class);
+```
+Because HalRepresentation does neither have `foo` nor `bar`properties, the values of these properties can only
+be accessed using `HalRepresentation.getAttributes` or `HalRepresentation.getAttribute(name)` The values of 
+such attributes are Jackson `JsonNode` objects:
+```java
+        assertThat(
+                resource.getAttributes().keySet(), 
+                containsInAnyOrder("foo", "bar"));
+        assertThat(
+                resource.getAttribute("foo").asText(), 
+                is("Hello World"));
+        assertThat(
+                resource.getAttribute("bar").at("/0").asText(), 
+                is("Hello"));
+        assertThat(
+                resource.getAttribute("bar").at("/1").asText(), 
+                is("World"));
+
+```
+ 
 ### 4.7 Using HAL in Spring controllers
 
 Using Spring MVC, you can directly return HalRepresentations from you controller methods:
@@ -571,6 +607,7 @@ in different ways.
 * Support for curies in nested embedded items
 * The HalParser now supports multiple type infos so more than one link-relation type can
 be configured with the type of the embedded items. 
+* Support for parsing and accessing attributes that were not mapped to properties of HalRepresentations
 
 ### 1.0.0.RC5
 
