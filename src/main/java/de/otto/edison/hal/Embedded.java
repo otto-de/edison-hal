@@ -12,11 +12,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.util.*;
 
-import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
-import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
+import static de.otto.edison.hal.LinkRelations.emptyLinkRelations;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -58,9 +59,9 @@ public class Embedded {
      */
     private final Map<String,List<HalRepresentation>> items;
     /**
-     * The curies from the HAL _links section, if any.
+     * The RelRegistry used to resolve curies
      */
-    private final List<Link> curies;
+    private final LinkRelations linkRelations;
 
     /**
      * Used by Jackson to parse/create Embedded instances.
@@ -69,7 +70,7 @@ public class Embedded {
      */
     Embedded() {
         items = null;
-        curies = emptyList();
+        linkRelations = emptyLinkRelations();
     }
 
     /**
@@ -81,29 +82,19 @@ public class Embedded {
      */
     private Embedded(final Map<String, List<HalRepresentation>> items) {
         this.items = items;
-        this.curies = emptyList();
+        this.linkRelations = emptyLinkRelations();
     }
 
-    /**
-     * Create an Embedded instance from a Map of nested items.
-     *
-     * @param items The embedded items, mapped by link-relation type
-     *
-     * @since 0.1.0
-     */
-    private Embedded(final Map<String, List<HalRepresentation>> items, final List<Link> curies) {
-        this.curies = curies;
-        this.items = new LinkedHashMap<>();
-        items.keySet().forEach(rel->{
-            final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
-            final List<HalRepresentation> itemsForRel = items.get(rel);
-            itemsForRel.forEach(item->item.withParentCuries(curies));
-            if (curiTemplate.isPresent()) {
-                this.items.put(curiTemplate.get().curiedRelFrom(rel), itemsForRel);
-            } else {
-                this.items.put(rel, itemsForRel);
-            }
-        });
+    private Embedded(final Map<String, List<HalRepresentation>> items, final LinkRelations linkRelations) {
+        final Map<String, List<HalRepresentation>> curiedItems = new LinkedHashMap<>();
+        for (final String rel : items.keySet()) {
+            curiedItems.put(linkRelations.resolve(rel), items.get(rel)
+                    .stream()
+                    .map(halRepresentation -> halRepresentation.using(linkRelations))
+                    .collect(toList()));
+        }
+        this.items = curiedItems;
+        this.linkRelations = linkRelations;
     }
 
     /**
@@ -142,19 +133,8 @@ public class Embedded {
         return new Builder();
     }
 
-    /**
-     * Returns an instance of Embedded that knows about the CURIs of the _links section of the HAL document.
-     * <p>
-     * Using this object, you can get the embedded items by full or compact URI of the link-relation type.
-     * <p>
-     * Typically you won't have to use this method directly. It is called by {@link HalRepresentation#getEmbedded()}.
-     *
-     * @param curies list of 'curies' Links.
-     *
-     * @return Embedded with support for curies.
-     */
-    Embedded withCuries(final List<Link> curies) {
-        return new Embedded(items, curies);
+    protected Embedded using(final LinkRelations linkRelations) {
+        return new Embedded(items, linkRelations);
     }
 
     /**
@@ -165,7 +145,7 @@ public class Embedded {
      */
     @JsonIgnore
     public Set<String> getRels() {
-        return items.keySet();
+        return items != null ? items.keySet() : emptySet();
     }
 
     /**
@@ -181,7 +161,7 @@ public class Embedded {
     @JsonIgnore
     public List<HalRepresentation> getItemsBy(final String rel) {
         if (items != null) {
-            return items.containsKey(rel) ? items.get(rel) : getCuriedItems(rel);
+            return items.getOrDefault(linkRelations.resolve(rel), emptyList());
         } else {
             return emptyList();
         }
@@ -265,32 +245,9 @@ public class Embedded {
         return items == null || items.isEmpty();
     }
 
-    /**
-     * A Builder used to build more complex Embedded objects.
-     *
-     * @since 0.1.0
-     */
-    /**
-     * Helper method used to retrieve Embedded items with support for CURIs.
-     *
-     * @param rel a curied or full link-relation type of the embedded items.
-     * @return List of matching items.
-     */
-    private List<HalRepresentation> getCuriedItems(final String rel) {
-        for (final Link curi : curies) {
-            final CuriTemplate curiTemplate = curiTemplateFor(curi);
-            if (curiTemplate.matches(rel)) {
-                final String shortRel = curiTemplate.curiedRelFrom(rel);
-                return items.containsKey(shortRel)
-                        ? items.get(shortRel)
-                        : emptyList();
-            }
-        }
-        return emptyList();
-    }
-
     public final static class Builder {
         private final Map<String,List<HalRepresentation>> _embedded = new LinkedHashMap<>();
+        private LinkRelations linkRelations = emptyLinkRelations();
 
         /**
          * <p>
@@ -339,6 +296,10 @@ public class Embedded {
             return this;
         }
 
+        public Builder using(final LinkRelations linkRelations) {
+            this.linkRelations = linkRelations;
+            return this;
+        }
 
         /**
          * Builds an Embedded instance.
@@ -348,7 +309,7 @@ public class Embedded {
          * @since 0.1.0
          */
         public Embedded build() {
-            return _embedded.isEmpty() ? emptyEmbedded() : new Embedded(_embedded);
+            return _embedded.isEmpty() ? emptyEmbedded() : new Embedded(_embedded, linkRelations);
         }
     }
 

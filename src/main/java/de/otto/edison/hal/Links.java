@@ -16,9 +16,9 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
-import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 import static de.otto.edison.hal.Link.linkBuilder;
+import static de.otto.edison.hal.LinkRelations.emptyLinkRelations;
+import static de.otto.edison.hal.LinkRelations.linkRelations;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
@@ -48,18 +48,17 @@ public class Links {
     private static final Links EMPTY_LINKS = new Links();
 
     private final Map<String, List<Link>> links = new LinkedHashMap<>();
-    /**
-     * Links in embedded items need to know about the CURIs of the embedding HalRepresentation, in order to resolve
-     * compact URIs.
-     */
-    private volatile List<Link> curiesFromEmbedding = emptyList();
+    private final LinkRelations linkRelations;
+
     private volatile Set<String> arrayRels = DEFAULT_ARRAY_LINK_RELATIONS;
 
     /**
      *
      * @since 0.1.0
      */
-    Links() {}
+    Links() {
+        this.linkRelations = emptyLinkRelations();
+    }
 
     /**
      * <p>
@@ -77,26 +76,35 @@ public class Links {
      * </p>
      *
      * @param links a map with link-relation types as key and the list of links as value.
-     * @since 0.1.0
+     * @param arrayRels the set of link-relation types that is rendered as an array of links.
+     * @param linkRelations the LinkRelations used to CURI the link-relation types of the links.
+     * @since 1.0.0
      */
-    private Links(final Map<String, List<Link>> links, final Set<String> arrayRels) {
+    private Links(final Map<String, List<Link>> links,
+                  final Set<String> arrayRels,
+                  final LinkRelations linkRelations) {
+        this.linkRelations = linkRelations;
         this.arrayRels = arrayRels;
-        final List<Link> curies = links.get(CURIES_REL);
-        if (curies == null || curies.isEmpty()) {
-            this.links.putAll(links);
-        } else {
-            this.links.put(CURIES_REL, curies);
-            links.keySet().forEach(rel -> {
-                if (!rel.equals(CURIES_REL)) {
-                    final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
-                    if (curiTemplate.isPresent()) {
-                        this.links.put(curiTemplate.get().curiedRelFrom(rel), links.get(rel));
-                    } else {
-                        this.links.put(rel, links.get(rel));
-                    }
-                }
-            });
-        }
+        final List<Link> curies = links.getOrDefault(CURIES_REL, emptyList());
+        curies.forEach(this.linkRelations::register);
+        links.keySet().forEach(rel -> {
+                this.links.put(linkRelations.resolve(rel), links.get(rel));
+        });
+    }
+
+    /**
+     * Applies LinkRelations to the links and replaces link-relation types with CURIed form, if applicable.
+     * <p>
+     *     All CURIes are registered in the given LinkRelations, so the HalRepresentation can forward these
+     *     CURIes to embedded items.
+     * </p>
+     * @param linkRelations LinkRelations used to replace CURIed rels
+     * @return Links having a reference to the given LinkRelations.
+     */
+    Links using(final LinkRelations linkRelations) {
+        final List<Link> curies = links.getOrDefault(CURIES_REL, emptyList());
+        curies.forEach(linkRelations::register);
+        return new Links(links, arrayRels, linkRelations);
     }
 
     /**
@@ -162,7 +170,7 @@ public class Links {
             }
             allLinks.get(l.getRel()).add(l);
         });
-        return new Links(allLinks, arrayRels);
+        return new Links(allLinks, arrayRels, emptyLinkRelations());
     }
 
     /**
@@ -289,13 +297,10 @@ public class Links {
      * @since 0.1.0
      */
     public List<Link> getLinksBy(final String rel) {
-        final List<Link> links = this.links.get(rel);
+        final String curiedRel = linkRelations.resolve(rel);
+        final List<Link> links = this.links.get(curiedRel);
 
-        if (links == null || links.isEmpty()) {
-            return getCuriedLinks(rel);
-        } else {
-            return links;
-        }
+        return links != null ? links : emptyList();
     }
 
     /**
@@ -321,38 +326,6 @@ public class Links {
      */
     public List<Link> getLinksBy(final String rel, final Predicate<Link> selector) {
         return getLinksBy(rel).stream().filter(selector).collect(toList());
-    }
-
-
-    /**
-     * Helper method used to retrieve Links with support for CURIs.
-     *
-     * @param rel a curied or full link-relation type.
-     * @return List of matching links.
-     */
-    private List<Link> getCuriedLinks(String rel) {
-        final List<Link> curies = getCuries();
-        for (final Link curi : curies) {
-            final CuriTemplate curiTemplate = curiTemplateFor(curi);
-            if (curiTemplate.matches(rel)) {
-                final String shortRel = curiTemplate.curiedRelFrom(rel);
-                return this.links.containsKey(shortRel) ? this.links.get(shortRel) : emptyList();
-            }
-        }
-        return emptyList();
-    }
-
-    /**
-     * Helper method used to get the CURIs.
-     *
-     * @return List of CURI links, or empty list
-     */
-    private List<Link> getCuries() {
-        final List<Link> curies = new ArrayList<>(curiesFromEmbedding);
-        if (links.containsKey(CURIES_REL)) {
-            curies.addAll(links.get(CURIES_REL));
-        }
-        return curies;
     }
 
     /**
@@ -387,25 +360,6 @@ public class Links {
     public Links withArrayRels(final Set<String> arrayRels) {
         this.arrayRels = arrayRels != null ? arrayRels : emptySet();
         return this;
-    }
-
-    void withParentCuries(final List<Link> curiesFromEmbedding) {
-        this.curiesFromEmbedding = curiesFromEmbedding;
-        if (this.links != null) {
-            final List<Link> curies = getCuries();
-            final Map<String, List<Link>> curiedLinks = new LinkedHashMap<>();
-            this.links.keySet().forEach(rel->{
-                final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
-                if (curiTemplate.isPresent()) {
-                    curiedLinks.put(curiTemplate.get().curiedRelFrom(rel), links.get(rel));
-                } else {
-                    curiedLinks.put(rel, links.get(rel));
-                }
-
-            });
-            this.links.clear();
-            this.links.putAll(curiedLinks);
-        }
     }
 
     /**
@@ -452,8 +406,10 @@ public class Links {
      * @since 0.2.0
      */
     public static class Builder {
-        final Map<String,List<Link>> links = new LinkedHashMap<>();
-        Set<String> arrayRels = DEFAULT_ARRAY_LINK_RELATIONS;
+        private final Map<String,List<Link>> links = new LinkedHashMap<>();
+        private LinkRelations linkRelations = emptyLinkRelations();
+        private Set<String> arrayRels = DEFAULT_ARRAY_LINK_RELATIONS;
+
 
         /**
          * Adds a list of links.
@@ -546,13 +502,18 @@ public class Links {
             return this;
         }
 
+        public Builder using(final LinkRelations linkRelations) {
+            this.linkRelations = linkRelations;
+            return this;
+        }
+
         /**
          * Creates a Links instance from all added links.
          *
          * @return Links
          */
         public Links build() {
-            return new Links(links, arrayRels);
+            return new Links(links, arrayRels, linkRelations);
         }
     }
 
@@ -606,10 +567,14 @@ public class Links {
                     .entrySet()
                     .stream()
                     .collect(toMap(Map.Entry::getKey, e -> asListOfLinks(e.getKey(), e.getValue())));
-            return new Links(links, DEFAULT_ARRAY_LINK_RELATIONS);
+            return new Links(
+                    links,
+                    DEFAULT_ARRAY_LINK_RELATIONS,
+                    LinkRelations.linkRelations(links.getOrDefault(CURIES_REL, emptyList()))
+            );
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         private List<Link> asListOfLinks(final String rel, final Object value) {
             if (value instanceof Map) {
                 return singletonList(asLink(rel, (Map)value));
@@ -622,6 +587,7 @@ public class Links {
             }
         }
 
+        @SuppressWarnings("rawtypes")
         private Link asLink(final String rel, final Map value) {
             Link.Builder builder = linkBuilder(rel, value.get("href").toString())
                     .withHrefLang((String) value.get("hreflang"))

@@ -1,17 +1,15 @@
 package de.otto.edison.hal;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
+import static de.otto.edison.hal.Links.copyOf;
 import static de.otto.edison.hal.Links.emptyLinks;
-import static de.otto.edison.hal.Links.linkingTo;
+import static de.otto.edison.hal.Links.linksBuilder;
 
 /**
  * Representation used to parse and create HAL+JSON documents from Java classes.
@@ -25,19 +23,23 @@ import static de.otto.edison.hal.Links.linkingTo;
 @JsonInclude(NON_NULL)
 public class HalRepresentation {
 
-    public static final String CURIES = "curies";
+    private final LinkRelations linkRelations;
+
     @JsonProperty(value = "_links")
     private volatile Links links;
     @JsonProperty(value = "_embedded")
     private volatile Embedded embedded;
+    /*
+    @JsonAnySetter
+    public Map<String,JsonNode> other = new LinkedHashMap<>();
+    */
 
     /**
      *
      * @since 0.1.0
      */
     public HalRepresentation() {
-        this.links = null;
-        this.embedded = null;
+        this(null, null, null);
     }
 
     /**
@@ -47,8 +49,7 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     public HalRepresentation(final Links links) {
-        this.links = links.isEmpty() ? null : links;
-        this.embedded = null;
+        this(null, links, null);
     }
 
     /**
@@ -63,11 +64,38 @@ public class HalRepresentation {
      * @param embedded the Embedded items of the HalRepresentation
      * @since 0.1.0
      */
-    public HalRepresentation(final Links links, final Embedded embedded) {
-        this.links = links.isEmpty() ? null : links;
-        this.embedded = embedded.isEmpty()
+    @JsonCreator
+    public HalRepresentation(final @JsonProperty("_links") Links links,
+                             final @JsonProperty("_embedded") Embedded embedded) {
+        this(null, links, embedded);
+    }
+
+    /**
+     * <p>
+     *     Creates a HalRepresentation with {@link Links} and {@link Embedded} objects.
+     * </p>
+     * <p>
+     *     If the Links do contain CURIs, the link-relation types of the embedded objects are shortened.
+     * </p>
+     * <p>
+     *     The RelRegistry is used to resolve CURIed link-relations in links and embedded resources.
+     * </p>
+     *
+     * @param linkRelations the link-relation registry used to resolve curied rels in links and embedded resources.
+     * @param links the Links of the HalRepresentation
+     * @param embedded the Embedded items of the HalRepresentation
+     * @since 0.1.0
+     */
+    public HalRepresentation(final LinkRelations linkRelations, final Links links, final Embedded embedded) {
+        this.linkRelations = linkRelations != null
+                ? linkRelations.mergeWith(links)
+                : LinkRelations.linkRelations(links);
+        this.links = links == null || links.isEmpty()
                 ? null
-                : embedded.withCuries(getLinks().getLinksBy(CURIES));
+                : links.using(this.linkRelations);
+        this.embedded = embedded == null || embedded.isEmpty()
+                ? null
+                : embedded.using(this.linkRelations);
     }
 
     /**
@@ -89,12 +117,15 @@ public class HalRepresentation {
      * </p>
      * @param link a link
      * @param moreLinks optionally more links
+     * @return this
      */
     protected HalRepresentation withLinks(final Link link, final Link... moreLinks) {
         this.links = this.links != null
-                ? Links.copyOf(this.links).with(link, moreLinks).build()
-                : linkingTo(link, moreLinks);
-        updateCuriesInEmbeddedItems();
+                ? copyOf(this.links).with(link, moreLinks).using(this.linkRelations).build()
+                : linksBuilder().with(link, moreLinks).using(this.linkRelations).build();
+        if (embedded != null) {
+            embedded = embedded.using(linkRelations);
+        }
         return this;
     }
 
@@ -105,12 +136,15 @@ public class HalRepresentation {
      *     to already existing links.
      * </p>
      * @param links added links
+     * @return this
      */
     protected HalRepresentation withLinks(final List<Link> links) {
         this.links = this.links != null
-                ? Links.copyOf(this.links).with(links).build()
-                : linkingTo(links);
-        updateCuriesInEmbeddedItems();
+                ? copyOf(this.links).with(links).using(linkRelations).build()
+                : linksBuilder().with(links).using(linkRelations).build();
+        if (embedded != null) {
+            embedded = embedded.using(linkRelations);
+        }
         return this;
     }
 
@@ -121,7 +155,7 @@ public class HalRepresentation {
      */
     @JsonIgnore
     public Embedded getEmbedded() {
-        return embedded != null ? embedded.withCuries(getLinks().getLinksBy(CURIES)) : emptyEmbedded();
+        return embedded != null ? embedded : emptyEmbedded();
     }
 
     /**
@@ -132,34 +166,22 @@ public class HalRepresentation {
      *
      * @param rel the link-relation type of the embedded items that are added or replaced
      * @param embeddedItems the new values for the specified link-relation type
-     *
+     * @return this
      * @since 0.5.0
      */
     protected HalRepresentation withEmbedded(final String rel, final List<? extends HalRepresentation> embeddedItems) {
-        embedded = copyOf(embedded).with(rel, embeddedItems).build().withCuries(getLinks().getLinksBy(CURIES));
+        embedded = copyOf(embedded).with(rel, embeddedItems).using(linkRelations).build();
         return this;
     }
 
-    /**
-     * This method is used by embedded HalRepresentations to get the CURIs from the embedding
-     * representation so curied links can be resolved.
-     * <p>
-     *     Only to be used internally.
-     * </p>
-     *
-     * @param curiesFromEmbedding the curies from the embedding representation.
-     */
-    HalRepresentation withParentCuries(final List<Link> curiesFromEmbedding) {
+    protected HalRepresentation using(final LinkRelations linkRelations) {
         if (links != null) {
-            links.withParentCuries(curiesFromEmbedding);
+            links = links.using(linkRelations);
+        }
+        if (embedded != null) {
+            embedded = embedded.using(linkRelations);
         }
         return this;
-    }
-
-    private void updateCuriesInEmbeddedItems() {
-        if (embedded != null && this.links.getRels().contains(CURIES)) {
-            embedded = embedded.withCuries(getLinks().getLinksBy(CURIES));
-        }
     }
 
     /**

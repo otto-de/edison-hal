@@ -19,6 +19,16 @@ dependencies {
     testCompile libraries.test
 }
 
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << "-Xlint:all,-serial"
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << "-Xlint:all,-serial"
+}
+
 test {
     println()
     afterSuite { desc, result ->
@@ -59,18 +69,20 @@ signing {
     sign configurations.archives
 }
 
-task askForVersionNumber << {
-    def console = System.console()
-    def enteredVersion
-    if (console) {
-        version = trimSnapshot(version)
-        enteredVersion = console.readLine('\n\u001B[92m\u001B[1mWhich version do you want to release?\u001B[0m \u001B[2m[' + version + ']\u001B[0m ')
-        if (!enteredVersion.isEmpty()) {
-            version = enteredVersion
+task askForVersionNumber {
+    doLast {
+        def console = System.console()
+        def enteredVersion
+        if (console) {
+            version = trimSnapshot(version)
+            enteredVersion = console.readLine('\n\u001B[92m\u001B[1mWhich version do you want to release?\u001B[0m \u001B[2m[' + version + ']\u001B[0m ')
+            if (!enteredVersion.isEmpty()) {
+                version = enteredVersion
+            }
+            bumpVersionInGradleFile(version)
+        } else {
+            logger.error "Cannot get console."
         }
-        bumpVersionInGradleFile(version)
-    } else {
-        logger.error "Cannot get console."
     }
 }
 
@@ -103,21 +115,23 @@ def trimSnapshot(String theVersion) {
 }
 
 
-task commitNewVersion << {
-    println(["git", "add", "build.gradle"].execute().text.trim())
-    println(["git", "commit", "-m", "bump version to " + version].execute().text.trim())
-    bumpVersionInGradleFile(incrementVersion(version) + "-SNAPSHOT")
-    println(["git", "add", "build.gradle"].execute().text.trim())
-    println(["git", "commit", "-m", "bump version to next snapshot"].execute().text.trim())
-
+task commitNewVersion {
+    doLast {
+        println(["git", "add", "build.gradle"].execute().text.trim())
+        println(["git", "commit", "-m", "bump version to " + version].execute().text.trim())
+        bumpVersionInGradleFile(incrementVersion(version) + "-SNAPSHOT")
+        println(["git", "add", "build.gradle"].execute().text.trim())
+        println(["git", "commit", "-m", "bump version to next snapshot"].execute().text.trim())
+    }
 }
 
 task doRelease {
     dependsOn askForVersionNumber, uploadArchives, commitNewVersion
 }
 
-doRelease << {
-
+doRelease {
+    doLast {
+    }
 }
 
 uploadArchives {

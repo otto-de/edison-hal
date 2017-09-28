@@ -3,7 +3,7 @@
 Library to produce and consume [application/hal+json](https://tools.ietf.org/html/draft-kelly-json-hal-08) 
 representations of REST resources using Jackson.
 
-## Status
+## 1. Status
 
 [![Build Status](https://travis-ci.org/otto-de/edison-hal.svg)](https://travis-ci.org/otto-de/edison-hal) 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal)
@@ -21,9 +21,10 @@ is supported by edison-hal.
 
 The current library is already in production at otto.de and should be more or less stable but
 still might have some issues.
+
 Please provide feedback, if something is not working as expected.
 
-## About
+## 2. About
 
 At otto.de, microservices should only communicate via REST APIs with other 
  microservices. HAL is a nice format to implement the HATEOAS part 
@@ -37,7 +38,7 @@ Currently, there are only a couple of libraries supporting HAL and even
 Spring HATEOAS, for example, is lacking many link properties, such as 
  title, name, type and others. 
  
-## Features
+## 3. Features
 
 Creating HAL representations:
 * Links with all specified attributes like rel, href, profile, type, name, title, etc. pp.
@@ -56,27 +57,23 @@ Traverson API
 * Curies are resolved transparantly, too. Clients of the Traverson API do not need to 
 know anything about curies or embedded resources.
 
-## Open Issues and next steps
-* Deep nesting of embedded items is currently not supported: a resource
-that has embedded items, which have embedded items, and so on.
+## 4. Usage
 
-## Usage
-
-### 0. Learn about Hypertext Application Language (HAL)
+Before using this library, you should have a good understanding of the Hypertext Application Language (HAL):
 
 * Read Mike's article about [HAL](http://stateless.co/hal_specification.html) and 
 * the current [draft of the RFC](https://tools.ietf.org/html/draft-kelly-json-hal-08).
 
-### 1. Include edison-hal into your project:
+### 4.1 Include edison-hal into your project:
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:1.0.0.RC5",
+        compile "de.otto.edison:edison-hal:1.0.0.RC6",
         ...
     }
 ```
   
-### 2. Provide a class for the representation of your REST API
+### 4.2 Provide a class for the representation of your REST API
 
 If your representation does not need additional attributes beside of
 the properties defined in application/hal+json, you can create a
@@ -111,7 +108,7 @@ Otherwise, you can derive a class from HalRepresentation to add extra attributes
 
 ```
 
-### 3. Multiple Links
+### 4.3 Multiple Links
 
 A resource may have multiple links that share the same link relation.
 
@@ -149,7 +146,7 @@ object of a ```HalRepresentation```:
 Instead of calling ```Links#withArrayRels()```, you can also configure this using ```Links#linkingTo(List<Link>, Set<String>)```
 or using ```Links.Builder```
 
-### 4. Serializing HalRepresentations
+### 4.4 Serializing HalRepresentations
 
 To convert your representation class into a application/hal+json document, you can use Jackson's 
 ObjectMapper directly:
@@ -159,7 +156,150 @@ ObjectMapper directly:
     final String json = mapper.writeValueAsString(representation);
 ```
 
-### 5. Parsing application/hal+json documents
+### 4.5 Curies
+
+The semantics of links in application/hal+json documents are specified by the link-relation type (rel). It is 
+recommended to use [predfined and documented rels](https://www.iana.org/assignments/link-relations/link-relations.xhtml) 
+like, for example, `self`, `prev` or `next`. 
+
+In case of custom link-relation types, fully qualified URIs should be used: a link to a product, for example, could be
+specified by something like `http://spec.example.com/link-relations/product`. The URI should be resolvable, pointing to
+some human readable documentation. 
+
+
+A curi (compact URI) is a feature in HAL+JSON that is helpful to use URIs while keeping the link-relation types compact.
+For example:
+```json
+{
+  "_links" : {
+    "http://spec.example.com/link-relations/product" : [
+      {"href" : "http://example.com/products/1"},
+      {"href" : "http://example.com/products/1"}
+    ],
+    "http://spec.example.com/link-relations/shoppingcart" :
+      {"href" : "http://example.com/shoppingcart/42"},
+    "http://spec.example.com/link-relations/wishlist" :
+      {"href" : "http://example.com/wishlist/0815"}
+  },
+  "_embedded" : {
+    "http://spec.example.com/link-relations/product" : [
+      {
+        "_links" : {
+          "http://spec.example.com/link-relations/similar-articles" : 
+            {"href" : "http://example.com/recommendations/similar-articles?productId=1"}
+        },
+        "title" : "Jeans", 
+        "more" : "attributes"
+      },
+      {
+        "_links" : {
+          "http://spec.example.com/link-relations/similar-articles" : 
+            {"href" : "http://example.com/recommendations/similar-articles?productId=2"}
+        },
+        "title" : "Shirt", 
+        "more" : "attributes"
+      }
+    ]  
+  }
+}
+```  
+By specifying a curi, the same document would look like this:
+```json
+{
+  "_links" : {
+    "curies" : [
+      {"name" : "ex", "href" : "http://spec.example.com/link-relations/{rel}", "templated" : true}
+    ],
+    "ex:product" : [
+      {"href" : "http://example.com/products/1"},
+      {"href" : "http://example.com/products/1"}
+    ],
+    "ex:shoppingcart" :
+      {"href" : "http://example.com/shoppingcart/42"},
+    "ex:wishlist" :
+      {"href" : "http://example.com/wishlist/0815"}
+  },
+  "_embedded" : {
+    "ex:product" : [
+      {
+        "_links" : {
+          "ex:similar-articles" : 
+            {"href" : "http://example.com/recommendations/similar-articles?productId=1"}
+        },
+        "title" : "Jeans", 
+        "more" : "attributes"
+      },
+      {
+        "_links" : {
+          "ex:similar-articles" : 
+            {"href" : "http://example.com/recommendations/similar-articles?productId=2"}
+        },
+        "title" : "Shirt", 
+        "more" : "attributes"
+      }
+    ]  
+  }
+}
+```  
+
+Curies are fully supported by edison-hal: By just adding a curi to the links of a HalRepresentation, the library
+takes care of matching link-relation types and replaces them during serialization:
+
+```java
+final HalRepresentation representation = new HalRepresentation(
+        linkingTo(
+                curi("x", "http://example.org/rels/{rel}"),
+                curi("y", "http://example.com/rels/{rel}"),
+                link("http://example.org/rels/foo", "http://example.org/test"),
+                link("http://example.com/rels/bar", "http://example.org/test")),
+        
+);
+``` 
+...will be rendered as
+```json
+{
+  "_links" : {
+    "curies" : [
+      {"name" : "x", "href" : "http://example.org/rels/{rel}", "templated" : true},
+      {"name" : "y", "href" : "http://example.com/rels/{rel}", "templated" : true}
+    ],
+    "x:foo" : {"href" : "http://example.org/test"},
+    "y:bar" : {"href" : "http://example.org/test"}
+  }
+}
+```  
+In the same way, curies are automatically applied to link-relation types in embedded resources, even if the embedded
+resources have nested embedded resources.
+```json
+{
+  "_links" : {
+    "curies" : [
+      {"name" : "x", "href" : "http://example.org/rels/{rel}", "templated" : true},
+      {"name" : "y", "href" : "http://example.com/rels/{rel}", "templated" : true}
+    ],
+    "x:foo" : {"href" : "http://example.org/test"},
+    "y:bar" : {"href" : "http://example.org/test"}
+  },
+  "_embedded" : {
+    "x:deeply-embedded" : {
+      "_links" : {
+        "x:foobar" : {"href" : "http://example.org/test"},
+        "y:barbar" : {"href" : "http://example.org/test"}
+      },
+      "_embedded" : {
+        "x:even-deeper" : {
+          "_links" : {
+            "x:barfoo" : {"href" : "http://example.org/test"},
+            "y:foofoo" : {"href" : "http://example.org/test"}
+          }
+        }      
+      }
+    }
+  }
+}
+```  
+
+### 4.6 Parsing application/hal+json documents
 
 A HAL document can be parsed using Jackson, too:
 
@@ -173,7 +313,7 @@ A HAL document can be parsed using Jackson, too:
                     "\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}}," +
                     "\"_embedded\":{\"bar\":[" +
                         "{" +
-                            "\"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
+                            "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
                         "}" +
                     "]}" +
                 "}";
@@ -195,7 +335,7 @@ A HAL document can be parsed using Jackson, too:
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 ```
-#### 5.1 Configuring the ObjectMapper
+#### 4.6.1 Configuring the ObjectMapper
 There are some special cases, where it is required to configure the ObjectMapper as follows:
 ```java    
     final ObjectMapper mapper = new ObjectMapper();
@@ -216,7 +356,7 @@ This will be necessary, if there a single embedded items for a link-relation typ
     }
 }
 ```
-#### 5.2 Using the HalParser
+#### 4.6.2 Using the HalParser
 If you want to parse embedded resources into a extended HalRepresentation, you need to use the *HalParser*:
 
 ```java
@@ -249,8 +389,7 @@ If you want to parse embedded resources into a extended HalRepresentation, you n
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 ```
-
-### 6. Using HAL in Spring controllers
+### 4.7 Using HAL in Spring controllers
 
 Using Spring MVC, you can directly return HalRepresentations from you controller methods:
 
@@ -267,7 +406,7 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
     }
 ```
 
-### 7. Using the Traverson:
+### 4.8 Using the Traverson:
 
 Traverson is a utility to make it easy to traverse linked and/or embedded resources using link-relation types:
 
@@ -303,7 +442,10 @@ Traverson is a utility to make it easy to traverse linked and/or embedded resour
     }
 ```
 
-## Paging over HAL resources:
+The Traverson is automatically taking care of embedded resources: if a linked resource is already embedded, it is used 
+instead of resolving the link. Only if it is not embedded, the Traverson is following the links. 
+
+### 4.9 Paging over HAL resources:
 
 Iterating over pages of items is supported by the Traverson, too. `Traverson.paginateNext()` can be used
 to iterate pages by following 'next' links. The callback function provided to `paginateNext()` is
@@ -369,7 +511,7 @@ items:
                 );
 ```
 
-## Building edison-hal
+## 5. Building edison-hal
 
 If you want to build edison-hal using Gradle, you might want to use
  the included Gradle wrapper:
@@ -392,7 +534,7 @@ If you want to build edison-hal using Gradle, you might want to use
 If you do not want to use the provided gradle wrapper, please make sure 
 that you are using an up-to-date version of Gradle (>= 2.12.0).
 
-## Running the examples
+## 6. Running the examples
 
 Currently, there are two examples: 
 * One for the server side, using Spring Boot
@@ -419,12 +561,16 @@ The client can be started like this:
 It requires the server to be running. The REST resources are traversed
 in different ways. 
 
-## Version History
+## 7. Version History
 
 ### 1.0.0
 
 *New Features / API extensions* 
 * It is now possible to configure the link-relation types that are serialized as an array of links.
+* Parsing of nested embedded items
+* Support for curies in nested embedded items
+* The HalParser now supports multiple type infos so more than one link-relation type can
+be configured with the type of the embedded items. 
 
 ### 1.0.0.RC5
 

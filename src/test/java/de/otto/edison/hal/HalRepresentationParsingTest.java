@@ -1,11 +1,14 @@
 package de.otto.edison.hal;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
@@ -227,12 +230,12 @@ public class HalRepresentationParsingTest {
         final String json = "{\"_links\":{" +
                 "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
                 "\"_embedded\":{\"x:foo\":[" +
-                "{" +
-                "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
-                "}," +
-                "{" +
-                "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
-                "}" +
+                    "{" +
+                        "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                    "}," +
+                    "{" +
+                        "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                    "}" +
                 "]}" +
                 "}" +
                 "}";
@@ -242,6 +245,46 @@ public class HalRepresentationParsingTest {
         final List<HalRepresentation> items = embedded.getItemsBy("http://example.org/rels/foo");
         assertThat(items, hasSize(2));
         assertThat(items.get(0).getLinks().getLinkBy("http://example.org/rels/bar").get().getHref(), is("http://example.org/test/bar/01"));
+    }
+
+    @Test
+    public void shouldParseNestedCuriedEmbeddeds() throws IOException {
+        // given
+        final String json = "{\"_links\":{" +
+                "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
+                "\"_embedded\":{\"x:test\":[{" +
+                "   \"_embedded\":{" +
+                "      \"http://example.org/rels/foo\":[" +
+                "         {" +
+                "            \"_links\":{\"http://example.org/rels/bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                "         }," +
+                "         {" +
+                "            \"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                "         }" +
+                "      ]," +
+                "      \"x:bar\":[" +
+                "         {" +
+                "            \"_links\":{\"http://example.org/rels/bar\":{\"href\":\"http://example.org/test/bar/03\"}}" +
+                "         }," +
+                "         {" +
+                "            \"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/04\"}}" +
+                "         }" +
+                "      ]" +
+                "   }" +
+                "}]}" +
+                "}";
+        // when
+        Embedded embedded = parse(json).as(HalRepresentation.class).getEmbedded();
+        // then
+        List<HalRepresentation> items = embedded.getItemsBy("http://example.org/rels/test").get(0).getEmbedded().getItemsBy("http://example.org/rels/foo");
+        assertThat(items, hasSize(2));
+        assertThat(items.get(0).getLinks().getLinkBy("x:bar").get().getHref(), is("http://example.org/test/bar/01"));
+        assertThat(items.get(1).getLinks().getLinkBy("http://example.org/rels/bar").get().getHref(), is("http://example.org/test/bar/02"));
+
+        items = embedded.getItemsBy("http://example.org/rels/test").get(0).getEmbedded().getItemsBy("x:bar");
+        assertThat(items, hasSize(2));
+        assertThat(items.get(0).getLinks().getLinkBy("http://example.org/rels/bar").get().getHref(), is("http://example.org/test/bar/03"));
+        assertThat(items.get(1).getLinks().getLinkBy("x:bar").get().getHref(), is("http://example.org/test/bar/04"));
     }
 
     @Test

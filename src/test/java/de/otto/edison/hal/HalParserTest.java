@@ -12,6 +12,7 @@ import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -112,6 +113,41 @@ public class HalParserTest {
     }
 
     @Test
+    public void shouldParseNestedEmbeddedItemsWithSpecificType() throws IOException {
+        // given
+        final String json =
+                "{" +
+                        "\"_embedded\":{\"foo\":[" +
+                        "   {" +
+                        "       \"_links\":{\"self\":[{\"href\":\"http://example.org/test/foo/01\"}]}," +
+                        "       \"_embedded\":{\"bar\":[" +
+                        "          {" +
+                        "              \"value\":\"3\"," +
+                        "              \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
+                        "          }," +
+                        "          {" +
+                        "              \"value\":\"4\"," +
+                        "              \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/02\"}]}" +
+                        "          }" +
+                        "       ]}" +
+                        "   }" +
+                        "]}" +
+                        "}";
+        // when
+        final HalRepresentation result = parse(json).as(HalRepresentation.class, withEmbedded("bar", EmbeddedHalRepresentation.class));
+        // then
+        final HalRepresentation foo = result.getEmbedded().getItemsBy("foo", HalRepresentation.class).get(0);
+        final List<EmbeddedHalRepresentation> embeddedItems = foo.getEmbedded().getItemsBy("bar", EmbeddedHalRepresentation.class);
+        assertThat(embeddedItems, hasSize(2));
+        assertThat(embeddedItems.get(0).getClass(), equalTo(EmbeddedHalRepresentation.class));
+        assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
+        assertThat(embeddedItems.get(0).value, is("3"));
+        assertThat(embeddedItems.get(1).getClass(), equalTo(EmbeddedHalRepresentation.class));
+        assertThat(embeddedItems.get(1).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/02")));
+        assertThat(embeddedItems.get(1).value, is("4"));
+    }
+
+    @Test
     public void shouldParseEmbeddedItemsWithDifferentSpecificTypes() throws IOException {
         // given
         final String json =
@@ -136,6 +172,40 @@ public class HalParserTest {
         assertThat(embeddedFoo.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/foo")));
         // and
         final List<EmbeddedHalRepresentation> embeddedBar = result.getEmbedded().getItemsBy("bar", EmbeddedHalRepresentation.class);
+        assertThat(embeddedBar, hasSize(1));
+        assertThat(embeddedBar.get(0).getClass(), equalTo(EmbeddedHalRepresentation.class));
+        assertThat(embeddedBar.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar")));
+    }
+
+    @Test
+    public void shouldParseNestedEmbeddedItemsWithDifferentSpecificTypes() throws IOException {
+        // given
+        final String json =
+                "{" +
+                "   \"_embedded\":{\"test\":[{" +
+                "      \"_embedded\":{" +
+                "          \"foo\":[{" +
+                "              \"fooValue\":\"1\"," +
+                "              \"_links\":{\"self\":[{\"href\":\"http://example.org/test/foo\"}]}" +
+                "          }]," +
+                "          \"bar\":[{" +
+                "              \"value\":\"2\"," +
+                "              \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar\"}]}" +
+                "          }]" +
+                "      }" +
+                "      }" +
+                "   ]}" +
+                "}";
+        // when
+        final SimpleHalRepresentation result = parse(json).as(SimpleHalRepresentation.class, withEmbedded("bar", EmbeddedHalRepresentation.class));
+        final HalRepresentation test = result.getEmbedded().getItemsBy("test").get(0);
+        // then
+        final List<HalRepresentation> embeddedFoo = test.getEmbedded().getItemsBy("foo");
+        assertThat(embeddedFoo, hasSize(1));
+        assertThat(embeddedFoo.get(0).getClass(), equalTo(HalRepresentation.class));
+        assertThat(embeddedFoo.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/foo")));
+        // and
+        final List<EmbeddedHalRepresentation> embeddedBar = test.getEmbedded().getItemsBy("bar", EmbeddedHalRepresentation.class);
         assertThat(embeddedBar, hasSize(1));
         assertThat(embeddedBar.get(0).getClass(), equalTo(EmbeddedHalRepresentation.class));
         assertThat(embeddedBar.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar")));

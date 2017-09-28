@@ -8,6 +8,10 @@ import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Embedded.embeddedBuilder;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
+import static de.otto.edison.hal.Link.curi;
+import static de.otto.edison.hal.Link.link;
+import static de.otto.edison.hal.LinkRelations.linkRelations;
+import static de.otto.edison.hal.Links.*;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -71,6 +75,64 @@ public class EmbeddedTest {
                 .with("bar", singletonList(new HalRepresentation()))
                 .build();
         assertThat(embedded.getRels(), contains("foo", "bar"));
+    }
+
+    @Test
+    public void shouldReplaceRelsWithCuriedRels() {
+        LinkRelations linkRelations = linkRelations(asList(
+                curi("test", "http://example.com/rels/{rel}"))
+        );
+        Embedded embedded = embeddedBuilder()
+                .with("http://example.com/rels/foo", singletonList(new HalRepresentation()))
+                .with("http://example.com/rels/bar", singletonList(new HalRepresentation()))
+                .build();
+        assertThat(embedded.using(linkRelations).getRels(), contains("test:foo", "test:bar"));
+    }
+
+    @Test
+    public void shouldReplaceNestedRelsWithCuriedRels() {
+        LinkRelations linkRelations = linkRelations(asList(
+                curi("test", "http://example.com/rels/{rel}"))
+        );
+        Embedded embedded = embeddedBuilder()
+                .with("http://example.com/rels/foo", singletonList(
+                        new HalRepresentation(null,
+                                embeddedBuilder()
+                                        .with("http://example.com/rels/bar", singletonList(new HalRepresentation()))
+                                        .build())))
+                .using(linkRelations)
+                .build();
+        assertThat(embedded.getRels(), contains("test:foo"));
+        assertThat(embedded.getItemsBy("test:foo").get(0).getEmbedded().getRels(), contains("test:bar"));
+    }
+
+    @Test
+    public void shouldReplaceNestedLinkRelsWithCuriedLinkRels() {
+        LinkRelations linkRelations = linkRelations(asList(
+                curi("test", "http://example.com/rels/{rel}"))
+        );
+        Embedded embedded = embeddedBuilder()
+                .with("http://example.com/rels/foo", singletonList(
+                        new HalRepresentation(
+                                linkingTo(
+                                        link("http://example.com/rels/bar", "http://example.com"))
+                        )))
+                .using(linkRelations)
+                .build();
+        assertThat(embedded.getItemsBy("test:foo").get(0).getLinks().getRels(), contains("test:bar"));
+    }
+
+    @Test
+    public void shouldReplaceRelsWithCuriedRelsUsingBuilder() {
+        LinkRelations linkRelations = linkRelations(asList(
+                curi("test", "http://example.com/rels/{rel}"))
+        );
+        Embedded embedded = embeddedBuilder()
+                .with("http://example.com/rels/foo", singletonList(new HalRepresentation()))
+                .with("http://example.com/rels/bar", singletonList(new HalRepresentation()))
+                .using(linkRelations)
+                .build();
+        assertThat(embedded.getRels(), contains("test:foo", "test:bar"));
     }
 
     static class TestHalRepresentation extends HalRepresentation {

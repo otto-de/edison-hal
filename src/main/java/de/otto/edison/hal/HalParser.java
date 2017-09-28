@@ -99,8 +99,32 @@ public final class HalParser {
         final JsonNode jsonNode = JSON_MAPPER.readTree(json);
         final T halRepresentation = JSON_MAPPER.convertValue(jsonNode, type);
 
-        final List<HalRepresentation> embeddedValues = new ArrayList<>();
-        final JsonNode embeddedNodeForRel = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.rel);
+        resolveEmbeddedTypeInfo(typeInfo, jsonNode, halRepresentation);
+        return halRepresentation;
+    }
+
+    private <T extends HalRepresentation> void resolveEmbeddedTypeInfo(EmbeddedTypeInfo typeInfo, JsonNode jsonNode, T halRepresentation) {
+        if (!jsonNode.isMissingNode()) {
+            final List<HalRepresentation> embeddedValues = new ArrayList<>();
+            final JsonNode embeddedNodeForRel = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.rel);
+            if (!embeddedNodeForRel.isMissingNode()) {
+                resolveEmbeddedTypeInfo(typeInfo, halRepresentation, embeddedValues, embeddedNodeForRel);
+            } else {
+                // maybe there are some nested embeddeds which should be resolved based on typeInfo...
+                Embedded embedded = halRepresentation.getEmbedded();
+                embedded.getRels().forEach(rel -> {
+                    embedded.getItemsBy(rel).forEach(embeddedItem -> {
+                        final JsonNode embeddedNode = findEmbeddedNode(jsonNode, rel);
+                        if (embeddedNode.isArray()) {
+                            embeddedNode.iterator().forEachRemaining(node -> resolveEmbeddedTypeInfo(typeInfo, node, embeddedItem));
+                        }
+                    });
+                });
+            }
+        }
+    }
+
+    private <T extends HalRepresentation> void resolveEmbeddedTypeInfo(EmbeddedTypeInfo typeInfo, T halRepresentation, List<HalRepresentation> embeddedValues, JsonNode embeddedNodeForRel) {
         if (embeddedNodeForRel.isArray()) {
             for (int i = 0; i < embeddedNodeForRel.size(); i++) {
                 final JsonNode embeddedNode = embeddedNodeForRel.get(i);
@@ -116,7 +140,18 @@ public final class HalParser {
             }
         }
         halRepresentation.withEmbedded(typeInfo.rel, embeddedValues);
-        return halRepresentation;
+    }
+
+    /**
+     * Returns the JsonNode of the embedded items by link-relation type.
+     *
+     * @param jsonNode the JsonNode of the document
+     * @param rel the link-relation type of interest
+     * @return JsonNode
+     * @since 1.0.0
+     */
+    private JsonNode findEmbeddedNode(final JsonNode jsonNode, final String rel) {
+        return jsonNode.at("/_embedded/" + rel);
     }
 
     /**
