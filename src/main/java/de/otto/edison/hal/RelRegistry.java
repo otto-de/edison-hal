@@ -229,6 +229,22 @@ public class RelRegistry {
         return curiTemplate.map(t -> t.curiedRelFrom(rel)).orElse(rel);
     }
 
+    public String expand(final String rel) {
+        if (rel.contains(":")) {
+            final String name = rel.substring(0, rel.indexOf(":"));
+            Optional<Link> curi = curies.stream().filter(c -> c.getName().equals(name)).findAny();
+            return curi.map(c -> c.getHrefAsTemplate()
+                    .set("rel", rel.substring(rel.indexOf(":")+1))
+                    .expand()).orElse(rel);
+        } else {
+            return rel;
+        }
+    }
+
+    public List<Link> getCuries() {
+        return this.curies;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

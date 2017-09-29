@@ -56,7 +56,11 @@ class CuriTemplate {
      * @return optional CuriTemplate
      */
     public static Optional<CuriTemplate> matchingCuriTemplateFor(final List<Link> curies, final String rel) {
-        return curies.stream().map(CuriTemplate::curiTemplateFor).filter(t->t.matches(rel)).findAny();
+        return curies
+                .stream()
+                .map(CuriTemplate::curiTemplateFor)
+                .filter(t->t.matches(rel))
+                .findAny();
     }
 
     /**

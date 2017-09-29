@@ -782,7 +782,7 @@ public class Traverson {
     public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
                                                              final EmbeddedTypeInfo embeddedTypeInfo,
                                                              final Function<Traverson, Boolean> pageCallback) {
-        paginate("next", pageType, null, pageCallback);
+        paginate("next", pageType, embeddedTypeInfo, pageCallback);
     }
 
     /**
@@ -939,12 +939,13 @@ public class Traverson {
     }
 
     /**
-     * Retrieve the HAL resource identified by {@code uri} and return the representation as a HopResponse.
+     * Retrieve the HAL resource identified by {@code uri} and return the representation as a HalRepresentation.
      *
      * @param link the Link of the resource to retrieve, or null, if the contextUrl should be resolved.
      * @param type the expected type of the returned resource
      * @param embeddedType type information to specify the type of embedded resources.
-     * @return HopResponse
+     * @param <T> the type of the returned HalRepresentation
+     * @return HalRepresentation
      * @throws IllegalArgumentException if resolving URLs is failing
      * @throws TraversionException thrown if getting or parsing the resource failed for some reason
      */

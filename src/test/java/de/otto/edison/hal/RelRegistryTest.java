@@ -3,7 +3,9 @@ package de.otto.edison.hal;
 import org.junit.Test;
 
 import static de.otto.edison.hal.Link.curi;
+import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
+import static de.otto.edison.hal.RelRegistry.relRegistry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -91,5 +93,35 @@ public class RelRegistryTest {
         // then
         assertThat(empty, is(defaultRelRegistry()));
         assertThat(merged.resolve("http://spec.otto.de/rels/foo"), is("o:foo"));
+    }
+
+    @Test
+    public void shouldExpandCuri() {
+        // given
+        final RelRegistry relRegistry = relRegistry(linkingTo(curi("x", "http://example.com/rels/{rel}")));
+        // when
+        final String expanded = relRegistry.expand("x:foo");
+        // then
+        assertThat(expanded, is("http://example.com/rels/foo"));
+    }
+
+    @Test
+    public void shouldReturnCuriIfNotResolvable() {
+        // given
+        final RelRegistry relRegistry = defaultRelRegistry();
+        // when
+        final String expanded = relRegistry.expand("x:foo");
+        // then
+        assertThat(expanded, is("x:foo"));
+    }
+
+    @Test
+    public void shouldReturnCuriIfAlreadyResolved() {
+        // given
+        final RelRegistry relRegistry = relRegistry(linkingTo(curi("x", "http://example.com/rels/{rel}")));
+        // when
+        final String expanded = relRegistry.expand("http://example.com/rels/foo");
+        // then
+        assertThat(expanded, is("http://example.com/rels/foo"));
     }
 }

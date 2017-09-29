@@ -1,14 +1,11 @@
 package de.otto.edison.hal;
 
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
@@ -18,11 +15,7 @@ import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 public class HalRepresentationParsingTest {
 
@@ -310,6 +303,87 @@ public class HalRepresentationParsingTest {
                 .getItemsBy("http://example.org/rels/bar", EmbeddedHalRepresentation.class);
         assertThat(items, hasSize(1));
         assertThat(items.get(0).value, is("Hello World"));
+    }
+
+    @Test
+    public void shouldParseCuriedEmbeddedsWithDerivedTypes() throws IOException {
+        // given
+        final String json = "{" +
+                "   \"_links\":{" +
+                "       \"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
+                "   \"_embedded\":{" +
+                "      \"http://example.org/rels/foo\":[" +
+                "         {" +
+                "            \"_links\":{\"http://example.org/rels/bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                "         }," +
+                "         {" +
+                "            \"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                "         }" +
+                "      ]," +
+                "      \"x:bar\":[" +
+                "         {" +
+                "            \"_links\":{\"http://example.org/rels/bar\":{\"href\":\"http://example.org/test/bar/03\"}}" +
+                "         }," +
+                "         {" +
+                "            \"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/04\"}}" +
+                "         }" +
+                "      ]" +
+                "   }" +
+                "}";
+        // when
+        Embedded embedded = parse(json)
+                .as(HalRepresentation.class, withEmbedded(
+                        "x:foo", EmbeddedHalRepresentation.class,
+                        "http://example.org/rels/bar", SimpleHalRepresentation.class))
+                .getEmbedded();
+        // then
+        assertThat(embedded.getItemsBy("x:foo"), hasSize(2));
+        assertThat(embedded.getItemsBy("x:foo").get(0), is(instanceOf(EmbeddedHalRepresentation.class)));
+        assertThat(embedded.getItemsBy("http://example.org/rels/foo").get(1), is(instanceOf(EmbeddedHalRepresentation.class)));
+        assertThat(embedded.getItemsBy("x:bar"), hasSize(2));
+        assertThat(embedded.getItemsBy("x:bar").get(0), is(instanceOf(SimpleHalRepresentation.class)));
+        assertThat(embedded.getItemsBy("http://example.org/rels/bar").get(1), is(instanceOf(SimpleHalRepresentation.class)));
+    }
+
+    //@Test
+    public void shouldParseNestedCuriedEmbeddedsWithDerivedTypes() throws IOException {
+        // given
+        final String json = "{\"_links\":{" +
+                "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
+                "\"_embedded\":{\"x:test\":[{" +
+                "   \"_embedded\":{" +
+                "      \"http://example.org/rels/foo\":[" +
+                "         {" +
+                "            \"_links\":{\"http://example.org/rels/bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                "         }," +
+                "         {" +
+                "            \"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                "         }" +
+                "      ]," +
+                "      \"x:bar\":[" +
+                "         {" +
+                "            \"_links\":{\"http://example.org/rels/bar\":{\"href\":\"http://example.org/test/bar/03\"}}" +
+                "         }," +
+                "         {" +
+                "            \"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/04\"}}" +
+                "         }" +
+                "      ]" +
+                "   }" +
+                "}]}" +
+                "}";
+        // when
+        Embedded embedded = parse(json)
+                .as(HalRepresentation.class, withEmbedded(
+                        "x:foo", EmbeddedHalRepresentation.class,
+                        "http://example.org/rels/bar", SimpleHalRepresentation.class))
+                .getEmbedded().getItemsBy("x:test").get(0).getEmbedded();
+        // then
+        assertThat(embedded.getItemsBy("x:foo"), hasSize(2));
+        assertThat(embedded.getItemsBy("x:foo").get(0), is(instanceOf(EmbeddedHalRepresentation.class)));
+        assertThat(embedded.getItemsBy("x:foo").get(1), is(instanceOf(EmbeddedHalRepresentation.class)));
+        assertThat(embedded.getItemsBy("x:bar"), hasSize(2));
+        assertThat(embedded.getItemsBy("x:bar").get(0), is(instanceOf(SimpleHalRepresentation.class)));
+        assertThat(embedded.getItemsBy("x:bar").get(1), is(instanceOf(SimpleHalRepresentation.class)));
     }
 
     @Test

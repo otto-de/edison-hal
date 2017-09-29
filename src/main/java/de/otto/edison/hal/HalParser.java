@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
-import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 
 /**
  * <p>
@@ -95,36 +95,59 @@ public final class HalParser {
      * @throws IOException if parsing the JSON fails for some reason.
      * @since 0.1.0
      */
-    public <T extends HalRepresentation> T as(final Class<T> type, final EmbeddedTypeInfo typeInfo) throws IOException {
+    public <T extends HalRepresentation> T as(final Class<T> type,
+                                              final EmbeddedTypeInfo typeInfo) throws IOException {
+        return as(type, Collections.singletonList(typeInfo));
+    }
+
+    /**
+     * Parse embedded items of a given link-relation type not as HalRepresentation, but as a sub-type of
+     * HalRepresentation, so extra attributes of the embedded items can be accessed.
+     *
+     * @param type the Java class used to map JSON to.
+     * @param typeInfo type information of the embedded items.
+     * @param <T> The type used to parse the HAL document
+     * @return T
+     * @throws IOException if parsing the JSON fails for some reason.
+     * @since 0.1.0
+     */
+    public <T extends HalRepresentation> T as(final Class<T> type,
+                                              final List<EmbeddedTypeInfo> typeInfo) throws IOException {
         final JsonNode jsonNode = JSON_MAPPER.readTree(json);
         final T halRepresentation = JSON_MAPPER.convertValue(jsonNode, type);
-
         resolveEmbeddedTypeInfo(typeInfo, jsonNode, halRepresentation);
         return halRepresentation;
     }
 
-    private <T extends HalRepresentation> void resolveEmbeddedTypeInfo(EmbeddedTypeInfo typeInfo, JsonNode jsonNode, T halRepresentation) {
+    private <T extends HalRepresentation> void resolveEmbeddedTypeInfo(final List<EmbeddedTypeInfo> typeInfos,
+                                                                       final JsonNode jsonNode,
+                                                                       final T halRepresentation) {
         if (!jsonNode.isMissingNode()) {
-            final List<HalRepresentation> embeddedValues = new ArrayList<>();
-            final JsonNode embeddedNodeForRel = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.getRel());
-            if (!embeddedNodeForRel.isMissingNode()) {
-                resolveEmbeddedTypeInfo(typeInfo, halRepresentation, embeddedValues, embeddedNodeForRel);
-            } else {
-                // maybe there are some nested embeddeds which should be resolved based on typeInfo...
-                Embedded embedded = halRepresentation.getEmbedded();
-                embedded.getRels().forEach(rel -> {
-                    embedded.getItemsBy(rel).forEach(embeddedItem -> {
-                        final JsonNode embeddedNode = findEmbeddedNode(jsonNode, rel);
-                        if (embeddedNode.isArray()) {
-                            embeddedNode.iterator().forEachRemaining(node -> resolveEmbeddedTypeInfo(typeInfo, node, embeddedItem));
-                        }
+            typeInfos.forEach(typeInfo -> {
+                final Optional<JsonNode> embeddedNodeForRel = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.getRel());
+                if (embeddedNodeForRel.isPresent()) {
+                    resolveEmbeddedTypeInfo(typeInfo, halRepresentation, embeddedNodeForRel.get());
+                } else {
+                    // maybe there are some nested embeddeds which should be resolved based on typeInfo...
+                    Embedded embedded = halRepresentation.getEmbedded();
+                    embedded.getRels().forEach(rel -> {
+                        embedded.getItemsBy(rel).forEach(embeddedItem -> {
+                            findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, rel).ifPresent(embeddedNode -> {
+                                if (embeddedNode.isArray()) {
+                                    embeddedNode.iterator().forEachRemaining(node -> resolveEmbeddedTypeInfo(typeInfos, node, embeddedItem));
+                                }
+                            });
+                        });
                     });
-                });
-            }
+                }
+            });
         }
     }
 
-    private <T extends HalRepresentation> void resolveEmbeddedTypeInfo(EmbeddedTypeInfo typeInfo, T halRepresentation, List<HalRepresentation> embeddedValues, JsonNode embeddedNodeForRel) {
+    private <T extends HalRepresentation> void resolveEmbeddedTypeInfo(final EmbeddedTypeInfo typeInfo,
+                                                                       final T halRepresentation,
+                                                                       final JsonNode embeddedNodeForRel) {
+        final List<HalRepresentation> embeddedValues = new ArrayList<>();
         if (embeddedNodeForRel.isArray()) {
             for (int i = 0; i < embeddedNodeForRel.size(); i++) {
                 final JsonNode embeddedNode = embeddedNodeForRel.get(i);
@@ -143,18 +166,6 @@ public final class HalParser {
     }
 
     /**
-     * Returns the JsonNode of the embedded items by link-relation type.
-     *
-     * @param jsonNode the JsonNode of the document
-     * @param rel the link-relation type of interest
-     * @return JsonNode
-     * @since 1.0.0
-     */
-    private JsonNode findEmbeddedNode(final JsonNode jsonNode, final String rel) {
-        return jsonNode.at("/_embedded/" + rel);
-    }
-
-    /**
      * Returns the JsonNode of the embedded items by link-relation type and resolves possibly curied rels.
      *
      * @param halRepresentation the HAL document including the 'curies' links.
@@ -163,16 +174,20 @@ public final class HalParser {
      * @return JsonNode
      * @since 0.3.0
      */
-    private JsonNode findPossiblyCuriedEmbeddedNode(final HalRepresentation halRepresentation, final JsonNode jsonNode, final String rel) {
-        final JsonNode listOfHalRepresentations = jsonNode.at("/_embedded/" + rel);
-        if (listOfHalRepresentations.isMissingNode()) {
-            // Try it with curied links:
-            final List<Link> curies = halRepresentation.getLinks().getLinksBy("curies");
-            final Optional<CuriTemplate> curiTemplate = matchingCuriTemplateFor(curies, rel);
-            if (curiTemplate.isPresent()) {
-                return jsonNode.at("/_embedded/" + curiTemplate.get().curiedRelFrom(rel));
+    private Optional<JsonNode> findPossiblyCuriedEmbeddedNode(final HalRepresentation halRepresentation,
+                                                              final JsonNode jsonNode,
+                                                              final String rel) {
+        final JsonNode embedded = jsonNode.get("_embedded");
+        if (embedded != null) {
+            final RelRegistry relRegistry = halRepresentation.getLinks().getRelRegistry();
+            final JsonNode curiedNode = embedded.get(relRegistry.resolve(rel));
+            if (curiedNode == null) {
+                return Optional.ofNullable(embedded.get(relRegistry.expand(rel)));
+            } else {
+                return Optional.of(curiedNode);
             }
+        } else {
+            return Optional.empty();
         }
-        return listOfHalRepresentations;
     }
 }
