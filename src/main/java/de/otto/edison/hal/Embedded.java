@@ -89,7 +89,7 @@ public class Embedded {
         for (final String rel : items.keySet()) {
             curiedItems.put(relRegistry.resolve(rel), items.get(rel)
                     .stream()
-                    .map(halRepresentation -> halRepresentation.using(relRegistry))
+                    .map(halRepresentation -> halRepresentation.mergeWithEmbedding(relRegistry))
                     .collect(toList()));
         }
         this.items = curiedItems;

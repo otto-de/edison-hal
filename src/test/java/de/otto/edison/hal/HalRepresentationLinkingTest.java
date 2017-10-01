@@ -93,8 +93,8 @@ public class HalRepresentationLinkingTest {
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo(
                         link("foo", "http://example.org/items/1"),
-                        link("bar", "http://example.org/items/2"))
-                .using(RelRegistry.relRegistry(asList("foo")))
+                        link("bar", "http://example.org/items/2")),
+                relRegistry(asList("foo"))
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -109,8 +109,8 @@ public class HalRepresentationLinkingTest {
                 linkingTo(
                         curi("ex", "http://example.org/rels/{rel}"),
                         link("ex:foo", "http://example.org/items/1"),
-                        link("http://example.org/rels/bar", "http://example.org/items/2"))
-                .using(RelRegistry.relRegistry(asList("http://example.org/rels/foo", "ex:bar")))
+                        link("http://example.org/rels/bar", "http://example.org/items/2")),
+                relRegistry(asList("http://example.org/rels/foo", "ex:bar"))
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -131,8 +131,8 @@ public class HalRepresentationLinkingTest {
                                 curi("ex", "http://example.org/rels/{rel}"),
                                 link("ex:foo", "http://example.org/items/1"),
                                 link("http://example.org/rels/bar", "http://example.org/items/2"))
-                                .using(RelRegistry.relRegistry(asList("http://example.org/rels/foo", "ex:bar")))
-                )))
+                ))),
+                relRegistry(asList("http://example.org/rels/foo", "ex:bar"))
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -156,31 +156,8 @@ public class HalRepresentationLinkingTest {
                         linkingTo(
                                 link("ex:foo", "http://example.org/items/1"),
                                 link("http://example.org/rels/bar", "http://example.org/items/2"))
-                )))
-        );
-        // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
-        // then
-        assertThat(json, is("{" +
-                "\"_links\":{" +
-                "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]}," +
-                "\"_embedded\":{\"ex:nested\":[{\"_links\":{" +
-                "\"ex:foo\":[{\"href\":\"http://example.org/items/1\"}]," +
-                "\"ex:bar\":[{\"href\":\"http://example.org/items/2\"}]}}" +
-                "]}}"));
-    }
-
-    @Test
-    public void shouldRenderNestedConfiguredCuriedRelAsArrayWithCuriAtTopLevelWithUsing() throws JsonProcessingException {
-        // given
-        final HalRepresentation representation = new HalRepresentation(
-                linkingTo(curi("ex", "http://example.org/rels/{rel}"))
-                        .using(RelRegistry.relRegistry(asList("http://example.org/rels/foo", "ex:bar"))),
-                embedded("http://example.org/rels/nested", asList(new HalRepresentation(
-                        linkingTo(
-                                link("ex:foo", "http://example.org/items/1"),
-                                link("http://example.org/rels/bar", "http://example.org/items/2"))
-                )))
+                ))),
+                relRegistry(asList("http://example.org/rels/foo", "ex:bar"))
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);

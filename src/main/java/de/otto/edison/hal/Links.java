@@ -82,7 +82,7 @@ public class Links {
     }
 
     /**
-     * Applies RelRegistry to the links and replaces link-relation types with CURIed form, if applicable.
+     * Returns a copy of this Links instance and replaces link-relation types with CURIed form, if applicable.
      * <p>
      *     All CURIes are registered in the given RelRegistry, so the HalRepresentation can forward these
      *     CURIes to embedded items.
@@ -91,10 +91,7 @@ public class Links {
      * @return Links having a reference to the given RelRegistry.
      */
     Links using(final RelRegistry relRegistry) {
-        final RelRegistry copy = RelRegistry.copyOf(relRegistry);
-        links.getOrDefault(CURIES_REL, emptyList()).forEach(copy::register);
-        copy.withArrayRels(this.relRegistry.getArrayRels());
-        return new Links(links, copy);
+        return new Links(links, relRegistry);
     }
 
     /**
@@ -180,10 +177,6 @@ public class Links {
      */
     public static Builder copyOf(final Links prototype) {
         return new Builder().with(prototype);
-    }
-
-    public RelRegistry getRelRegistry() {
-        return relRegistry;
     }
 
     /**
@@ -422,10 +415,10 @@ public class Links {
          * @since 0.4.2
          */
         public Builder with(final Links moreLinks) {
+            this.relRegistry = moreLinks.relRegistry;
             for (final String rel : moreLinks.getRels()) {
                 with(moreLinks.getLinksBy(rel));
             }
-            this.relRegistry = moreLinks.relRegistry;
             return this;
         }
 

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
+import static java.util.Arrays.asList;
 
 /**
  * <p>
@@ -90,14 +91,21 @@ public final class HalParser {
      *
      * @param type the Java class used to map JSON to.
      * @param typeInfo type information of the embedded items.
+     * @param moreTypeInfo more type information of embedded items.
      * @param <T> The type used to parse the HAL document
      * @return T
      * @throws IOException if parsing the JSON fails for some reason.
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type,
-                                              final EmbeddedTypeInfo typeInfo) throws IOException {
-        return as(type, Collections.singletonList(typeInfo));
+                                              final EmbeddedTypeInfo typeInfo,
+                                              final EmbeddedTypeInfo... moreTypeInfo) throws IOException {
+        final List<EmbeddedTypeInfo> typeInfos = new ArrayList<>();
+        typeInfos.add(typeInfo);
+        if (moreTypeInfo != null) {
+            typeInfos.addAll(asList(moreTypeInfo));
+        }
+        return as(type, typeInfos);
     }
 
     /**
@@ -179,7 +187,7 @@ public final class HalParser {
                                                               final String rel) {
         final JsonNode embedded = jsonNode.get("_embedded");
         if (embedded != null) {
-            final RelRegistry relRegistry = halRepresentation.getLinks().getRelRegistry();
+            final RelRegistry relRegistry = halRepresentation.getRelRegistry();
             final JsonNode curiedNode = embedded.get(relRegistry.resolve(rel));
             if (curiedNode == null) {
                 return Optional.ofNullable(embedded.get(relRegistry.expand(rel)));
