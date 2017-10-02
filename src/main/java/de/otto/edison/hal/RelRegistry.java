@@ -3,7 +3,6 @@ package de.otto.edison.hal;
 import java.util.*;
 
 import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
-import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
@@ -61,7 +60,7 @@ public class RelRegistry {
 
     /**
      * Creates default RelRegistry with no curi links but 'curies', 'item' and 'items' registered as
-     * {@link #withArrayRels(String, String...) array rels}
+     * {@link #getArrayRels() array rels}
      *
      * @return default RelRegistry
      */
@@ -77,12 +76,8 @@ public class RelRegistry {
      * @return RelRegistry
      */
     public static RelRegistry relRegistry(final Links links) {
-        if (links != null) {
-            List<Link> curies = links.getLinksBy("curies");
-            return relRegistry(curies);
-        } else {
-            return defaultRelRegistry();
-        }
+        List<Link> curies = links.getLinksBy("curies");
+        return relRegistry(curies);
     }
 
     /**
@@ -95,12 +90,8 @@ public class RelRegistry {
      */
     public static RelRegistry relRegistry(final Links links,
                                           final Collection<String> arrayRels) {
-        if (links != null) {
-            final List<Link> curies = links.getLinksBy("curies");
-            return relRegistry(curies, arrayRels);
-        } else {
-            return relRegistry(arrayRels);
-        }
+        final List<Link> curies = links.getLinksBy("curies");
+        return relRegistry(curies, arrayRels);
     }
 
     /**
@@ -171,38 +162,23 @@ public class RelRegistry {
         arrayRels = arrayRels.stream().map(this::resolve).collect(toSet());
     }
 
-    public RelRegistry withArrayRels(final String rel, final String... more) {
-        final Set<String> arrayRels = new LinkedHashSet<>(this.arrayRels);
-        arrayRels.add(resolve(rel));
-         if (more != null) {
-             stream(more).forEach(r -> arrayRels.add(resolve(r)));
-        }
-        return new RelRegistry(this.curies, arrayRels);
-    }
-
-    public RelRegistry withArrayRels(final Collection<String> rels) {
-        final Set<String> arrayRels = new LinkedHashSet<>(this.arrayRels);
-        rels.forEach(rel -> this.arrayRels.add(resolve(rel)));
-        return new RelRegistry(this.curies, arrayRels);
-    }
-
+    /**
+     * Returns true if the given link-relation type is configured to be rendered as an array, false if not.
+     *
+     * @param rel the link-relation type in curied or expanded format
+     * @return boolean
+     */
     public boolean isArrayRel(final String rel) {
         return arrayRels.contains(resolve(rel));
     }
 
+    /**
+     * Returns the set of link-relation types (in curied format) that is configured to be rendered as an array of links.
+     *
+     * @return set of link-relation types
+     */
     public Set<String> getArrayRels() {
         return arrayRels;
-    }
-    /**
-     * Merges this RelRegistry with curies from the Links parameter.
-     *
-     * @param links merged Links
-     * @return merged RelRegistry
-     */
-    public RelRegistry mergeWith(final Links links) {
-        final RelRegistry merged = copyOf(this);
-        links.getLinksBy("curies").forEach(merged::register);
-        return merged;
     }
 
     /**

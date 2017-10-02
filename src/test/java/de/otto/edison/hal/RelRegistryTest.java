@@ -3,13 +3,55 @@ package de.otto.edison.hal;
 import org.junit.Test;
 
 import static de.otto.edison.hal.Link.curi;
+import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
 import static de.otto.edison.hal.RelRegistry.relRegistry;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
 public class RelRegistryTest {
+
+    @Test
+    public void shouldBuildRegistryWithLinksAndArrayRels() {
+        // given
+        final RelRegistry relRegistry = relRegistry(
+                linkingTo(curi("x", "http://example.com/rels/{rel}")),
+                asList("x:foo"));
+        // then
+        assertThat(relRegistry.resolve("http://example.com/rels/foo"), is("x:foo"));
+        assertThat(relRegistry.isArrayRel("x:foo"), is(true));
+        assertThat(relRegistry.isArrayRel("http://example.com/rels/foo"), is(true));
+        assertThat(relRegistry.isArrayRel("curies"), is(true));
+        assertThat(relRegistry.getArrayRels(), containsInAnyOrder("curies", "x:foo"));
+    }
+
+    @Test
+    public void shouldExpandFullRel() {
+        // given
+        final RelRegistry relRegistry = relRegistry(linkingTo(curi("x", "http://example.com/rels/{rel}")), asList("x:foo"));
+        // when
+        final String first = relRegistry.expand("http://example.com/rels/foo");
+        final String second = relRegistry.expand("item");
+        // then
+        assertThat(first, is("http://example.com/rels/foo"));
+        assertThat(second, is("item"));
+    }
+
+    @Test
+    public void shouldBuildRegistryWithArrayRels() {
+        // given
+        final RelRegistry relRegistry = relRegistry(asList("foo"));
+        // then
+        assertThat(relRegistry.isArrayRel("foo"), is(true));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToRegisterNonCuriLink() {
+        defaultRelRegistry().register(link("foo", "http://example.com/foo"));
+    }
 
     @Test
     public void shouldResolveFullUri() {
