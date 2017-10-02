@@ -425,7 +425,7 @@ products:
         }
       },
       {
-      // more shopping-cart items...
+      "more" : "shopping-cart items..."
       }
     ]
   }
