@@ -134,7 +134,10 @@ public class HalParserTest {
                         "]}" +
                         "}";
         // when
-        final HalRepresentation result = parse(json).as(HalRepresentation.class, withEmbedded("bar", EmbeddedHalRepresentation.class));
+        final HalRepresentation result = parse(json)
+                .as(HalRepresentation.class,
+                        withEmbedded("foo", HalRepresentation.class,
+                                withEmbedded("bar", EmbeddedHalRepresentation.class)));
         // then
         final HalRepresentation foo = result.getEmbedded().getItemsBy("foo", HalRepresentation.class).get(0);
         final List<EmbeddedHalRepresentation> embeddedItems = foo.getEmbedded().getItemsBy("bar", EmbeddedHalRepresentation.class);
@@ -197,7 +200,11 @@ public class HalParserTest {
                 "   ]}" +
                 "}";
         // when
-        final SimpleHalRepresentation result = parse(json).as(SimpleHalRepresentation.class, withEmbedded("bar", EmbeddedHalRepresentation.class));
+        final SimpleHalRepresentation result = parse(json)
+                .as(SimpleHalRepresentation.class,
+                        withEmbedded("test", HalRepresentation.class,
+                                withEmbedded("bar", EmbeddedHalRepresentation.class))
+                );
         final HalRepresentation test = result.getEmbedded().getItemsBy("test").get(0);
         // then
         final List<HalRepresentation> embeddedFoo = test.getEmbedded().getItemsBy("foo");

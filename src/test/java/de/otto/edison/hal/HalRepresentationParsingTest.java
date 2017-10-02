@@ -14,7 +14,6 @@ import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
@@ -375,8 +374,9 @@ public class HalRepresentationParsingTest {
         // when
         Embedded embedded = parse(json)
                 .as(HalRepresentation.class,
-                        withEmbedded("x:foo", EmbeddedHalRepresentation.class),
-                        withEmbedded("http://example.org/rels/bar", SimpleHalRepresentation.class))
+                        withEmbedded("x:test", HalRepresentation.class,
+                                withEmbedded("x:foo", EmbeddedHalRepresentation.class),
+                                withEmbedded("http://example.org/rels/bar", SimpleHalRepresentation.class)))
                 .getEmbedded().getItemsBy("x:test").get(0).getEmbedded();
         // then
         assertThat(embedded.getItemsBy("x:foo"), hasSize(2));
@@ -387,7 +387,48 @@ public class HalRepresentationParsingTest {
         assertThat(embedded.getItemsBy("x:bar").get(1), is(instanceOf(SimpleHalRepresentation.class)));
     }
 
-    //@Test
+    @Test
+    public void shouldParseNestedEmbeddedsWithDifferentDerivedTypesForSameRel() throws IOException {
+        // given
+        final String json = "{" +
+                "\"_embedded\":{" +
+                "   \"item\":[{" +
+                "       \"first\":\"first value\"," +
+                "       \"second\":\"second value\"," +
+                "       \"_embedded\":{" +
+                "           \"item\":[" +
+                "           {" +
+                "               \"_links\":{\"http://example.org/rels/bar\":{\"href\":\"http://example.org/test/bar/01\"}}," +
+                "               \"value\":\"first value\"" +
+                "           }," +
+                "           {" +
+                "               \"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}," +
+                "               \"value\":\"second value\"" +
+                "           }" +
+                "           ]" +
+                "       }" +
+                "   }]" +
+                "}" +
+                "}";
+        // when
+        Embedded embedded = parse(json)
+                .as(HalRepresentation.class,
+                        withEmbedded("item", SimpleHalRepresentation.class,
+                                withEmbedded("item", EmbeddedHalRepresentation.class)))
+                .getEmbedded();
+        // then
+        assertThat(embedded.getItemsBy("item"), hasSize(1));
+        assertThat(embedded.getItemsBy("item", SimpleHalRepresentation.class).get(0).first, is("first value"));
+        assertThat(embedded.getItemsBy("item", SimpleHalRepresentation.class).get(0).second, is("second value"));
+        // and
+        embedded = embedded.getItemsBy("item").get(0).getEmbedded();
+
+        assertThat(embedded.getItemsBy("item"), hasSize(2));
+        assertThat(embedded.getItemsBy("item", EmbeddedHalRepresentation.class).get(0).value, is("first value"));
+        assertThat(embedded.getItemsBy("item", EmbeddedHalRepresentation.class).get(1).value, is("second value"));
+    }
+
+    @Test
     public void shouldParseNestedCuriedEmbeddedsWithDifferentDerivedTypesForSameRel() throws IOException {
         // given
         final String json = "{\"_links\":{" +
@@ -416,9 +457,10 @@ public class HalRepresentationParsingTest {
         // when
         Embedded embedded = parse(json)
                 .as(HalRepresentation.class,
-                        withEmbedded("http://example.org/rels/foo", SimpleHalRepresentation.class),
-                        withEmbedded("x:foo", EmbeddedHalRepresentation.class),
-                        withEmbedded("http://example.org/rels/bar", SimpleHalRepresentation.class))
+                        withEmbedded("http://example.org/rels/foo", SimpleHalRepresentation.class,
+                                withEmbedded("x:foo", EmbeddedHalRepresentation.class),
+                                withEmbedded("http://example.org/rels/bar", SimpleHalRepresentation.class))
+                        )
                 .getEmbedded();
         // then
         assertThat(embedded.getItemsBy("x:foo"), hasSize(1));

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,18 +134,19 @@ public final class HalParser {
                 final Optional<JsonNode> embeddedNodeForRel = findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, typeInfo.getRel());
                 if (embeddedNodeForRel.isPresent()) {
                     resolveEmbeddedTypeInfo(typeInfo, halRepresentation, embeddedNodeForRel.get());
-                } else {
-                    // maybe there are some nested embeddeds which should be resolved based on typeInfo...
-                    Embedded embedded = halRepresentation.getEmbedded();
-                    embedded.getRels().forEach(rel -> {
-                        embedded.getItemsBy(rel).forEach(embeddedItem -> {
-                            findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, rel).ifPresent(embeddedNode -> {
-                                if (embeddedNode.isArray()) {
-                                    embeddedNode.iterator().forEachRemaining(node -> resolveEmbeddedTypeInfo(typeInfos, node, embeddedItem));
-                                }
+                    if (!typeInfo.getNestedTypeInfo().isEmpty()) {
+                        // maybe there are some nested embeddeds which should be resolved based on typeInfo, too...
+                        final Embedded embedded = halRepresentation.getEmbedded();
+                        embedded.getRels().forEach(rel -> {
+                            embedded.getItemsBy(rel).forEach(embeddedItem -> {
+                                findPossiblyCuriedEmbeddedNode(halRepresentation, jsonNode, rel).ifPresent(embeddedNode -> {
+                                    if (embeddedNode.isArray()) {
+                                        embeddedNode.iterator().forEachRemaining(node -> resolveEmbeddedTypeInfo(typeInfo.getNestedTypeInfo(), node, embeddedItem));
+                                    }
+                                });
                             });
                         });
-                    });
+                    }
                 }
             });
         }

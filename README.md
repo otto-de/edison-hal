@@ -43,12 +43,14 @@ Spring HATEOAS, for example, is lacking many link properties, such as
 Creating HAL representations:
 * Links with all specified attributes like rel, href, profile, type, name, title, etc. pp.
 * Embedded resources
-* CURIs in links and embedded resources
+* Curies in links and embedded resources
 * Generation of HAL representations using Jackson using annotated classes
 
 Parsing HAL representations:
-* Mapping application/hal+json to Java classes using Jackson
-* simple domain model to access links, embedded resources etc.
+* Mapping application/hal+json to Java classes using Jackson. This also works for deeply nested embedded items.
+* Simple domain model to access links, embedded resources etc.
+* Curies are automatically resolved: Given a curi with name=ex and href=http://example.com/rels/{rel}, links
+and embedded items can be access either in curied format `ex:foo`, or expanded format `http://exampl.com/rels/foo` 
 
 Traversion of HAL representations:
 * Simple client-side navigation through linked and embedded REST resources using
@@ -341,7 +343,7 @@ There are some special cases, where it is required to configure the ObjectMapper
     final ObjectMapper mapper = new ObjectMapper();
     mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 ```
-This will be necessary, if there a single embedded items for a link-relation type, instead of an array of items:
+This will be necessary, if there are single embedded items for a link-relation type, instead of an array of items:
 ```json
 {
     "_embedded" : {
@@ -357,7 +359,8 @@ This will be necessary, if there a single embedded items for a link-relation typ
 }
 ```
 #### 4.6.2 Using the HalParser
-If you want to parse embedded resources into a extended HalRepresentation, you need to use the *HalParser*:
+
+If you want to parse embedded resources as a sub-class of HalRepresentation, you need to use the *HalParser*:
 
 ```java
     @Test
@@ -390,7 +393,63 @@ If you want to parse embedded resources into a extended HalRepresentation, you n
     }
 ```
 
-### 4.6.3 Unmapped attributes
+### 4.6.3 Nested embedded resources
+
+The `HalParser` is also able to parse nested embedded resources into different subclasses of HalRepresentation. For 
+example, you could parse a shopping-cart document with embedded shopping-cart items, which in turn have embedded 
+products:
+
+```json
+{
+  "_links" : {"self" : {"href" : "http://shop.example.com/shoppingcarts/42"}},
+  "_embedded" : {
+    "http://example.com/rels/customer" : {
+      "_links" : {"self" : {"href" : "http://shop.example.com/customers/1234"}},
+      "customerId" : "some customer id",
+      "name" : "Max Mustermann"
+    },
+    "item" : [
+      {
+        "_links" : {"self" : {"href" : "http://shop.example.com/shoppingcarts/42/item/1"}},
+        "_embedded" : {
+          "item" : [
+            {
+              "_links" : {"self" : {"href" : "http://shop.example.com/products/0815"}},
+              "count" : 2
+            },
+            {
+              "_links" : {"self" : {"href" : "http://shop.example.com/products/4711"}},
+              "count" : 2
+            }
+          ]
+        }
+      },
+      {
+      // more shopping-cart items...
+      }
+    ]
+  }
+}
+``` 
+
+This shopping-cart document could be parsed into some java `ShoppingCart` object containing embedded `Customer`and 
+`ShoppingCartItem`s, which in turn have embedded `Product`s like this:
+
+```java
+final ShoppingCart cart = HalParser
+        .parse(json)
+        .as(ShoppingCart.class, 
+            withEmbedded("http://example.com/rels/customer", Customer.class),
+            withEmbedded("item", ShoppingCartItem.class,
+                withEmbedded("item", Product.class)
+            )
+        );
+```  
+`EmbeddedTypeInfo.withEmbedded()` is a factory method used to specify the types of embedded items. By nesting
+the type infos, you can tell the HalParser about the types of any embedded item type, event deeply nested in complex
+HAL representations.
+
+### 4.6.4 Unmapped attributes
 
 HalRepresentation supports access to attributes, that could not be mapped to properties. For example:
 ```json
