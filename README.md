@@ -135,18 +135,18 @@ _[text + example taken from http://stateless.co/hal_specification.html)_
 By default, links with link-relation type `curies`, `item`, and `items` are serialized as 
 an array of links.
 
-Using Edison HAL, you can override this default behaviour when you build the ```Links``` 
-object of a ```HalRepresentation```:
+Using Edison HAL, you can override this default behaviour when you build a ```HalRepresentation```:
 ```java
     final HalRepresentation representation = new HalRepresentation(
             linkingTo(
-                    self("http://example.org/test/bar")
-            ).withArrayRels("item", "foo", "bar")
+                    link("foo", "http://example.org/test/foo")
+                    link("bar", "http://example.org/test/bar")
+            ),
+            RelRegistry.relRegistry("foo", "bar")
     );
 ```
 
-Instead of calling ```Links#withArrayRels()```, you can also configure this using ```Links#linkingTo(List<Link>, Set<String>)```
-or using ```Links.Builder```
+Curies, however, are always rendered as an array.
 
 ### 4.4 Serializing HalRepresentations
 
