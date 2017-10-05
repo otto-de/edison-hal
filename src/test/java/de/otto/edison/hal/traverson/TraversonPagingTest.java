@@ -109,14 +109,7 @@ public class TraversonPagingTest {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
-        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
-                "{" +
-                        "\"_links\":{" +
-                            "\"foo\":[" +
-                                "{\"href\":\"/example/foo/1\"}," +
-                                "{\"href\":\"/example/foo/2\"}]" +
-                        "}" +
-                "}");
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn("{}");
 
         // when we getResource the next page
         final Optional<HalRepresentation> optionalPage = traverson(mock)
@@ -281,10 +274,15 @@ public class TraversonPagingTest {
                     .follow("item")
                     .streamAs(OtherExtendedHalRepresentation.class)
                     .forEach(x -> values.add(x.someOtherProperty));
-            currentPage = pager
-                    .follow("next")
-                    .getResourceAs(ExtendedHalRepresentation.class);
+            if (currentPage.get().getLinks().hasLink("next")) {
+                currentPage = pager
+                        .follow("next")
+                        .getResourceAs(ExtendedHalRepresentation.class);
+            } else {
+                currentPage = Optional.empty();
+            }
         }
+
         // then
         assertThat(values, contains("one", "two", "three", "four"));
     }

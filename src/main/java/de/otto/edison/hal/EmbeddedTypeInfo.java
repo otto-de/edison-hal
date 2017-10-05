@@ -31,7 +31,7 @@ public class EmbeddedTypeInfo {
     public static EmbeddedTypeInfo withEmbedded(final String rel,
                                                 final Class<? extends HalRepresentation> embeddedType,
                                                 final EmbeddedTypeInfo... nestedTypeInfo) {
-        if (nestedTypeInfo == null) {
+        if (nestedTypeInfo == null || nestedTypeInfo.length == 0) {
             return new EmbeddedTypeInfo(rel, embeddedType, emptyList());
         } else {
             return new EmbeddedTypeInfo(rel, embeddedType, asList(nestedTypeInfo));
@@ -53,6 +53,6 @@ public class EmbeddedTypeInfo {
     }
 
     public List<EmbeddedTypeInfo> getNestedTypeInfo() {
-        return nestedTypeInfo;
+        return nestedTypeInfo != null ? nestedTypeInfo : emptyList();
     }
 }

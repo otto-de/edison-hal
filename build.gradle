@@ -15,8 +15,10 @@ repositories {
 dependencies {
     compile libraries.jackson
     compile libraries.uritemplates
+    compile libraries.loggingApi
 
     testCompile libraries.test
+    testCompile libraries.loggingImpl
 }
 
 compileJava {

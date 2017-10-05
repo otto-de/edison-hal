@@ -300,6 +300,17 @@ public class Links {
     }
 
     /**
+     * Checks the existence of a link with link-relation type {@code rel}
+     * @param rel the link-relation type
+     * @return true, if links exists, false otherwise
+     *
+     * @since 1.0.0
+     */
+    public boolean hasLink(final String rel) {
+        return links.containsKey(rel);
+    }
+
+    /**
      *
      * @return true if Links is empty, false otherwise.
      *

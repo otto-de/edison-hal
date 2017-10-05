@@ -242,6 +242,26 @@ public class HalRepresentationParsingTest {
     }
 
     @Test
+    public void shouldIgnoreMissingEmbeddeds() throws IOException {
+        // given
+        final String json = "{\"_links\":{" +
+                "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
+                "\"_embedded\":{\"x:test\":[{" +
+                "}]}" +
+                "}";
+        // when
+        final HalRepresentation halRepresentation = parse(json)
+                .as(HalRepresentation.class,
+                        withEmbedded("x:test", SimpleHalRepresentation.class,
+                                withEmbedded("x:doesnotexist", EmbeddedHalRepresentation.class)));
+        // then
+        final List<HalRepresentation> items = halRepresentation.getEmbedded().getItemsBy("http://example.org/rels/test");
+        assertThat(items, hasSize(1));
+        assertThat(items.get(0), is(instanceOf(SimpleHalRepresentation.class)));
+        assertThat(items.get(0).getEmbedded().isEmpty(), is(true));
+    }
+
+    @Test
     public void shouldParseNestedCuriedEmbeddeds() throws IOException {
         // given
         final String json = "{\"_links\":{" +

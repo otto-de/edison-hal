@@ -6,5 +6,9 @@ ext.libraries = [
         jackson: [
                 "com.fasterxml.jackson.core:jackson-databind:2.9.1"],
         uritemplates: [
-                'com.damnhandy:handy-uri-templates:2.1.6']
+                "com.damnhandy:handy-uri-templates:2.1.6"],
+        loggingApi: [
+                "org.slf4j:slf4j-api:1.7.25"],
+        loggingImpl: [
+                "ch.qos.logback:logback-classic:1.2.3"]
 ]

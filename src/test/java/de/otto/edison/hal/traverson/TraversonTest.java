@@ -3,6 +3,7 @@ package de.otto.edison.hal.traverson;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
 import org.junit.Test;
@@ -27,16 +28,14 @@ import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.traverson.TraversionError.Type.INVALID_JSON;
 import static de.otto.edison.hal.traverson.TraversionError.Type.NOT_FOUND;
 import static de.otto.edison.hal.traverson.TraversionError.traversionError;
+import static de.otto.edison.hal.traverson.Traverson.embeddedTypeInfoFor;
 import static de.otto.edison.hal.traverson.Traverson.hops;
 import static de.otto.edison.hal.traverson.Traverson.traverson;
 import static de.otto.edison.hal.traverson.Traverson.withVars;
+import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -665,6 +664,102 @@ public class TraversonTest {
     }
 
     @Test
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                "   \"_embedded\":{" +
+                "       \"foo\":[{" +
+                "           \"someProperty\":\"foo value\"," +
+                "           \"_embedded\":{" +
+                "               \"bar\":[{" +
+                "                   \"someProperty\":\"bar value\"" +
+                "               }]" +
+                "           }" +
+                "       }]" +
+                "   }" +
+                "}");
+        // when
+        final ExtendedHalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .follow("foo")
+                .getResourceAs(ExtendedHalRepresentation.class, withEmbedded("bar", ExtendedHalRepresentation.class))
+                .get();
+        // then
+        assertThat(hal.someProperty, is("foo value"));
+        assertThat(hal.getEmbedded().getItemsBy("bar", ExtendedHalRepresentation.class).get(0).someProperty, is("bar value"));
+    }
+
+    @Test
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesAsSubtypeFromSingleDocument() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                "   \"_links\":{\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]}," +
+                "   \"_embedded\":{" +
+                "       \"x:foo\":[{" +
+                "           \"someProperty\":\"foo value\"," +
+                "           \"_embedded\":{" +
+                "               \"http://example.com/rels/bar\":[{" +
+                "                   \"someProperty\":\"bar value\"" +
+                "               }]" +
+                "           }" +
+                "       }]" +
+                "   }" +
+                "}");
+        // when
+        final ExtendedHalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .follow("http://example.com/rels/foo")
+                .getResourceAs(ExtendedHalRepresentation.class, withEmbedded("x:bar", ExtendedHalRepresentation.class))
+                .get();
+        // then
+        assertThat(hal.someProperty, is("foo value"));
+        assertThat(hal.getEmbedded().getItemsBy("http://example.com/rels/bar", ExtendedHalRepresentation.class).get(0).someProperty, is("bar value"));
+    }
+
+    @Test
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                "   \"_links\":{" +
+                        "\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]," +
+                        "\"x:foo\":{\"href\":\"http://example.com/foo\"}" +
+                "   }" +
+                "}",
+        "{" +
+                "   \"_links\":{\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]}," +
+                "   \"_embedded\":{" +
+                "       \"x:bar\":[{" +
+                "           \"someProperty\":\"bar value\"," +
+                "           \"_embedded\":{" +
+                "               \"http://example.com/rels/foobar\":[{" +
+                "                   \"someProperty\":\"foobar value\"" +
+                "               }]" +
+                "           }" +
+                "       }]" +
+                "   }" +
+                "}"
+        );
+        // when
+        final ExtendedHalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .follow(asList("http://example.com/rels/foo", "http://example.com/rels/bar"))
+                .getResourceAs(ExtendedHalRepresentation.class, withEmbedded("x:foobar", ExtendedHalRepresentation.class))
+                .get();
+        // then
+        assertThat(hal.someProperty, is("bar value"));
+        assertThat(hal.getEmbedded().getItemsBy("http://example.com/rels/foobar", ExtendedHalRepresentation.class).get(0).someProperty, is("foobar value"));
+    }
+
+    @Test
     public void shouldGetSingleEmbeddedHalRepresentationAsSubtype() {
         // given
         @SuppressWarnings("unchecked")
@@ -770,6 +865,67 @@ public class TraversonTest {
                 .collect(toList());
         // then
         assertThat(hrefs, contains("first","second"));
+    }
+
+    @Test
+    public void shouldBuildTypeInfoForSingleHopWithoutEmbeddedTypeInfo() {
+        final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
+                asList(hop("foo")),
+                ExtendedHalRepresentation.class, null);
+        assertThat(typeInfo.getRel(), is("foo"));
+        assertThat(typeInfo.getType().getSimpleName(), is("ExtendedHalRepresentation"));
+        assertThat(typeInfo.getNestedTypeInfo(), is(empty()));
+    }
+
+    @Test
+    public void shouldBuildTypeInfoForSingleHop() {
+        final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
+                asList(hop("foo")),
+                ExtendedHalRepresentation.class,
+                withEmbedded("bar", OtherExtendedHalRepresentation.class));
+        assertThat(typeInfo.getRel(), is("foo"));
+        assertThat(typeInfo.getType().getSimpleName(), is("ExtendedHalRepresentation"));
+        assertThat(typeInfo.getNestedTypeInfo().get(0).getRel(), is("bar"));
+        assertThat(typeInfo.getNestedTypeInfo().get(0).getType().getSimpleName(), is("OtherExtendedHalRepresentation"));
+    }
+
+    @Test
+    public void shouldBuildTypeInfoForMultipleHopsWithoutEmbeddedTypeInfo() {
+        final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
+                asList(hop("foo"), hop("bar"), hop("foobar")),
+                ExtendedHalRepresentation.class, null);
+        assertThat(typeInfo.getRel(), is("foo"));
+        assertThat(typeInfo.getType().getSimpleName(), is("HalRepresentation"));
+        EmbeddedTypeInfo nested = typeInfo.getNestedTypeInfo().get(0);
+        assertThat(nested.getRel(), is("bar"));
+        assertThat(nested.getType().getSimpleName(), is("HalRepresentation"));
+        nested = nested.getNestedTypeInfo().get(0);
+        assertThat(nested.getRel(), is("foobar"));
+        assertThat(nested.getType().getSimpleName(), is("ExtendedHalRepresentation"));
+        assertThat(nested.getNestedTypeInfo(), is(empty()));
+    }
+
+    @Test
+    public void shouldBuildTypeInfoForMultipleHops() {
+        final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
+                asList(hop("foo"), hop("bar"), hop("foobar")),
+                ExtendedHalRepresentation.class,
+                withEmbedded("barbar", OtherExtendedHalRepresentation.class));
+        assertThat(typeInfo.getRel(), is("foo"));
+        assertThat(typeInfo.getType().getSimpleName(), is("HalRepresentation"));
+        EmbeddedTypeInfo nested = typeInfo.getNestedTypeInfo().get(0);
+        assertThat(nested.getRel(), is("bar"));
+        assertThat(nested.getType().getSimpleName(), is("HalRepresentation"));
+        nested = nested.getNestedTypeInfo().get(0);
+        assertThat(nested.getRel(), is("foobar"));
+        assertThat(nested.getType().getSimpleName(), is("ExtendedHalRepresentation"));
+        nested = nested.getNestedTypeInfo().get(0);
+        assertThat(nested.getRel(), is("barbar"));
+        assertThat(nested.getType().getSimpleName(), is("OtherExtendedHalRepresentation"));
+    }
+
+    private Traverson.Hop hop(final String rel) {
+        return new Traverson.Hop(rel, null, null);
     }
 
     static class ExtendedHalRepresentation extends HalRepresentation {

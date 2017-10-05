@@ -4,6 +4,7 @@ import de.otto.edison.hal.Embedded;
 import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
+import org.slf4j.Logger;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -29,6 +30,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.empty;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * A Traverson is a utility that makes it easy to navigate REST APIs using HAL+JSON.
@@ -59,21 +61,23 @@ import static java.util.stream.Stream.empty;
  */
 public class Traverson {
 
-    private static class Hop {
+    static class Hop {
         /** Link-relation type of the hop. */
         final String rel;
         final Predicate<Link> predicate;
         /** URI-template variables used when following the hop. */
         final Map<String,Object> vars;
 
-        private Hop(final String rel,
-                    final Predicate<Link> predicate,
-                    final Map<String, Object> vars) {
+        Hop(final String rel,
+            final Predicate<Link> predicate,
+            final Map<String, Object> vars) {
             this.rel = rel;
             this.predicate = predicate;
             this.vars = vars;
         }
     }
+
+    private static final Logger LOG = getLogger(Traverson.class);
 
     private final Function<Link, String> linkToJsonFunc;
     private final List<Hop> hops = new ArrayList<>();
@@ -450,6 +454,7 @@ public class Traverson {
             }
             return (Stream<T>) lastResult.stream();
         } catch (final TraversionException e) {
+            LOG.error("Failed to fetch application/hal+json resources: " + e.getMessage(), e);
             lastError = e.getError();
             return empty();
         }
@@ -511,6 +516,7 @@ public class Traverson {
             }
             return Optional.of(type.cast(lastResult.get(0)));
         } catch (final TraversionException e) {
+            LOG.error("Failed to fetch application/hal+json resources: " + e.getMessage(), e);
             lastError = e.getError();
             return Optional.empty();
         }
@@ -832,7 +838,9 @@ public class Traverson {
                                                         final EmbeddedTypeInfo embeddedTypeInfo,
                                                         final Function<Traverson, Boolean> pageCallback) {
         Optional<T> currentPage = getResourceAs(pageType, embeddedTypeInfo);
-        while (currentPage.isPresent() && pageCallback.apply(traverson(linkToJsonFunc).startWith(contextUrl, currentPage.get()))) {
+        while (currentPage.isPresent()
+                && pageCallback.apply(traverson(linkToJsonFunc).startWith(contextUrl, currentPage.get()))
+                && currentPage.get().getLinks().getRels().contains(rel)) {
             currentPage = follow(rel).getResourceAs(pageType, embeddedTypeInfo);
         }
     }
@@ -840,24 +848,61 @@ public class Traverson {
     private <T extends HalRepresentation> List<T> traverseInitialResource(final Class<T> pageType,
                                                                           final EmbeddedTypeInfo embeddedTypeInfo,
                                                                           final boolean retrieveAll) {
-        final Link current = self(startWith.toString());
+        /*
+        #hops = N; N > 0
+        max nesting-level in embeddedTypeInfo = M; M >= 0
+        */
+        final Link initial = self(startWith.toString());
         this.startWith = null;
         if (hops.isEmpty()) {
-            return singletonList(getResource(current, pageType, embeddedTypeInfo));
+            /*
+            0. N=0, M=0:
+            getResource(startwith, pageType)
+            */
+            return singletonList(getResource(initial, pageType, embeddedTypeInfo));
         } else {
             final HalRepresentation firstHop;
             // Follow startWith URL, but have a look at the next hop, so we can parse the resource
             // with respect to pageType and embeddedTypeInfo:
             if (hops.size() == 1) {
                 final Hop hop = hops.get(0);
-                if (embeddedTypeInfo == null || !hop.rel.equals(embeddedTypeInfo.getRel())) {
-                    firstHop = getResource(current, HalRepresentation.class, withEmbedded(hop.rel, pageType));
+                if (embeddedTypeInfo == null /*|| !hop.rel.equals(embeddedTypeInfo.getRel())*/) {
+                    /*
+                    1. N=1, M=0 (keine TypeInfos):
+                    Die zurückgegebene Representation soll vom Typ pageType sein.
+
+                    startWith könnte hop 0 embedden, oder es könnten zwei Resourcen angefragt werden.
+
+                    a) getResource(startwith, HalRepresentation.class, embeddedTypeInfo(hop-0-rel, pageType))
+                    b) getResource(current, pageType)
+                    */
+                    firstHop = getResource(initial, HalRepresentation.class, withEmbedded(hop.rel, pageType));
                 } else {
-                    firstHop = getResource(current, pageType, embeddedTypeInfo);
+                    /*
+                    2. N=1, M>0 (mit TypeInfos)
+                    Die zurückgegebene Representation soll vom Typ pageType sein und eingebettete Items gemäss der embeddedTypeInfo enthalten.
+
+                    startWith könnte hop 0 embedden, oder es könnten zwei Resourcen angefragt werden.
+
+                    a) getResource(startwith, HalRepresentation.class, embeddedTypeInfo(hop-0-rel, pageType, embeddedTypeInfo))
+                    b) getResource(current, pageType, embeddedTypeInfo)
+                    */
+                    //firstHop = getResource(current, pageType, embeddedTypeInfo);
+                    firstHop = getResource(initial, HalRepresentation.class, withEmbedded(hop.rel, pageType, embeddedTypeInfo));
                 }
             } else {
-                // the next hop is not the last one - so we do not need to use type information yet:
-                firstHop = getResource(current, HalRepresentation.class, null);
+                /*
+                3. N>=2, M=0
+                Die zurückgegebene Representation soll vom Typ pageType sein.
+
+                startWith könnte hop 0 und 1 embedden, oder es könnten zwei Resourcen angefragt werden, von denen die zweite
+                den hop 1 embedded, oder es könnten drei Resource angefragt werden.
+
+                a) getResource(startWith, HalRepresentation.class, embeddedTypeInfo(hop-0-rel, HalRepresentation.class, hop-1-rel, pageType,)
+                b) getResource(current, HalRepresentation.class, embeddedTypeInfo(hop-1-rel, pageType)
+                c) getResource(current, pageType)
+                */
+                firstHop = getResource(initial, HalRepresentation.class, embeddedTypeInfoFor(hops, pageType, embeddedTypeInfo));
             }
             return traverseHop(firstHop, pageType, embeddedTypeInfo, retrieveAll);
         }
@@ -907,21 +952,12 @@ public class Traverson {
 
         if (hops.size() == 1) { // one before the last hop:
             final Hop nextHop = hops.get(0);
-            if (embeddedTypeInfo != null) {
-                final EmbeddedTypeInfo embeddedType = nextHop.rel.equals(embeddedTypeInfo.getRel())
-                        ? embeddedTypeInfo
-                        : withEmbedded(nextHop.rel, resultType);
-                this.contextUrl = linkToUrl(expandedLink);
-                final T resource = getResource(expandedLink, resultType, embeddedType);
-                return traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
-            } else {
-                this.contextUrl = linkToUrl(expandedLink);
-                final T resource = getResource(expandedLink, resultType, withEmbedded(nextHop.rel, resultType));
-                return traverseHop(resource, resultType, null, retrieveAll);
-            }
+            this.contextUrl = linkToUrl(expandedLink);
+            final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
+            return traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
         } else { // some more hops
             this.contextUrl = linkToUrl(expandedLink);
-            final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, null);
+            final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
             return traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
         }
     }
@@ -997,6 +1033,21 @@ public class Traverson {
                     format("Did not get JSON response from %s", link.getHref())));
         }
         return json;
+    }
+
+    static EmbeddedTypeInfo embeddedTypeInfoFor(final List<Hop> hops,
+                                                final Class<? extends HalRepresentation> pageType,
+                                                final EmbeddedTypeInfo embeddedTypeInfo) {
+        if (hops.isEmpty()) {
+            throw new IllegalArgumentException("Hops must not be empty");
+        }
+        EmbeddedTypeInfo typeInfo = embeddedTypeInfo != null
+                ? withEmbedded(hops.get(hops.size()-1).rel, pageType, embeddedTypeInfo)
+                : withEmbedded(hops.get(hops.size()-1).rel, pageType);
+        for (int i = hops.size()-2; i >= 0; i--) {
+            typeInfo = withEmbedded(hops.get(i).rel, HalRepresentation.class, typeInfo);
+        }
+        return typeInfo;
     }
 
     private static URL linkToUrl(final Link link) {
