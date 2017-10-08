@@ -55,4 +55,13 @@ public class EmbeddedTypeInfo {
     public List<EmbeddedTypeInfo> getNestedTypeInfo() {
         return nestedTypeInfo != null ? nestedTypeInfo : emptyList();
     }
+
+    @Override
+    public String toString() {
+        return "EmbeddedTypeInfo{" +
+                "rel='" + rel + '\'' +
+                ", type=" + type +
+                ", nestedTypeInfo=" + nestedTypeInfo +
+                '}';
+    }
 }
