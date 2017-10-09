@@ -288,7 +288,7 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginate() throws MalformedURLException {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginateNext() throws MalformedURLException {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
@@ -326,7 +326,45 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginate() {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginatePrev() throws MalformedURLException {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
+                "{" +
+                        "\"_links\":{" +
+                        "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
+                        "\"prev\":{\"href\":\"/example/foo?page=2\"}}}");
+        when(mock.apply(link("prev", "http://example.com/example/foo?page=2"))).thenReturn(
+                "{" +
+                        "\"_links\":{" +
+                        "\"item\":[{\"href\":\"/example/foo/3\"},{\"href\":\"/example/foo/4\"}]," +
+                        "\"next\":{\"href\":\"/example/foo\"}}" +
+                        "}");
+        when(mock.apply(link("item", "http://example.com/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
+
+        // when
+        final List<String> values = new ArrayList<>();
+        final Traverson traverson = traverson(mock);
+                traverson.startWith("http://example.com/example/foo")
+                .paginatePrev((Traverson pageTraverson) -> {
+                    pageTraverson
+                            .follow("item")
+                            .streamAs(OtherExtendedHalRepresentation.class)
+                            .forEach(x -> values.add(x.someOtherProperty));
+                    return true;
+                });
+
+        // then
+        assertThat(values, contains("one", "two", "three", "four"));
+        assertThat(traverson.getCurrentContextUrl(), is(new URL("http://example.com/example/foo?page=2")));
+    }
+
+    @Test
+    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginateNext() {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
@@ -346,6 +384,38 @@ public class TraversonPagingTest {
         traverson(mock)
                 .startWith("http://example.com/example/foo")
                 .paginateNext(withEmbedded("item", ExtendedHalRepresentation.class), (Traverson pageTraverson) -> {
+                    pageTraverson
+                            .follow("item")
+                            .streamAs(ExtendedHalRepresentation.class)
+                            .forEach(x -> values.add(x.someProperty));
+                    return true;
+                });
+
+        // then
+        assertThat(values, contains("one", "two", "three", "four"));
+    }
+
+    @Test
+    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginatePrev() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
+                "{" +
+                        "\"_links\":{\"prev\":{\"href\":\"http://example.com/example/foo?page=2\"}}," +
+                        "\"_embedded\":{\"item\":[{\"someProperty\":\"one\"},{\"someProperty\":\"two\"}]" +
+                        "}}");
+        when(mock.apply(link("prev", "http://example.com/example/foo?page=2"))).thenReturn(
+                "{" +
+                        "\"_links\":{\"next\":{\"href\":\"/example/foo\"}}," +
+                        "\"_embedded\":{\"item\":[{\"someProperty\":\"three\"},{\"someProperty\":\"four\"}]" +
+                        "}}");
+
+        // when
+        final List<String> values = new ArrayList<>();
+        traverson(mock)
+                .startWith("http://example.com/example/foo")
+                .paginatePrev(withEmbedded("item", ExtendedHalRepresentation.class), (Traverson pageTraverson) -> {
                     pageTraverson
                             .follow("item")
                             .streamAs(ExtendedHalRepresentation.class)
@@ -386,7 +456,7 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginateAs() {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginateNextAs() {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
@@ -427,7 +497,48 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginateAs() {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginatePrevAs() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
+                "{\"someProperty\":\"firstPage\",\"_links\":{" +
+                        "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
+                        "\"prev\":{\"href\":\"/example/foo?page=2\"}}}");
+        when(mock.apply(link("prev", "http://example.com/example/foo?page=2"))).thenReturn(
+                "{\"someProperty\":\"secondPage\"," +
+                        "\"_links\":{" +
+                        "\"item\":[{\"href\":\"/example/foo/3\"},{\"href\":\"/example/foo/4\"}]" +
+                        "}" +
+                        "}");
+        when(mock.apply(link("item", "http://example.com/example/foo/1"))).thenReturn("{\"someOtherProperty\":\"one\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/2"))).thenReturn("{\"someOtherProperty\":\"two\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/3"))).thenReturn("{\"someOtherProperty\":\"three\"}");
+        when(mock.apply(link("item", "http://example.com/example/foo/4"))).thenReturn("{\"someOtherProperty\":\"four\"}");
+
+        // when
+        final List<String> pageValues = new ArrayList<>();
+        final List<String> values = new ArrayList<>();
+        traverson(mock)
+                .startWith("http://example.com/example/foo")
+                .paginatePrevAs(ExtendedHalRepresentation.class, (Traverson pageTraverson) -> {
+                    pageTraverson
+                            .getResourceAs(ExtendedHalRepresentation.class)
+                            .ifPresent((page) -> pageValues.add(page.someProperty));
+                    pageTraverson
+                            .follow("item")
+                            .streamAs(OtherExtendedHalRepresentation.class)
+                            .forEach(x -> values.add(x.someOtherProperty));
+                    return true;
+                });
+
+        // then
+        assertThat(pageValues, contains("firstPage", "secondPage"));
+        assertThat(values, contains("one", "two", "three", "four"));
+    }
+
+    @Test
+    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginateNextAs() {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
@@ -448,6 +559,43 @@ public class TraversonPagingTest {
         traverson(mock)
                 .startWith("http://example.com/example/foo")
                 .paginateNextAs(ExtendedHalRepresentation.class, withEmbedded("item", OtherExtendedHalRepresentation.class), (Traverson pageTraverson) -> {
+                    pageTraverson
+                            .getResourceAs(ExtendedHalRepresentation.class)
+                            .ifPresent((page) -> pageValues.add(page.someProperty));
+                    pageTraverson
+                            .follow("item")
+                            .streamAs(OtherExtendedHalRepresentation.class)
+                            .forEach(x -> values.add(x.someOtherProperty));
+                    return true;
+                });
+
+        // then
+        assertThat(pageValues, contains("firstPage", "secondPage"));
+        assertThat(values, contains("one", "two", "three", "four"));
+    }
+
+    @Test
+    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginatePrevAs() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
+                "{\"someProperty\":\"firstPage\"," +
+                        "\"_links\":{\"prev\":{\"href\":\"/example/foo?page=2\"}}," +
+                        "\"_embedded\":{\"item\":[{\"someOtherProperty\":\"one\"},{\"someOtherProperty\":\"two\"}]" +
+                        "}}");
+        when(mock.apply(link("prev", "http://example.com/example/foo?page=2"))).thenReturn(
+                "{\"someProperty\":\"secondPage\"," +
+                        "\"_links\":{\"next\":{\"href\":\"/example/foo\"}}," +
+                        "\"_embedded\":{\"item\":[{\"someOtherProperty\":\"three\"},{\"someOtherProperty\":\"four\"}]" +
+                        "}}");
+
+        // when
+        final List<String> pageValues = new ArrayList<>();
+        final List<String> values = new ArrayList<>();
+        traverson(mock)
+                .startWith("http://example.com/example/foo")
+                .paginatePrevAs(ExtendedHalRepresentation.class, withEmbedded("item", OtherExtendedHalRepresentation.class), (Traverson pageTraverson) -> {
                     pageTraverson
                             .getResourceAs(ExtendedHalRepresentation.class)
                             .ifPresent((page) -> pageValues.add(page.someProperty));

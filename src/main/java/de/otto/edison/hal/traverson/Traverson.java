@@ -142,10 +142,6 @@ public class Traverson {
         return map;
     }
 
-    public TraversionError getLastError() {
-        return lastError;
-    }
-
     /**
      * Creates a list of link-relation types used to {@link #follow(List) follow} multiple hops, optionally
      * using {@link #follow(List, Map) uri template variables}.
@@ -385,142 +381,6 @@ public class Traverson {
         return this;
     }
 
-    /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
-     * containing the returned {@link HalRepresentation HalRepresentations}.
-     * <p>
-     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
-     * </p>
-     * <p>
-     *     Many times, you do not need the HalRepresentations, but subtypes of HalRepresentation,
-     *     so you are able to access custom attributes of your resources. In this case, you need
-     *     to use {@link #streamAs(Class)} instead of this method.
-     * </p>
-     *
-     * @return this
-     */
-    public Stream<HalRepresentation> stream() {
-        return streamAs(HalRepresentation.class, null);
-    }
-
-    /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
-     * containing the returned {@link HalRepresentation HalRepresentations}.
-     * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
-     * </p>
-     * <p>
-     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
-     * </p>
-     * @param type the specific type of the returned HalRepresentations
-     * @param <T> type of the returned HalRepresentations
-     * @return this
-     */
-    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type) {
-        return streamAs(type, null);
-    }
-
-    /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
-     * containing the returned {@link HalRepresentation HalRepresentations}.
-     * <p>
-     *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
-     * </p>
-     * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
-     * </p>
-     * <p>
-     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
-     * </p>
-     * @param type the specific type of the returned HalRepresentations
-     * @param embeddedTypeInfo specification of the type of embedded items
-     * @param <T> type of the returned HalRepresentations
-     * @return this
-     * @since 1.0.0
-     */
-    @SuppressWarnings("unchecked")
-    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo) {
-        checkState();
-        try {
-            if (startWith != null) {
-                lastResult = traverseInitialResource(type, embeddedTypeInfo, true);
-                lastError = null;
-            } else if (!hops.isEmpty()) {
-                lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfo, true);
-                lastError = null;
-            }
-            return (Stream<T>) lastResult.stream();
-        } catch (final TraversionException e) {
-            LOG.error("Failed to fetch application/hal+json resources: " + e.getMessage(), e);
-            lastError = e.getError();
-            return empty();
-        }
-    }
-
-    /**
-     * Return the selected resource as HalRepresentation.
-     * <p>
-     *     If there are multiple matching representations, the first node is returned.
-     * </p>
-     * <p>
-     *     Many times, you do not need the HalRepresentation, but a subtype of HalRepresentation,
-     *     so you are able to access custom attributes of your resource. In this case, you need
-     *     to use {@link #getResourceAs(Class)} instead of this method.
-     * </p>
-     *
-     * @return HalRepresentation
-     */
-    public Optional<HalRepresentation> getResource() {
-        return getResourceAs(HalRepresentation.class, null);
-    }
-
-    /**
-     * Return the selected resource and return it in the specified type.
-     * <p>
-     *     If there are multiple matching representations, the first node is returned.
-     * </p>
-     * @param type the subtype of the HalRepresentation used to parse the resource.
-     * @param <T> the subtype of HalRepresentation of the returned resource.
-     * @return HalRepresentation
-     */
-    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) {
-        return getResourceAs(type, null);
-    }
-
-    /**
-     * Return the selected resource and return it in the specified type.
-     * <p>
-     *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
-     * </p>
-     * <p>
-     *     If there are multiple matching representations, the first node is returned.
-     * </p>
-     * @param type the subtype of the HalRepresentation used to parse the resource.
-     * @param embeddedTypeInfo specification of the type of embedded items
-     * @param <T> the subtype of HalRepresentation of the returned resource.
-     * @return HalRepresentation
-     * @since 1.0.0
-     */
-    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo) {
-        checkState();
-        try {
-            if (startWith != null) {
-                lastResult = traverseInitialResource(type, embeddedTypeInfo, false);
-                lastError = null;
-            } else if (!hops.isEmpty()) {
-                lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfo, false);
-                lastError = null;
-            }
-            return Optional.of(type.cast(lastResult.get(0)));
-        } catch (final TraversionException e) {
-            LOG.error("Failed to fetch application/hal+json resources: " + e.getMessage(), e);
-            lastError = e.getError();
-            return Optional.empty();
-        }
-    }
 
     /**
      * Iterates over pages by following 'next' links. For every page, a {@code Traverson} is created and provided as a
@@ -753,7 +613,7 @@ public class Traverson {
      */
     public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
                                                              final Function<Traverson, Boolean> pageCallback) {
-        paginate("next", pageType, null, pageCallback);
+        paginate("prev", pageType, null, pageCallback);
     }
 
     /**
@@ -788,7 +648,148 @@ public class Traverson {
     public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
                                                              final EmbeddedTypeInfo embeddedTypeInfo,
                                                              final Function<Traverson, Boolean> pageCallback) {
-        paginate("next", pageType, embeddedTypeInfo, pageCallback);
+        paginate("prev", pageType, embeddedTypeInfo, pageCallback);
+    }
+
+    /**
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * containing the returned {@link HalRepresentation HalRepresentations}.
+     * <p>
+     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
+     *     these items are used instead of following the associated {@link Link}.
+     * </p>
+     * <p>
+     *     Many times, you do not need the HalRepresentations, but subtypes of HalRepresentation,
+     *     so you are able to access custom attributes of your resources. In this case, you need
+     *     to use {@link #streamAs(Class)} instead of this method.
+     * </p>
+     *
+     * @return this
+     */
+    public Stream<HalRepresentation> stream() {
+        return streamAs(HalRepresentation.class, null);
+    }
+
+    /**
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * containing the returned {@link HalRepresentation HalRepresentations}.
+     * <p>
+     *     Templated links are resolved to URIs using the specified template variables.
+     * </p>
+     * <p>
+     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
+     *     these items are used instead of following the associated {@link Link}.
+     * </p>
+     * @param type the specific type of the returned HalRepresentations
+     * @param <T> type of the returned HalRepresentations
+     * @return this
+     */
+    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type) {
+        return streamAs(type, null);
+    }
+
+    /**
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * containing the returned {@link HalRepresentation HalRepresentations}.
+     * <p>
+     *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
+     * </p>
+     * <p>
+     *     Templated links are resolved to URIs using the specified template variables.
+     * </p>
+     * <p>
+     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
+     *     these items are used instead of following the associated {@link Link}.
+     * </p>
+     * @param type the specific type of the returned HalRepresentations
+     * @param embeddedTypeInfo specification of the type of embedded items
+     * @param <T> type of the returned HalRepresentations
+     * @return this
+     * @since 1.0.0
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo) {
+        checkState();
+        try {
+            if (startWith != null) {
+                lastResult = traverseInitialResource(type, embeddedTypeInfo, true);
+                lastError = null;
+            } else if (!hops.isEmpty()) {
+                lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfo, true);
+                lastError = null;
+            }
+            return (Stream<T>) lastResult.stream();
+        } catch (final TraversionException e) {
+            LOG.error("Failed to fetch application/hal+json resources: " + e.getMessage(), e);
+            lastError = e.getError();
+            return empty();
+        }
+    }
+
+    /**
+     * Return the selected resource as HalRepresentation.
+     * <p>
+     *     If there are multiple matching representations, the first node is returned.
+     * </p>
+     * <p>
+     *     Many times, you do not need the HalRepresentation, but a subtype of HalRepresentation,
+     *     so you are able to access custom attributes of your resource. In this case, you need
+     *     to use {@link #getResourceAs(Class)} instead of this method.
+     * </p>
+     *
+     * @return HalRepresentation
+     */
+    public Optional<HalRepresentation> getResource() {
+        return getResourceAs(HalRepresentation.class, null);
+    }
+
+    /**
+     * Return the selected resource and return it in the specified type.
+     * <p>
+     *     If there are multiple matching representations, the first node is returned.
+     * </p>
+     * @param type the subtype of the HalRepresentation used to parse the resource.
+     * @param <T> the subtype of HalRepresentation of the returned resource.
+     * @return HalRepresentation
+     */
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) {
+        return getResourceAs(type, null);
+    }
+
+    /**
+     * Return the selected resource and return it in the specified type.
+     * <p>
+     *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
+     * </p>
+     * <p>
+     *     If there are multiple matching representations, the first node is returned.
+     * </p>
+     * @param type the subtype of the HalRepresentation used to parse the resource.
+     * @param embeddedTypeInfo specification of the type of embedded items
+     * @param <T> the subtype of HalRepresentation of the returned resource.
+     * @return HalRepresentation
+     * @since 1.0.0
+     */
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo) {
+        checkState();
+        try {
+            if (startWith != null) {
+                lastResult = traverseInitialResource(type, embeddedTypeInfo, false);
+                lastError = null;
+            } else if (!hops.isEmpty()) {
+                lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfo, false);
+                lastError = null;
+            }
+            return Optional.of(type.cast(lastResult.get(0)));
+        } catch (final TraversionException e) {
+            LOG.error("Failed to fetch application/hal+json resources: " + e.getMessage(), e);
+            lastError = e.getError();
+            return Optional.empty();
+        }
+    }
+
+    public TraversionError getLastError() {
+        return lastError;
     }
 
     /**

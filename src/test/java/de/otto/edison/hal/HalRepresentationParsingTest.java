@@ -14,6 +14,7 @@ import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
@@ -493,6 +494,81 @@ public class HalRepresentationParsingTest {
         assertThat(embedded.getItemsBy("x:bar"), hasSize(2));
         assertThat(embedded.getItemsBy("x:bar").get(0), is(instanceOf(SimpleHalRepresentation.class)));
         assertThat(embedded.getItemsBy("x:bar").get(1), is(instanceOf(SimpleHalRepresentation.class)));
+    }
+
+    @Test
+    public void shouldParseMultipleNestedEmbeddedsWithSameRel() throws IOException {
+        final String json = "{" +
+                "   \"_links\":{\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]}," +
+                "   \"_embedded\":{" +
+                "       \"x:bar\":[" +
+                "           {" +
+                "               \"first\":\"foo\"," +
+                "               \"_embedded\":{" +
+                "                   \"x:foobar\":[" +
+                "                       {\"value\":\"value1\"}" +
+                "                   ]" +
+                "               }" +
+                "           }," +
+                "           {" +
+                "               \"first\":\"bar\"," +
+                "               \"_embedded\":{" +
+                "                   \"x:foobar\":[" +
+                "                       {\"value\":\"value2\"}" +
+                "                   ]" +
+                "               }" +
+                "           }" +
+                "       ]" +
+                "   }" +
+                "}";
+        // when
+        final HalRepresentation hal = parse(json).as(HalRepresentation.class,
+                withEmbedded("x:bar", SimpleHalRepresentation.class,
+                        withEmbedded("x:foobar", EmbeddedHalRepresentation.class)));
+        final List<String> barValues = hal.getEmbedded()
+                .getItemsBy("x:bar", SimpleHalRepresentation.class)
+                .stream()
+                .map(r -> r.first + " " + r.getEmbedded().getItemsBy("x:foobar", EmbeddedHalRepresentation.class).get(0).value)
+                .collect(toList());
+        // then
+        assertThat(barValues, contains("foo value1", "bar value2"));
+    }
+
+    @Test
+    public void shouldParseMultipleNestedEmbeddedsWithSameLinkRel() throws IOException {
+        final String json = "{" +
+                "   \"_links\":{\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]}," +
+                "   \"_embedded\":{" +
+                "       \"x:bar\":[" +
+                "           {" +
+                "               \"first\":\"foo\"," +
+                "               \"_links\":{" +
+                "                   \"x:foobar\":" +
+                "                       {\"href\":\"/test/a\"}" +
+                "               }" +
+                "           }," +
+                "           {" +
+                "               \"first\":\"bar\"," +
+                "               \"_links\":{" +
+                "                   \"x:foobar\":[" +
+                "                       {\"href\":\"/test/b\"}" +
+                "                   ]" +
+                "               }" +
+                "           }" +
+                "       ]" +
+                "   }" +
+                "}";
+        // when
+        final HalRepresentation hal = parse(json).as(HalRepresentation.class,
+                withEmbedded("x:bar", SimpleHalRepresentation.class,
+                        withEmbedded("x:foobar", EmbeddedHalRepresentation.class)));
+        final List<String> barValues = hal.getEmbedded()
+                .getItemsBy("x:bar", SimpleHalRepresentation.class)
+                .stream()
+                .map(r -> r.first + " " + r.getLinks().getLinksBy("x:foobar").get(0).getHref())
+                .collect(toList());
+        // then
+        assertThat(barValues, contains("foo /test/a", "bar /test/b"));
     }
 
     @Test

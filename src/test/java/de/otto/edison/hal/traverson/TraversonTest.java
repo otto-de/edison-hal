@@ -868,6 +868,54 @@ public class TraversonTest {
     }
 
     @Test
+    public void shouldStreamDeeplyNestedEmbeddedObjectsWithCuriesAsSubtype() {
+        // given
+        @SuppressWarnings("unchecked")
+        final Function<Link,String> mock = mock(Function.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                        "   \"_links\":{" +
+                        "\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]," +
+                        "\"x:foo\":{\"href\":\"http://example.com/foo\"}" +
+                        "   }" +
+                        "}",
+                "{" +
+                        "   \"_links\":{\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]}," +
+                        "   \"_embedded\":{" +
+                        "       \"x:bar\":[" +
+                        "           {" +
+                        "               \"someProperty\":\"foo\"," +
+                        "               \"_embedded\":{" +
+                        "                   \"http://example.com/rels/foobar\":[" +
+                        "                       {\"someOtherProperty\":\"value1\"}" +
+                        "                   ]" +
+                        "               }" +
+                        "           }," +
+                        "           {" +
+                        "               \"someProperty\":\"bar\"," +
+                        "               \"_embedded\":{" +
+                        "                   \"x:foobar\":[" +
+                        "                       {\"someOtherProperty\":\"value2\"}" +
+                        "                   ]" +
+                        "               }" +
+                        "           }" +
+                        "       ]" +
+                        "   }" +
+                        "}"
+        );
+        // when
+        final List<String> barValues = traverson(mock)
+                .startWith("http://example.com/example")
+                .follow(asList("http://example.com/rels/foo", "http://example.com/rels/bar"))
+                .streamAs(ExtendedHalRepresentation.class, withEmbedded("x:foobar", OtherExtendedHalRepresentation.class))
+                .map(r->r.someProperty + " " + r.getEmbedded().getItemsBy("http://example.com/rels/foobar", OtherExtendedHalRepresentation.class).get(0).someOtherProperty)
+                .collect(toList());
+        // then
+        assertThat(barValues, contains("foo value1", "bar value2"));
+    }
+
+
+    @Test
     public void shouldBuildTypeInfoForSingleHopWithoutEmbeddedTypeInfo() {
         final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
                 asList(hop("foo")),
