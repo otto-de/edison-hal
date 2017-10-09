@@ -158,25 +158,30 @@ public final class HalParser {
         if (embeddedNodeForRel.isArray()) {
             for (int i = 0; i < embeddedNodeForRel.size(); i++) {
                 final JsonNode embeddedNode = embeddedNodeForRel.get(i);
-                final HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNode, typeInfo.getType())
-                        .mergeWithEmbedding(parent.getRelRegistry());
-                if (embedded != null) {
-                    typeInfo.getNestedTypeInfo().forEach(nestedTypeInfo -> {
-                        findPossiblyCuriedEmbeddedNode(embedded, embeddedNode, nestedTypeInfo.getRel())
-                                .ifPresent(nestedNodeForRel -> {
-                                    resolveEmbeddedTypeInfoForRel(nestedTypeInfo, embedded, nestedNodeForRel);
-                                });
-                    });
-                    embeddedValues.add(embedded);
-                }
+                embeddedValues.addAll(resolveSingleEmbedded(typeInfo, parent.getRelRegistry(), embeddedNode));
             }
         } else {
-            HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNodeForRel, typeInfo.getType());
-            if (embedded != null) {
-                embeddedValues.add(embedded);
-            }
+            embeddedValues.addAll(resolveSingleEmbedded(typeInfo, parent.getRelRegistry(), embeddedNodeForRel));
         }
         parent.withEmbedded(typeInfo.getRel(), embeddedValues);
+    }
+
+    public List<? extends HalRepresentation> resolveSingleEmbedded(final EmbeddedTypeInfo typeInfo,
+                                                                   final RelRegistry parentRelRegistry,
+                                                                   final JsonNode embeddedNodeForRel) {
+        final List<HalRepresentation> embeddedValues = new ArrayList<>();
+        HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNodeForRel, typeInfo.getType())
+                .mergeWithEmbedding(parentRelRegistry);
+        if (embedded != null) {
+            typeInfo.getNestedTypeInfo().forEach(nestedTypeInfo -> {
+                findPossiblyCuriedEmbeddedNode(embedded, embeddedNodeForRel, nestedTypeInfo.getRel())
+                        .ifPresent(nestedNodeForRel -> {
+                            resolveEmbeddedTypeInfoForRel(nestedTypeInfo, embedded, nestedNodeForRel);
+                        });
+            });
+            embeddedValues.add(embedded);
+        }
+        return embeddedValues;
     }
 
     /**
