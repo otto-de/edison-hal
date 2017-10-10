@@ -25,6 +25,7 @@ import static de.otto.edison.hal.traverson.TraversionError.Type.NOT_FOUND;
 import static de.otto.edison.hal.traverson.TraversionError.traversionError;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -164,11 +165,11 @@ public class Traverson {
     public static List<String> hops(final String rel, final String... moreRels) {
         if (moreRels != null) {
             return new ArrayList<String>() {{
-                add(rel);
+                add(requireNonNull(rel));
                 addAll(asList(moreRels));
             }};
         } else {
-            return singletonList(rel);
+            return singletonList(requireNonNull(rel));
         }
     }
 
@@ -708,7 +709,41 @@ public class Traverson {
      * @since 1.0.0
      */
     @SuppressWarnings("unchecked")
-    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo) {
+    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type,
+                                                            final EmbeddedTypeInfo embeddedTypeInfo,
+                                                            final EmbeddedTypeInfo... moreEmbeddedTypeInfos) {
+        if (moreEmbeddedTypeInfos == null || moreEmbeddedTypeInfos.length == 0) {
+            return streamAs(type, embeddedTypeInfo != null ? singletonList(embeddedTypeInfo) : emptyList());
+        } else {
+            final List<EmbeddedTypeInfo> typeInfos = new ArrayList<>();
+            typeInfos.add(requireNonNull(embeddedTypeInfo));
+            typeInfos.addAll(asList(moreEmbeddedTypeInfos));
+            return streamAs(type, typeInfos);
+        }
+    }
+
+    /**
+     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * containing the returned {@link HalRepresentation HalRepresentations}.
+     * <p>
+     *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
+     * </p>
+     * <p>
+     *     Templated links are resolved to URIs using the specified template variables.
+     * </p>
+     * <p>
+     *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
+     *     these items are used instead of following the associated {@link Link}.
+     * </p>
+     * @param type the specific type of the returned HalRepresentations
+     * @param embeddedTypeInfo specification of the type of embedded items
+     * @param <T> type of the returned HalRepresentations
+     * @return this
+     * @since 1.0.0
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type,
+                                                            final List<EmbeddedTypeInfo> embeddedTypeInfo) {
         checkState();
         try {
             if (startWith != null) {
@@ -766,18 +801,46 @@ public class Traverson {
      * </p>
      * @param type the subtype of the HalRepresentation used to parse the resource.
      * @param embeddedTypeInfo specification of the type of embedded items
+     * @param moreEmbeddedTypeInfos more type infors for embedded items
      * @param <T> the subtype of HalRepresentation of the returned resource.
      * @return HalRepresentation
      * @since 1.0.0
      */
-    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, final EmbeddedTypeInfo embeddedTypeInfo) {
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type,
+                                                                   final EmbeddedTypeInfo embeddedTypeInfo,
+                                                                   final EmbeddedTypeInfo... moreEmbeddedTypeInfos) {
+        if (moreEmbeddedTypeInfos == null || moreEmbeddedTypeInfos.length == 0) {
+            return getResourceAs(type, embeddedTypeInfo != null ? singletonList(embeddedTypeInfo) : emptyList());
+        } else {
+            final List<EmbeddedTypeInfo> typeInfos = new ArrayList<>();
+            typeInfos.add(requireNonNull(embeddedTypeInfo));
+            typeInfos.addAll(asList(moreEmbeddedTypeInfos));
+            return getResourceAs(type, typeInfos);
+        }
+    }
+
+    /**
+     * Return the selected resource and return it in the specified type.
+     * <p>
+     *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
+     * </p>
+     * <p>
+     *     If there are multiple matching representations, the first node is returned.
+     * </p>
+     * @param type the subtype of the HalRepresentation used to parse the resource.
+     * @param embeddedTypeInfos specification of the type of embedded items
+     * @param <T> the subtype of HalRepresentation of the returned resource.
+     * @return HalRepresentation
+     * @since 1.0.0
+     */
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, final List<EmbeddedTypeInfo> embeddedTypeInfos) {
         checkState();
         try {
             if (startWith != null) {
-                lastResult = traverseInitialResource(type, embeddedTypeInfo, false);
+                lastResult = traverseInitialResource(type, embeddedTypeInfos, false);
                 lastError = null;
             } else if (!hops.isEmpty()) {
-                lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfo, false);
+                lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfos, false);
                 lastError = null;
             }
             return Optional.of(type.cast(lastResult.get(0)));
@@ -847,7 +910,7 @@ public class Traverson {
     }
 
     private <T extends HalRepresentation> List<T> traverseInitialResource(final Class<T> pageType,
-                                                                          final EmbeddedTypeInfo embeddedTypeInfo,
+                                                                          final List<EmbeddedTypeInfo> embeddedTypeInfo,
                                                                           final boolean retrieveAll) {
         /*
         #hops = N; N > 0
@@ -867,7 +930,7 @@ public class Traverson {
             // with respect to pageType and embeddedTypeInfo:
             if (hops.size() == 1) {
                 final Hop hop = hops.get(0);
-                if (embeddedTypeInfo == null /*|| !hop.rel.equals(embeddedTypeInfo.getRel())*/) {
+                if (embeddedTypeInfo == null || embeddedTypeInfo.isEmpty()) {
                     /*
                     1. N=1, M=0 (keine TypeInfos):
                     Die zurückgegebene Representation soll vom Typ pageType sein.
@@ -912,7 +975,7 @@ public class Traverson {
     @SuppressWarnings("unchecked")
     private <T extends HalRepresentation> List<T> traverseHop(final HalRepresentation current,
                                                               final Class<T> resultType,
-                                                              final EmbeddedTypeInfo embeddedTypeInfo,
+                                                              final List<EmbeddedTypeInfo> embeddedTypeInfo,
                                                               boolean retrieveAll) {
 
         final Hop currentHop = hops.remove(0);
@@ -987,9 +1050,24 @@ public class Traverson {
      * @throws TraversionException thrown if getting or parsing the resource failed for some reason
      */
     private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final EmbeddedTypeInfo embeddedType) {
+        return getResource(link, type, singletonList(embeddedType));
+    }
+
+    /**
+     * Retrieve the HAL resource identified by {@code uri} and return the representation as a HalRepresentation.
+     *
+     * @param link the Link of the resource to retrieve, or null, if the contextUrl should be resolved.
+     * @param type the expected type of the returned resource
+     * @param embeddedType type information to specify the type of embedded resources.
+     * @param <T> the type of the returned HalRepresentation
+     * @return HalRepresentation
+     * @throws IllegalArgumentException if resolving URLs is failing
+     * @throws TraversionException thrown if getting or parsing the resource failed for some reason
+     */
+    private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final List<EmbeddedTypeInfo> embeddedType) {
         final String json = getJson(link);
         try {
-            return embeddedType != null
+            return embeddedType != null && !embeddedType.isEmpty()
                     ? parse(json).as(type, embeddedType)
                     : parse(json).as(type);
         } catch (final Exception e) {
@@ -1038,11 +1116,11 @@ public class Traverson {
 
     static EmbeddedTypeInfo embeddedTypeInfoFor(final List<Hop> hops,
                                                 final Class<? extends HalRepresentation> pageType,
-                                                final EmbeddedTypeInfo embeddedTypeInfo) {
+                                                final List<EmbeddedTypeInfo> embeddedTypeInfo) {
         if (hops.isEmpty()) {
             throw new IllegalArgumentException("Hops must not be empty");
         }
-        EmbeddedTypeInfo typeInfo = embeddedTypeInfo != null
+        EmbeddedTypeInfo typeInfo = embeddedTypeInfo != null && !embeddedTypeInfo.isEmpty()
                 ? withEmbedded(hops.get(hops.size()-1).rel, pageType, embeddedTypeInfo)
                 : withEmbedded(hops.get(hops.size()-1).rel, pageType);
         for (int i = hops.size()-2; i >= 0; i--) {

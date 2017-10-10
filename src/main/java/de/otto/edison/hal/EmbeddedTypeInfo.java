@@ -38,6 +38,12 @@ public class EmbeddedTypeInfo {
         }
     }
 
+    public static EmbeddedTypeInfo withEmbedded(final String rel,
+                                                final Class<? extends HalRepresentation> embeddedType,
+                                                final List<EmbeddedTypeInfo> nestedTypeInfo) {
+        return new EmbeddedTypeInfo(rel, embeddedType, nestedTypeInfo);
+    }
+
     /**
      * @return The link-relation type used to identify items of the embedded type.
      */
