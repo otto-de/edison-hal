@@ -11,40 +11,27 @@ representations of REST resources using Jackson.
 [![codecov](https://codecov.io/gh/otto-de/edison-hal/branch/master/graph/badge.svg)](https://codecov.io/gh/otto-de/edison-hal)
 [![Dependency Status](https://www.versioneye.com/user/projects/5790e6b326c1a40035ecd1e8/badge.svg?style=flat)](https://www.versioneye.com/user/projects/5790e6b326c1a40035ecd1e8)
 
-RELEASE CANDIDATE - almost done.
-
-The current implementation is supporting HAL compliant links and
-embedded resources, including curies (compact URIs). 
-
-The full media-type as defined in https://tools.ietf.org/html/draft-kelly-json-hal-08
-is supported by edison-hal.
-
-The current library is already in production at otto.de and should be more or less stable but
-still might have some issues.
-
-Please provide feedback, if something is not working as expected.
-
 ## 2. About
 
 At otto.de, microservices should only communicate via REST APIs with other 
  microservices. HAL is a nice format to implement the HATEOAS part 
- of REST. Edison-hal is a simple library, to make it easy to produce
+ of REST. Edison-HAL is a library to make it easy to produce
  and consume HAL representations for your REST APIs.
 
 Currently, there are only a couple of libraries supporting HAL and even
  less that support the full media type including all link properties,
- curies (compact URIs) and embedded resources. 
+ curies (compact URIs) and embedded resources.
  
 Spring HATEOAS, for example, is lacking many link properties, such as 
  title, name, type and others. 
- 
+
 ## 3. Features
 
 Creating HAL representations:
 * Links with all specified attributes like rel, href, profile, type, name, title, etc. pp.
-* Embedded resources
+* Embedded resources, even deeply nested
 * Curies in links and embedded resources
-* Generation of HAL representations using Jackson using annotated classes
+* Generation of HAL representations using Jackson annotations
 
 Parsing HAL representations:
 * Mapping application/hal+json to Java classes using Jackson. This also works for deeply nested embedded items.
@@ -70,7 +57,7 @@ Before using this library, you should have a good understanding of the Hypertext
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:1.0.0.RC6",
+        compile "de.otto.edison:edison-hal:1.0.0",
         ...
     }
 ```
@@ -663,10 +650,11 @@ in different ways.
 *New Features / API extensions* 
 * It is now possible to configure the link-relation types that are serialized as an array of links.
 * Parsing of nested embedded items
-* Support for curies in nested embedded items
+* Support for curies in deeply nested embedded items
 * The HalParser now supports multiple type infos so more than one link-relation type can
 be configured with the type of the embedded items. 
 * Support for parsing and accessing attributes that were not mapped to properties of HalRepresentations
+* Added TRACE logging to Traverson to make it easier to analyse the behaviour of the Traverson.
 
 ### 1.0.0.RC5
 

@@ -320,7 +320,7 @@ public class Embedded {
     public static class EmbeddedSerializer extends JsonSerializer<Embedded> {
 
         @Override
-        public void serialize(Embedded value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
+        public void serialize(Embedded value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
             gen.writeObject(value.items);
         }
     }
