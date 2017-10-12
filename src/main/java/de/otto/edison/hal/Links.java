@@ -512,7 +512,7 @@ public class Links {
                 try {
                     return ((List<Map>) value).stream().map(o -> asLink(rel, o)).collect(toList());
                 } catch (final ClassCastException e) {
-                    throw new IllegalStateException("Document is not in application/hal+json format. Expected a single Link or a List of Links: rel=" + rel + " value=" + value);
+                    throw new IllegalStateException("Expected a single Link or a List of Links: rel=" + rel + " value=" + value);
                 }
             }
         }

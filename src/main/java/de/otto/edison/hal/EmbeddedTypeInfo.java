@@ -66,7 +66,7 @@ public class EmbeddedTypeInfo {
     public String toString() {
         return "EmbeddedTypeInfo{" +
                 "rel='" + rel + '\'' +
-                ", type=" + type +
+                ", type=" + type.getSimpleName() +
                 ", nestedTypeInfo=" + nestedTypeInfo +
                 '}';
     }

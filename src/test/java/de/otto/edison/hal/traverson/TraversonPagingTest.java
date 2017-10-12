@@ -3,7 +3,11 @@ package de.otto.edison.hal.traverson;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+import org.slf4j.Logger;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -21,8 +25,19 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.slf4j.LoggerFactory.getLogger;
 
 public class TraversonPagingTest {
+
+    private static final Logger LOG = getLogger(TraversonPagingTest.class);
+
+    @Rule
+    public TestName testName = new TestName();
+
+    @Before
+    public void logTestName() throws Throwable {
+        LOG.trace("============== {} ===================", testName.getMethodName());
+    }
 
     @Test
     public void shouldPageOverLinksUsingNext() {

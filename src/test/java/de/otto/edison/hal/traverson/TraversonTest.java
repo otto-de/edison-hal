@@ -1,17 +1,18 @@
 package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+import org.slf4j.Logger;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -41,9 +42,19 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.slf4j.LoggerFactory.getLogger;
 
 public class TraversonTest {
 
+    private static final Logger LOG = getLogger(TraversonTest.class);
+
+    @Rule
+    public TestName testName = new TestName();
+
+    @Before
+    public void logTestName() throws Throwable {
+        LOG.trace("============== {} ===================", testName.getMethodName());
+    }
 
     ////////////////////////////////////
     // Basics:
@@ -553,11 +564,11 @@ public class TraversonTest {
                 .getResource();
         // then
         assertThat(hal.isPresent(), is(false));
-        assertThat(traverson.getLastError(), is(traversionError(NOT_FOUND, "Kawummmm!", expectedException)));
+        assertThat(traverson.getLastError(), is(traversionError(NOT_FOUND, "Error fetching json response from http://example.com/example: Kawummmm!", expectedException)));
     }
 
     @Test
-    public void shouldReportErrorOnMissingLinkedResource() {
+    public void shouldReportErrorOnBrokenJsonFormat() {
         // given
         @SuppressWarnings("unchecked")
         final Function<Link,String> mock = mock(Function.class);
@@ -571,8 +582,7 @@ public class TraversonTest {
         // then
         assertThat(hal.isPresent(), is(false));
         assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from http://example.com/example is not in application/hal+json format"));
-        assertThat(traverson.getLastError().getCause().get(), instanceOf(JsonParseException.class));
+        assertThat(traverson.getLastError().getMessage(), startsWith("Unable to parse {{} returned from http://example.com/example"));
     }
 
     @Test
@@ -592,8 +602,7 @@ public class TraversonTest {
         // then
         assertThat(hal.isPresent(), is(false));
         assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from http://example.com/example is not in application/hal+json format"));
-        assertThat(traverson.getLastError().getCause().get(), instanceOf(JsonMappingException.class));
+        assertThat(traverson.getLastError().getMessage(), startsWith("Unable to parse {\"_links\":{\"href\":\"/example/foo/1\"}} returned from"));
     }
 
     @Test
@@ -613,8 +622,7 @@ public class TraversonTest {
         // then
         assertThat(hal.isPresent(), is(false));
         assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Document returned from http://example.com/example is not in application/hal+json format"));
-        assertThat(traverson.getLastError().getCause().get(), instanceOf(JsonMappingException.class));
+        assertThat(traverson.getLastError().getMessage(), startsWith("Unable to parse {\"_embedded\":{\"count\":42}} returned from http://example.com/example"));
     }
 
     //////////////////////////////////

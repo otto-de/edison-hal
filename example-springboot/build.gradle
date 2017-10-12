@@ -28,7 +28,8 @@ repositories {
 dependencies {
     //compile rootProject
     compile rootProject
-    compile('org.springframework.boot:spring-boot-starter')
-    compile('org.springframework.boot:spring-boot-starter-web')
-    //testCompile('org.springframework.boot:spring-boot-starter-test')
+    compile("org.springframework.boot:spring-boot-starter")
+    compile("org.springframework.boot:spring-boot-starter-web")
+    compile("ch.qos.logback:logback-classic:1.2.3")
+
 }

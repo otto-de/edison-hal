@@ -755,7 +755,7 @@ public class Traverson {
             }
             return (Stream<T>) lastResult.stream();
         } catch (final TraversionException e) {
-            LOG.error("Failed to fetch application/hal+json resources: " + e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
             lastError = e.getError();
             return empty();
         }
@@ -845,7 +845,7 @@ public class Traverson {
             }
             return Optional.of(type.cast(lastResult.get(0)));
         } catch (final TraversionException e) {
-            LOG.error("Failed to fetch application/hal+json resources: " + e.getMessage(), e);
+            LOG.error(e.getMessage());
             lastError = e.getError();
             return Optional.empty();
         }
@@ -917,6 +917,7 @@ public class Traverson {
         max nesting-level in embeddedTypeInfo = M; M >= 0
         */
         final Link initial = self(startWith.toString());
+        LOG.trace("Starting with {}", startWith);
         this.startWith = null;
         if (hops.isEmpty()) {
             /*
@@ -979,13 +980,14 @@ public class Traverson {
                                                               boolean retrieveAll) {
 
         final Hop currentHop = hops.remove(0);
-
+        LOG.trace("Following {}", currentHop.rel);
         // the next hop could possibly be already available as an embedded object:
         final List<? extends HalRepresentation> embeddedItems = hops.isEmpty()
                 ? current.getEmbedded().getItemsBy(currentHop.rel, resultType)
                 : current.getEmbedded().getItemsBy(currentHop.rel);
 
         if (!embeddedItems.isEmpty()) {
+            LOG.trace("Returning {} embedded {}", embeddedItems.size(), currentHop.rel);
             return hops.isEmpty()
                     ? (List<T>) embeddedItems
                     : traverseHop(embeddedItems.get(0), resultType, embeddedTypeInfo, retrieveAll);
@@ -995,15 +997,18 @@ public class Traverson {
                 .getLinks()
                 .getLinksBy(currentHop.rel, currentHop.predicate);
         if (links.isEmpty()) {
+            final String msg = format("Can not follow hop %s: no matching links found in resource %s", currentHop.rel, current);
+            LOG.error(msg);
             throw new TraversionException(traversionError(
                     MISSING_LINK,
-                    format("Can not follow hop %s: no matching links found in resource %s", currentHop.rel, current))
+                    msg)
             );
         }
         final Link expandedLink = resolve(this.contextUrl, expand(links.get(0), currentHop.vars));
 
         if (hops.isEmpty()) { // last hop
             if (retrieveAll) {
+                LOG.trace("Following {} {} links", links.size(), currentHop.rel);
                 return links
                         .stream()
                         .map(link-> getResource(resolve(this.contextUrl, expand(link, currentHop.vars)), resultType, embeddedTypeInfo))
@@ -1065,6 +1070,7 @@ public class Traverson {
      * @throws TraversionException thrown if getting or parsing the resource failed for some reason
      */
     private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final List<EmbeddedTypeInfo> embeddedType) {
+        LOG.trace("Fetching resource href={} rel={} as type={} with embeddedType={}", link.getHref(), link.getRel(), type.getSimpleName(), embeddedType);
         final String json = getJson(link);
         try {
             return embeddedType != null && !embeddedType.isEmpty()
@@ -1073,8 +1079,7 @@ public class Traverson {
         } catch (final Exception e) {
             throw new TraversionException(traversionError(
                     Type.INVALID_JSON,
-                    format("Document returned from %s is not in application/hal+json format: %s", link.getHref(), e.getMessage()),
-                    e));
+                    format("Unable to parse %s returned from %s: %s", json, link.getHref(), e.getMessage())));
         }
     }
 
@@ -1088,7 +1093,9 @@ public class Traverson {
      */
     private static Link resolve(final URL contextUrl, final Link link) {
         if (link != null && link.isTemplated()) {
-            throw new IllegalStateException("link must not be templated");
+            final String msg = "Link must not be templated";
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
         if (link == null) {
             return self(contextUrl.toString());
@@ -1103,8 +1110,7 @@ public class Traverson {
             json = linkToJsonFunc.apply(link);
         } catch (final RuntimeException e) {
             throw new TraversionException(traversionError(
-                    NOT_FOUND, e.getMessage(), e
-            ));
+                    NOT_FOUND, format("Error fetching json response from %s: %s", link.getHref(), e.getMessage()), e));
         }
         if (json == null) {
             throw new TraversionException(traversionError(
@@ -1131,7 +1137,9 @@ public class Traverson {
 
     private static URL linkToUrl(final Link link) {
         if (link.isTemplated()) {
-            throw new IllegalArgumentException(format("Unable to create URL from templated link %s", link));
+            final String msg = format("Unable to create URL from templated link %s", link);
+            LOG.error(msg);
+            throw new IllegalArgumentException(msg);
         }
         return hrefToUrl(link.getHref());
     }
@@ -1140,7 +1148,9 @@ public class Traverson {
         try {
             return new URL(href);
         } catch (final MalformedURLException e) {
-            throw new IllegalArgumentException(format("Unable to create URL from href '%s': %s", href, e.getMessage()), e);
+            final String msg = format("Unable to create URL from href '%s': %s", href, e.getMessage());
+            LOG.error(msg, e);
+            throw new IllegalArgumentException(msg, e);
         }
     }
 
@@ -1148,7 +1158,9 @@ public class Traverson {
         try {
             return contextUrl == null ? new URL(href) : new URL(contextUrl, href);
         } catch (final MalformedURLException e) {
-            throw new IllegalArgumentException(format("Unable to resolve URL from contextUrl %s and href '%s': %s", contextUrl, href, e.getMessage()), e);
+            final String msg = format("Unable to resolve URL from contextUrl %s and href '%s': %s", contextUrl, href, e.getMessage());
+            LOG.error(msg, e);
+            throw new IllegalArgumentException(msg, e);
         }
     }
 
@@ -1159,7 +1171,9 @@ public class Traverson {
      */
     private void checkState() {
         if (startWith == null && lastResult == null) {
-            throw new IllegalStateException("Please call startWith(uri) first.");
+            final String msg = "Please call startWith(uri) first.";
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 }
