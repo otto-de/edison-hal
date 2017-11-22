@@ -1,11 +1,14 @@
 package de.otto.edison.hal.traverson;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import de.otto.edison.hal.Embedded;
 import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -18,25 +21,18 @@ import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.copyOf;
 import static de.otto.edison.hal.Link.self;
-import static de.otto.edison.hal.traverson.TraversionError.Type;
-import static de.otto.edison.hal.traverson.TraversionError.Type.INVALID_JSON;
-import static de.otto.edison.hal.traverson.TraversionError.Type.MISSING_LINK;
-import static de.otto.edison.hal.traverson.TraversionError.Type.NOT_FOUND;
-import static de.otto.edison.hal.traverson.TraversionError.traversionError;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * A Traverson is a utility that makes it easy to navigate REST APIs using HAL+JSON.
  * <p>
- *     {@link #startWith(String) Starting with} an URI to an initial resource, you can {@link #follow(String) follow}
+ *     {@link #startWith(String) Starting with} a href to an initial resource, you can {@link #follow(String) follow}
  *     one or more links identified by their link-relation type.
  * </p>
  * <p>
@@ -44,10 +40,14 @@ import static org.slf4j.LoggerFactory.getLogger;
  *     {@link #withVars(String, Object, Object...) variables}.
  * </p>
  * <p>
+ *     Paginated resources can be processed using the different {@link #paginateNext(PageHandler)},
+ *     {@link #paginateNextAs(Class, PageHandler)}, etc. methods.
+ * </p>
+ * <p>
  *     Example:
  * </p>
  * <pre><code>
- *        final HalRepresentation hal = traverson(this::myHttpGetFunction)
+ *        final Optional&lt;HalRepresentation&gt; hal = traverson(this::myHttpGetFunction)
  *                .startWith("http://example.org")
  *                .follow("foobar")
  *                .follow(
@@ -80,15 +80,14 @@ public class Traverson {
 
     private static final Logger LOG = getLogger(Traverson.class);
 
-    private final Function<Link, String> linkToJsonFunc;
+    private final LinkResolver linkResolver;
     private final List<Hop> hops = new ArrayList<>();
     private URL startWith;
     private URL contextUrl;
     private List<? extends HalRepresentation> lastResult;
-    private TraversionError lastError;
 
-    private Traverson(final Function<Link,String> linkToJsonFunc) {
-        this.linkToJsonFunc = linkToJsonFunc;
+    private Traverson(final LinkResolver linkResolver) {
+        this.linkResolver = linkResolver;
     }
 
     /**
@@ -105,11 +104,11 @@ public class Traverson {
      *     the function should take care of the link's {@link Link#getType() type} and {@link Link#getProfile()},
      *     so the proper HTTP Accept header is used.
      * </p>
-     * @param linkToJsonFunc A Function that gets a ) Link of a resource and returns a HAL+JSON document.
+     * @param linkResolver A function that gets a Link of a resource and returns a HAL+JSON document.
      * @return Traverson
      */
-    public static Traverson traverson(final Function<Link,String> linkToJsonFunc) {
-        return new Traverson(linkToJsonFunc);
+    public static Traverson traverson(final LinkResolver linkResolver) {
+        return new Traverson(linkResolver);
     }
 
     /**
@@ -398,7 +397,7 @@ public class Traverson {
      * <p>
      *     The {@code Traverson} is backed by a {@link HalRepresentation} with no type information. If pages may contain
      *     embedded items, and if a specific sub-type of HalRepresentation is required for items,
-     *     {@link #paginateNext(EmbeddedTypeInfo,Function)} or {@link #paginateNextAs(Class,EmbeddedTypeInfo,Function)}
+     *     {@link #paginateNext(EmbeddedTypeInfo,PageHandler)} or {@link #paginateNextAs(Class,EmbeddedTypeInfo,PageHandler)}
      *     should be used instead of this method.
      * </p>
      *
@@ -406,11 +405,14 @@ public class Traverson {
      *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
      * </p>
      *
-     * @param pageCallback the callback used to process pages of items.
+     * @param pageHandler the callback used to process pages of items.
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
-    public void paginateNext(final Function<Traverson, Boolean> pageCallback) {
-        paginate("next", HalRepresentation.class, null, pageCallback);
+    public void paginateNext(final PageHandler pageHandler) throws IOException {
+        paginate("next", HalRepresentation.class, null, pageHandler);
     }
 
     /**
@@ -435,12 +437,15 @@ public class Traverson {
      * </p>
      *
      * @param embeddedTypeInfo type information about possibly embedded items.
-     * @param pageCallback the callback used to process pages of items.
+     * @param pageHandler the callback used to process pages of items.
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     public void paginateNext(final EmbeddedTypeInfo embeddedTypeInfo,
-                             final Function<Traverson, Boolean> pageCallback) {
-        paginate("next", HalRepresentation.class, embeddedTypeInfo, pageCallback);
+                             final PageHandler pageHandler) throws IOException {
+        paginate("next", HalRepresentation.class, embeddedTypeInfo, pageHandler);
     }
 
     /**
@@ -465,7 +470,7 @@ public class Traverson {
      * </p>
      *
      * <p>
-     *     For embedded items having a subtype of HalRepresentation, {@link #paginateNextAs(Class, EmbeddedTypeInfo, Function)}
+     *     For embedded items having a subtype of HalRepresentation, {@link #paginateNextAs(Class, EmbeddedTypeInfo, PageHandler)}
      *     must be used instead of this method, otherwise a {@code ClassCastException} will be thrown.
      * </p>
      *
@@ -474,13 +479,16 @@ public class Traverson {
      * </p>
      *
      * @param pageType the subtype of HalRepresentation of the page resources
-     * @param pageCallback callback function called for every page
+     * @param pageHandler callback function called for every page
      * @param <T> subtype of HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     public <T extends HalRepresentation> void paginateNextAs(final Class<T> pageType,
-                                                             final Function<Traverson, Boolean> pageCallback) {
-        paginate("next", pageType, null, pageCallback);
+                                                             final PageHandler pageHandler) throws IOException {
+        paginate("next", pageType, null, pageHandler);
     }
 
     /**
@@ -508,14 +516,17 @@ public class Traverson {
      *
      * @param pageType the subtype of HalRepresentation of the page resources
      * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
-     * @param pageCallback callback function called for every page
+     * @param pageHandler callback function called for every page
      * @param <T> subtype of HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     public <T extends HalRepresentation> void paginateNextAs(final Class<T> pageType,
                                                              final EmbeddedTypeInfo embeddedTypeInfo,
-                                                             final Function<Traverson, Boolean> pageCallback) {
-        paginate("next", pageType, embeddedTypeInfo, pageCallback);
+                                                             final PageHandler pageHandler) throws IOException {
+        paginate("next", pageType, embeddedTypeInfo, pageHandler);
     }
 
     /**
@@ -533,7 +544,7 @@ public class Traverson {
      * <p>
      *     The {@code Traverson} is backed by a {@link HalRepresentation} with no type information. If pages may contain
      *     embedded items, and if a specific sub-type of HalRepresentation is required for items,
-     *     {@link #paginateNext(EmbeddedTypeInfo,Function)} or {@link #paginateNextAs(Class,EmbeddedTypeInfo,Function)}
+     *     {@link #paginateNext(EmbeddedTypeInfo,PageHandler)} or {@link #paginateNextAs(Class,EmbeddedTypeInfo,PageHandler)}
      *     should be used instead of this method.
      * </p>
      *
@@ -541,11 +552,14 @@ public class Traverson {
      *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
      * </p>
      *
-     * @param pageCallback the callback used to process pages of items.
+     * @param pageHandler the callback used to process pages of items.
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
-    public void paginatePrev(final Function<Traverson, Boolean> pageCallback) {
-        paginate("prev", HalRepresentation.class, null, pageCallback);
+    public void paginatePrev(final PageHandler pageHandler) throws IOException {
+        paginate("prev", HalRepresentation.class, null, pageHandler);
     }
 
     /**
@@ -570,12 +584,15 @@ public class Traverson {
      * </p>
      *
      * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
-     * @param pageCallback callback function called for every page
+     * @param pageHandler callback function called for every page
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     public void paginatePrev(final EmbeddedTypeInfo embeddedTypeInfo,
-                             final Function<Traverson, Boolean> pageCallback) {
-        paginate("prev", HalRepresentation.class, embeddedTypeInfo, pageCallback);
+                             final PageHandler pageHandler) throws IOException {
+        paginate("prev", HalRepresentation.class, embeddedTypeInfo, pageHandler);
     }
 
     /**
@@ -599,7 +616,7 @@ public class Traverson {
      * </p>
      *
      * <p>
-     *     For embedded items having a subtype of HalRepresentation, {@link #paginatePrevAs(Class, EmbeddedTypeInfo, Function)}
+     *     For embedded items having a subtype of HalRepresentation, {@link #paginatePrevAs(Class, EmbeddedTypeInfo, PageHandler)}
      *     must be used instead of this method, otherwise a {@code ClassCastException} will be thrown.
      * </p>
      *
@@ -608,13 +625,16 @@ public class Traverson {
      * </p>
      *
      * @param pageType the subtype of HalRepresentation of the page resources
-     * @param pageCallback callback function called for every page
+     * @param pageHandler callback function called for every page
      * @param <T> subtype of HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
-                                                             final Function<Traverson, Boolean> pageCallback) {
-        paginate("prev", pageType, null, pageCallback);
+                                                             final PageHandler pageHandler) throws IOException {
+        paginate("prev", pageType, null, pageHandler);
     }
 
     /**
@@ -642,14 +662,17 @@ public class Traverson {
      *
      * @param pageType the subtype of HalRepresentation of the page resources
      * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
-     * @param pageCallback callback function called for every page
+     * @param pageHandler callback function called for every page
      * @param <T> subtype of HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
                                                              final EmbeddedTypeInfo embeddedTypeInfo,
-                                                             final Function<Traverson, Boolean> pageCallback) {
-        paginate("prev", pageType, embeddedTypeInfo, pageCallback);
+                                                             final PageHandler pageHandler) throws IOException {
+        paginate("prev", pageType, embeddedTypeInfo, pageHandler);
     }
 
     /**
@@ -666,8 +689,11 @@ public class Traverson {
      * </p>
      *
      * @return this
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      */
-    public Stream<HalRepresentation> stream() {
+    public Stream<HalRepresentation> stream() throws IOException {
         return streamAs(HalRepresentation.class, null);
     }
 
@@ -684,8 +710,11 @@ public class Traverson {
      * @param type the specific type of the returned HalRepresentations
      * @param <T> type of the returned HalRepresentations
      * @return this
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      */
-    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type) {
+    public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type) throws IOException {
         return streamAs(type, null);
     }
 
@@ -706,12 +735,15 @@ public class Traverson {
      * @param embeddedTypeInfo specification of the type of embedded items
      * @param <T> type of the returned HalRepresentations
      * @return this
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     @SuppressWarnings("unchecked")
     public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type,
                                                             final EmbeddedTypeInfo embeddedTypeInfo,
-                                                            final EmbeddedTypeInfo... moreEmbeddedTypeInfos) {
+                                                            final EmbeddedTypeInfo... moreEmbeddedTypeInfos) throws IOException {
         if (moreEmbeddedTypeInfos == null || moreEmbeddedTypeInfos.length == 0) {
             return streamAs(type, embeddedTypeInfo != null ? singletonList(embeddedTypeInfo) : emptyList());
         } else {
@@ -739,25 +771,25 @@ public class Traverson {
      * @param embeddedTypeInfo specification of the type of embedded items
      * @param <T> type of the returned HalRepresentations
      * @return this
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     @SuppressWarnings("unchecked")
     public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type,
-                                                            final List<EmbeddedTypeInfo> embeddedTypeInfo) {
+                                                            final List<EmbeddedTypeInfo> embeddedTypeInfo) throws IOException {
         checkState();
         try {
             if (startWith != null) {
                 lastResult = traverseInitialResource(type, embeddedTypeInfo, true);
-                lastError = null;
             } else if (!hops.isEmpty()) {
                 lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfo, true);
-                lastError = null;
             }
             return (Stream<T>) lastResult.stream();
-        } catch (final TraversionException e) {
+        } catch (final Exception e) {
             LOG.error(e.getMessage(), e);
-            lastError = e.getError();
-            return empty();
+            throw e;
         }
     }
 
@@ -773,8 +805,11 @@ public class Traverson {
      * </p>
      *
      * @return HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      */
-    public Optional<HalRepresentation> getResource() {
+    public Optional<HalRepresentation> getResource() throws IOException {
         return getResourceAs(HalRepresentation.class, null);
     }
 
@@ -786,8 +821,11 @@ public class Traverson {
      * @param type the subtype of the HalRepresentation used to parse the resource.
      * @param <T> the subtype of HalRepresentation of the returned resource.
      * @return HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      */
-    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) {
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) throws IOException {
         return getResourceAs(type, null);
     }
 
@@ -804,11 +842,14 @@ public class Traverson {
      * @param moreEmbeddedTypeInfos more type infors for embedded items
      * @param <T> the subtype of HalRepresentation of the returned resource.
      * @return HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type,
                                                                    final EmbeddedTypeInfo embeddedTypeInfo,
-                                                                   final EmbeddedTypeInfo... moreEmbeddedTypeInfos) {
+                                                                   final EmbeddedTypeInfo... moreEmbeddedTypeInfos) throws IOException {
         if (moreEmbeddedTypeInfos == null || moreEmbeddedTypeInfos.length == 0) {
             return getResourceAs(type, embeddedTypeInfo != null ? singletonList(embeddedTypeInfo) : emptyList());
         } else {
@@ -831,28 +872,28 @@ public class Traverson {
      * @param embeddedTypeInfos specification of the type of embedded items
      * @param <T> the subtype of HalRepresentation of the returned resource.
      * @return HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
-    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, final List<EmbeddedTypeInfo> embeddedTypeInfos) {
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, final List<EmbeddedTypeInfo> embeddedTypeInfos) throws IOException {
         checkState();
         try {
             if (startWith != null) {
                 lastResult = traverseInitialResource(type, embeddedTypeInfos, false);
-                lastError = null;
             } else if (!hops.isEmpty()) {
                 lastResult = traverseHop(lastResult.get(0), type, embeddedTypeInfos, false);
-                lastError = null;
             }
-            return Optional.of(type.cast(lastResult.get(0)));
-        } catch (final TraversionException e) {
+            if (lastResult.size() > 0) {
+                return Optional.of(type.cast(lastResult.get(0)));
+            } else {
+                return Optional.empty();
+            }
+        } catch (final Exception e) {
             LOG.error(e.getMessage());
-            lastError = e.getError();
-            return Optional.empty();
+            throw e;
         }
-    }
-
-    public TraversionError getLastError() {
-        return lastError;
     }
 
     /**
@@ -893,25 +934,39 @@ public class Traverson {
      * @param rel link-relation type of the links used to traverse pages
      * @param pageType the subtype of HalRepresentation of the page resources
      * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
-     * @param pageCallback callback function called for every page
+     * @param pageHandler callback function called for every page
      * @param <T> subtype of HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
     private <T extends HalRepresentation> void paginate(final String rel,
                                                         final Class<T> pageType,
                                                         final EmbeddedTypeInfo embeddedTypeInfo,
-                                                        final Function<Traverson, Boolean> pageCallback) {
+                                                        final PageHandler pageHandler) throws IOException {
         Optional<T> currentPage = getResourceAs(pageType, embeddedTypeInfo);
         while (currentPage.isPresent()
-                && pageCallback.apply(traverson(linkToJsonFunc).startWith(contextUrl, currentPage.get()))
+                && pageHandler.apply(traverson(linkResolver).startWith(contextUrl, currentPage.get()))
                 && currentPage.get().getLinks().getRels().contains(rel)) {
             currentPage = follow(rel).getResourceAs(pageType, embeddedTypeInfo);
         }
     }
 
-    private <T extends HalRepresentation> List<T> traverseInitialResource(final Class<T> pageType,
+    /**
+     *
+     * @param resultType the Class of the returned HalRepresentation.
+     * @param embeddedTypeInfo type information about embedded items
+     * @param retrieveAll false if only a single resource is returned, true otherwise.
+     * @param <T> type parameter of the returned HalRepresentation
+     * @return list of zero or more HalRepresentations.
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     */
+    private <T extends HalRepresentation> List<T> traverseInitialResource(final Class<T> resultType,
                                                                           final List<EmbeddedTypeInfo> embeddedTypeInfo,
-                                                                          final boolean retrieveAll) {
+                                                                          final boolean retrieveAll) throws IOException {
         /*
         #hops = N; N > 0
         max nesting-level in embeddedTypeInfo = M; M >= 0
@@ -924,7 +979,7 @@ public class Traverson {
             0. N=0, M=0:
             getResource(startwith, pageType)
             */
-            return singletonList(getResource(initial, pageType, embeddedTypeInfo));
+            return singletonList(getResource(initial, resultType, embeddedTypeInfo));
         } else {
             final HalRepresentation firstHop;
             // Follow startWith URL, but have a look at the next hop, so we can parse the resource
@@ -941,7 +996,7 @@ public class Traverson {
                     a) getResource(startwith, HalRepresentation.class, embeddedTypeInfo(hop-0-rel, pageType))
                     b) getResource(current, pageType)
                     */
-                    firstHop = getResource(initial, HalRepresentation.class, withEmbedded(hop.rel, pageType));
+                    firstHop = getResource(initial, HalRepresentation.class, withEmbedded(hop.rel, resultType));
                 } else {
                     /*
                     2. N=1, M>0 (mit TypeInfos)
@@ -953,7 +1008,7 @@ public class Traverson {
                     b) getResource(current, pageType, embeddedTypeInfo)
                     */
                     //firstHop = getResource(current, pageType, embeddedTypeInfo);
-                    firstHop = getResource(initial, HalRepresentation.class, withEmbedded(hop.rel, pageType, embeddedTypeInfo));
+                    firstHop = getResource(initial, HalRepresentation.class, withEmbedded(hop.rel, resultType, embeddedTypeInfo));
                 }
             } else {
                 /*
@@ -967,18 +1022,31 @@ public class Traverson {
                 b) getResource(current, HalRepresentation.class, embeddedTypeInfo(hop-1-rel, pageType)
                 c) getResource(current, pageType)
                 */
-                firstHop = getResource(initial, HalRepresentation.class, embeddedTypeInfoFor(hops, pageType, embeddedTypeInfo));
+                firstHop = getResource(initial, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
             }
-            return traverseHop(firstHop, pageType, embeddedTypeInfo, retrieveAll);
+            return traverseHop(firstHop, resultType, embeddedTypeInfo, retrieveAll);
         }
     }
 
+    /**
+     *
+     * @param current HalRepresentation of the current hop
+     * @param resultType the Class of the returned HalRepresentation.
+     * @param embeddedTypeInfo type information about embedded items
+     * @param retrieveAll false if only a single resource is returned, true otherwise.
+     * @param <T> type parameter of the returned HalRepresentation
+     * @return list of zero or more HalRepresentations.
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     */
     @SuppressWarnings("unchecked")
     private <T extends HalRepresentation> List<T> traverseHop(final HalRepresentation current,
                                                               final Class<T> resultType,
                                                               final List<EmbeddedTypeInfo> embeddedTypeInfo,
-                                                              boolean retrieveAll) {
+                                                              boolean retrieveAll) throws IOException {
 
+        final List<T> response;
         final Hop currentHop = hops.remove(0);
         LOG.trace("Following {}", currentHop.rel);
         // the next hop could possibly be already available as an embedded object:
@@ -992,43 +1060,38 @@ public class Traverson {
                     ? (List<T>) embeddedItems
                     : traverseHop(embeddedItems.get(0), resultType, embeddedTypeInfo, retrieveAll);
         }
-
         final List<Link> links = current
                 .getLinks()
                 .getLinksBy(currentHop.rel, currentHop.predicate);
-        if (links.isEmpty()) {
+        if (!links.isEmpty()) {
+            final Link expandedLink = resolve(this.contextUrl, expand(links.get(0), currentHop.vars));
+            if (hops.isEmpty()) { // last hop
+                if (retrieveAll) {
+                    LOG.trace("Following {} {} links", links.size(), currentHop.rel);
+                    final List<T> representations = new ArrayList<>();
+                    for (final Link link : links) {
+                        representations.add(getResource(resolve(this.contextUrl, expand(link, currentHop.vars)), resultType, embeddedTypeInfo));
+                    }
+                    response = representations;
+                } else {
+                    this.contextUrl = linkToUrl(expandedLink);
+                    response = singletonList(getResource(expandedLink, resultType, embeddedTypeInfo));
+                }
+            } else if (hops.size() == 1) { // one before the last hop:
+                this.contextUrl = linkToUrl(expandedLink);
+                final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
+                response = traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
+            } else { // some more hops
+                this.contextUrl = linkToUrl(expandedLink);
+                final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
+                response = traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
+            }
+        } else {
             final String msg = format("Can not follow hop %s: no matching links found in resource %s", currentHop.rel, current);
             LOG.error(msg);
-            throw new TraversionException(traversionError(
-                    MISSING_LINK,
-                    msg)
-            );
+            response = emptyList();
         }
-        final Link expandedLink = resolve(this.contextUrl, expand(links.get(0), currentHop.vars));
-
-        if (hops.isEmpty()) { // last hop
-            if (retrieveAll) {
-                LOG.trace("Following {} {} links", links.size(), currentHop.rel);
-                return links
-                        .stream()
-                        .map(link-> getResource(resolve(this.contextUrl, expand(link, currentHop.vars)), resultType, embeddedTypeInfo))
-                        .collect(toList());
-            } else {
-                this.contextUrl = linkToUrl(expandedLink);
-                return singletonList(getResource(expandedLink, resultType, embeddedTypeInfo));
-            }
-        }
-
-        if (hops.size() == 1) { // one before the last hop:
-            final Hop nextHop = hops.get(0);
-            this.contextUrl = linkToUrl(expandedLink);
-            final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
-            return traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
-        } else { // some more hops
-            this.contextUrl = linkToUrl(expandedLink);
-            final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
-            return traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
-        }
+        return response;
     }
 
     private Link expand(final Link link, final Map<String,Object> vars) {
@@ -1047,15 +1110,16 @@ public class Traverson {
      * Retrieve the HAL resource identified by {@code uri} and return the representation as a HalRepresentation.
      *
      * @param link the Link of the resource to retrieve, or null, if the contextUrl should be resolved.
-     * @param type the expected type of the returned resource
-     * @param embeddedType type information to specify the type of embedded resources.
-     * @param <T> the type of the returned HalRepresentation
-     * @return HalRepresentation
      * @throws IllegalArgumentException if resolving URLs is failing
-     * @throws TraversionException thrown if getting or parsing the resource failed for some reason
+     * @param resultType the Class of the returned HalRepresentation.
+     * @param embeddedTypeInfo type information about embedded items
+     * @param <T> type parameter of the returned HalRepresentation
+     * @return list of zero or more HalRepresentations.
      */
-    private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final EmbeddedTypeInfo embeddedType) {
-        return getResource(link, type, singletonList(embeddedType));
+    private <T extends HalRepresentation> T getResource(final Link link,
+                                                        final Class<T> resultType,
+                                                        final EmbeddedTypeInfo embeddedTypeInfo) throws IOException {
+        return getResource(link, resultType, singletonList(embeddedTypeInfo));
     }
 
     /**
@@ -1067,19 +1131,26 @@ public class Traverson {
      * @param <T> the type of the returned HalRepresentation
      * @return HalRepresentation
      * @throws IllegalArgumentException if resolving URLs is failing
-     * @throws TraversionException thrown if getting or parsing the resource failed for some reason
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      */
-    private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final List<EmbeddedTypeInfo> embeddedType) {
+    private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final List<EmbeddedTypeInfo> embeddedType) throws IOException {
         LOG.trace("Fetching resource href={} rel={} as type={} with embeddedType={}", link.getHref(), link.getRel(), type.getSimpleName(), embeddedType);
-        final String json = getJson(link);
+        final String json;
+        try {
+            json = linkResolver.apply(link);
+        } catch (final IOException | RuntimeException e) {
+            LOG.error("Failed to fetch resource href={}: {}", link.getHref(), e.getMessage());
+            throw e;
+        }
         try {
             return embeddedType != null && !embeddedType.isEmpty()
                     ? parse(json).as(type, embeddedType)
                     : parse(json).as(type);
-        } catch (final Exception e) {
-            throw new TraversionException(traversionError(
-                    Type.INVALID_JSON,
-                    format("Unable to parse %s returned from %s: %s", json, link.getHref(), e.getMessage())));
+        } catch (final RuntimeException e) {
+            LOG.error("Failed to parse resource href={} rel={} as type={} with embeddedType={}", link.getHref(), link.getRel(), type.getSimpleName(), embeddedType);
+            throw e;
         }
     }
 
@@ -1102,22 +1173,6 @@ public class Traverson {
         } else {
             return copyOf(link).withHref(resolveHref(contextUrl, link.getHref()).toString()).build();
         }
-    }
-
-    private String getJson(Link link) {
-        final String json;
-        try {
-            json = linkToJsonFunc.apply(link);
-        } catch (final RuntimeException e) {
-            throw new TraversionException(traversionError(
-                    NOT_FOUND, format("Error fetching json response from %s: %s", link.getHref(), e.getMessage()), e));
-        }
-        if (json == null) {
-            throw new TraversionException(traversionError(
-                    INVALID_JSON,
-                    format("Did not get JSON response from %s", link.getHref())));
-        }
-        return json;
     }
 
     static EmbeddedTypeInfo embeddedTypeInfoFor(final List<Hop> hops,

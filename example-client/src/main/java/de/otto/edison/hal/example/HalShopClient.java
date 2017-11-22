@@ -8,7 +8,6 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 
-import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
 import static de.otto.edison.hal.traverson.Traverson.traverson;
 import static de.otto.edison.hal.traverson.Traverson.withVars;
 import static java.lang.String.format;
@@ -48,7 +47,7 @@ public class HalShopClient implements AutoCloseable {
      * @param embeddedProducts query for embedded products
      * @see <a href="https://github.com/damnhandy/Handy-URI-Templates">Handy-URI-Templates</a>
      */
-    public void traverse(final String query, final boolean embeddedProducts) {
+    public void traverse(final String query, final boolean embeddedProducts) throws IOException {
         System.out.println("\n\n");
         System.out.println("---------- Traverson Example ----------");
         traverson(this::getHalJson)
@@ -68,7 +67,7 @@ public class HalShopClient implements AutoCloseable {
      * @param link the non-templated Link of the resource
      * @return json
      */
-    private String getHalJson(final Link link) {
+    private String getHalJson(final Link link) throws IOException {
         try {
             final HttpGet httpget = new HttpGet(link.getHref());
             if (link.getType().isEmpty()) {
@@ -87,7 +86,7 @@ public class HalShopClient implements AutoCloseable {
             return json;
         } catch (final IOException e) {
             System.out.println("\nPlease start example-springboot Server before you are running the Client.\n");
-            throw new RuntimeException(e.getMessage(), e);
+            throw e;
         }
     }
 

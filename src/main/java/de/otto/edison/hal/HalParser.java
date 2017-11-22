@@ -1,5 +1,7 @@
 package de.otto.edison.hal;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -77,7 +79,9 @@ public final class HalParser {
      * @param type the java type used to parse the JSON
      * @param <T> the type of the class, extending HalRepresentation
      * @return instance of T, containing the data of the parsed HAL document.
-     * @throws IOException if parsing JSOn failed for some reason.
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type) throws IOException {
@@ -93,7 +97,9 @@ public final class HalParser {
      * @param moreTypeInfo more type information of embedded items.
      * @param <T> The type used to parse the HAL document
      * @return T
-     * @throws IOException if parsing the JSON fails for some reason.
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type,
@@ -115,7 +121,9 @@ public final class HalParser {
      * @param typeInfo type information of the embedded items.
      * @param <T> The type used to parse the HAL document
      * @return T
-     * @throws IOException if parsing the JSON fails for some reason.
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type,

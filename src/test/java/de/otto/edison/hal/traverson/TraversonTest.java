@@ -1,6 +1,8 @@
 package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
@@ -10,12 +12,11 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.slf4j.Logger;
 
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
@@ -27,9 +28,6 @@ import static de.otto.edison.hal.LinkPredicates.havingType;
 import static de.otto.edison.hal.LinkPredicates.optionallyHavingType;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.traverson.TraversionError.Type.INVALID_JSON;
-import static de.otto.edison.hal.traverson.TraversionError.Type.NOT_FOUND;
-import static de.otto.edison.hal.traverson.TraversionError.traversionError;
 import static de.otto.edison.hal.traverson.Traverson.embeddedTypeInfoFor;
 import static de.otto.edison.hal.traverson.Traverson.hops;
 import static de.otto.edison.hal.traverson.Traverson.traverson;
@@ -38,7 +36,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -76,7 +77,7 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetEmptyHalRepresentation() {
+    public void shouldGetEmptyHalRepresentation() throws IOException {
         final Traverson t = traverson(s->"{}").startWith("http://example.com/");
         assertThat(t.getResource().get().getLinks(), is(emptyLinks()));
         assertThat(t.getResource().get().getEmbedded(), is(emptyEmbedded()));
@@ -95,20 +96,20 @@ public class TraversonTest {
         );
 
         // when
-        traverson(mock(Function.class))
+        traverson(mock(LinkResolver.class))
                 .startWith(existingRepresentation);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldCreateTraversonFromContextUrlAndHalRepresentationWithoutSelfLinkButWithRelativeLinks() throws MalformedURLException {
+    public void shouldCreateTraversonFromContextUrlAndHalRepresentationWithoutSelfLinkButWithRelativeLinks() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
                 linkingTo(link("search", "/example/foo"))
         );
 
         // when
-        Traverson traverson = traverson(mock(Function.class))
+        Traverson traverson = traverson(mock(LinkResolver.class))
                 .startWith(new URL("http://example.com"), existingRepresentation);
 
         // then
@@ -124,12 +125,12 @@ public class TraversonTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldCreateTraversonFromHalRepresentationWithoutSelfLinkButWithAbsoluteLinks() throws MalformedURLException {
+    public void shouldCreateTraversonFromHalRepresentationWithoutSelfLinkButWithAbsoluteLinks() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
                 linkingTo(link("search", "http://example.com/example/"))
         );
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("search", "http://example.com/example/"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"http://example.com/example/foo\"}}}");
 
@@ -155,10 +156,10 @@ public class TraversonTest {
     ////////////////////////////////////
 
     @Test
-    public void shouldFollowLink() {
+    public void shouldFollowLink() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"http://example.com/example/foo\"}}}");
         when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
@@ -176,10 +177,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowRelativeLink() {
+    public void shouldFollowRelativeLink() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(self("http://example.com/example/"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"foo\"}}}");
         when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
@@ -197,10 +198,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowLinkMatchingPredicate() {
+    public void shouldFollowLinkMatchingPredicate() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"item\":[{\"href\":\"http://example.com/example/foo\"},{\"href\":\"http://example.com/example/foo\",\"type\":\"text/plain\"}]}}");
         when(mock.apply(linkBuilder("item", "http://example.com/example/foo").withType("text/plain").build())).thenReturn(
@@ -217,10 +218,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowRelativeLinkMatchingPredicate() {
+    public void shouldFollowRelativeLinkMatchingPredicate() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"item\":[{\"href\":\"/example/foo\"},{\"href\":\"/example/foo\",\"type\":\"text/plain\"}]}}");
         when(mock.apply(linkBuilder("item", "http://example.com/example/foo").withType("text/plain").build())).thenReturn(
@@ -237,14 +238,14 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowLinkStartingWithHalRepresentationHavingAbsoluteLinks() {
+    public void shouldFollowLinkStartingWithHalRepresentationHavingAbsoluteLinks() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
                 linkingTo(link("search", "http://example.com/example/foo"))
         );
         // and
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("search", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
 
@@ -259,7 +260,7 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowLinkStartingWithHalRepresentationHavingSelfLink() {
+    public void shouldFollowLinkStartingWithHalRepresentationHavingSelfLink() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
                 linkingTo(
@@ -269,7 +270,7 @@ public class TraversonTest {
         );
         // and
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("search", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
 
@@ -284,13 +285,13 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowLinkStartingWithHalRepresentationAndContextUrl() throws MalformedURLException {
+    public void shouldFollowLinkStartingWithHalRepresentationAndContextUrl() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
                 linkingTo(link("search", "/example/foo")));
         // and
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("search", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
 
@@ -305,10 +306,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowMultipleLinks() {
+    public void shouldFollowMultipleLinks() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"http://example.com/example/foo\"}}}");
         when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
@@ -332,10 +333,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowMultipleLinksMatchingPredicate() {
+    public void shouldFollowMultipleLinksMatchingPredicate() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}");
         when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
@@ -356,10 +357,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowLinksAfterGettingRepresentation() {
+    public void shouldFollowLinksAfterGettingRepresentation() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"http://example.com/example/foo\"}}}");
         when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
@@ -385,10 +386,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetCurrentNodeTwice() {
+    public void shouldGetCurrentNodeTwice() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(self("http://example.com/example"))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}");
         when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
@@ -403,10 +404,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowTemplatedLink() {
+    public void shouldFollowTemplatedLink() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self","http://example.com/example"))).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?test}\"}}}");
         when(mock.apply(link("foo", "http://example.com/example/foo?test=bar"))).thenReturn("{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
         // when
@@ -422,10 +423,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowMultipleTemplatedLinks() {
+    public void shouldFollowMultipleTemplatedLinks() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example"))).thenReturn("{\"_links\":{\"foo\":{\"templated\":true,\"href\":\"/example/foo{?param1}\"}}}");
         when(mock.apply(link("foo", "http://example.com/example/foo?param1=value1"))).thenReturn("{\"_links\":{\"bar\":{\"templated\":true,\"href\":\"/example/bar{?param2}\"}}}");
         when(mock.apply(link("bar", "http://example.com/example/bar?param2=value2"))).thenReturn("{\"_links\":{\"self\":{\"href\":\"http://example.com/example/bar\"}}}");
@@ -444,10 +445,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowTemplatedLinksWithPredicates() {
+    public void shouldFollowTemplatedLinksWithPredicates() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example")))
                 .thenReturn("{\"_links\":{\"foo\":[" +
                         "{\"templated\":true,\"type\":\"text/plain\",\"href\":\"/example/foo1{?param1}\"}," +
@@ -472,10 +473,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldFollowLinkWithEmbeddedObjects() {
+    public void shouldFollowLinkWithEmbeddedObjects() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}]}" +
@@ -497,10 +498,10 @@ public class TraversonTest {
     //////////////////////////
 
     @Test
-    public void shouldStreamLinkedObjects() {
+    public void shouldStreamLinkedObjects() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}" +
@@ -525,10 +526,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldStreamEmbeddedObjects() {
+    public void shouldStreamEmbeddedObjects() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"/example/foo/1\"}}},{\"_links\":{\"self\":{\"href\":\"/example/foo/2\"}}}]}," +
@@ -549,80 +550,67 @@ public class TraversonTest {
     // Error Handling
     //////////////////////////////////
 
-    @Test
-    public void shouldReportErrorIfResourceDoesNotExist() {
+    @Test(expected = RuntimeException.class)
+    public void shouldReportErrorIfResourceDoesNotExist() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         final RuntimeException expectedException = new RuntimeException("Kawummmm!");
         when(mock.apply(any(Link.class))).thenThrow(expectedException);
         // when
         final Traverson traverson = traverson(mock);
-        final Optional<HalRepresentation> hal = traverson
-                .startWith("http://example.com/example")
-                .follow("foo")
-                .getResource();
-        // then
-        assertThat(hal.isPresent(), is(false));
-        assertThat(traverson.getLastError(), is(traversionError(NOT_FOUND, "Error fetching json response from http://example.com/example: Kawummmm!", expectedException)));
+        try {
+            traverson
+                    .startWith("http://example.com/example")
+                    .follow("foo")
+                    .getResource();
+        } catch (final RuntimeException e) {
+            assertThat(e.getMessage(), is("Kawummmm!"));
+            throw e;
+        }
     }
 
-    @Test
-    public void shouldReportErrorOnBrokenJsonFormat() {
+    @Test(expected = JsonParseException.class)
+    public void shouldReportErrorOnBrokenJsonFormat() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn("{{}");
         // when
-        final Traverson traverson = traverson(mock);
-        final Optional<HalRepresentation> hal = traverson
+        traverson(mock)
                 .startWith("http://example.com/example")
                 .follow("foo")
                 .getResource();
-        // then
-        assertThat(hal.isPresent(), is(false));
-        assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Unable to parse {{} returned from http://example.com/example"));
     }
 
-    @Test
-    public void shouldReportErrorOnInvalidHalLinkFormat() {
+    @Test(expected = JsonMappingException.class)
+    public void shouldReportErrorOnInvalidHalLinkFormat() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_links\":{\"href\":\"/example/foo/1\"}" +
                 "}");
         // when
-        final Traverson traverson = traverson(mock);
-        final Optional<HalRepresentation> hal = traverson
-                .startWith("http://example.com/example")
-                .getResource();
-        // then
-        assertThat(hal.isPresent(), is(false));
-        assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Unable to parse {\"_links\":{\"href\":\"/example/foo/1\"}} returned from"));
+        traverson(mock)
+                    .startWith("http://example.com/example")
+                    .getResource();
     }
 
-    @Test
-    public void shouldReportErrorOnBrokenHalEmbeddedFormat() {
+    @Test(expected = JsonMappingException.class)
+    public void shouldReportErrorOnBrokenHalEmbeddedFormat() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"count\":42}" +
                 "}");
         // when
-        final Traverson traverson = traverson(mock);
-        final Optional<HalRepresentation> hal = traverson
+        traverson(mock)
                 .startWith("http://example.com/example")
                 .getResource();
-        // then
-        assertThat(hal.isPresent(), is(false));
-        assertThat(traverson.getLastError().getType(), is(INVALID_JSON));
-        assertThat(traverson.getLastError().getMessage(), startsWith("Unable to parse {\"_embedded\":{\"count\":42}} returned from http://example.com/example"));
     }
 
     //////////////////////////////////
@@ -630,10 +618,10 @@ public class TraversonTest {
     //////////////////////////////////
 
     @Test
-    public void shouldGetHalRepresentationAsSubtype() {
+    public void shouldGetHalRepresentationAsSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{\"_links\":{\"foo\":{\"href\":\"/example/foo\"}}}",
                 "{\"_links\":{\"self\":{\"href\":\"/example/foo\"}}, \"someProperty\":\"bar\"}");
@@ -651,10 +639,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetEmbeddedHalRepresentationAsSubtype() {
+    public void shouldGetEmbeddedHalRepresentationAsSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"foo\":[{\"someProperty\":\"bar\",\"_links\":{\"self\":{\"href\":\"/example/foo\"}}}]}," +
@@ -674,10 +662,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithSubtype() {
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                 "   \"_embedded\":{" +
@@ -703,10 +691,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithMultipleSubtypes() {
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithMultipleSubtypes() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                 "   \"_embedded\":{" +
@@ -739,10 +727,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesWithSubtypeFromSingleDocument() {
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesWithSubtypeFromSingleDocument() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                 "   \"_links\":{\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]}," +
@@ -769,10 +757,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesWithMultipleSubtypesFromSingleDocument() {
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesWithMultipleSubtypesFromSingleDocument() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                 "   \"_links\":{\"curies\":[{\"href\":\"http://example.com/rels/{rel}\",\"name\":\"x\",\"templated\":true}]}," +
@@ -805,10 +793,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesWithSubtype() {
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesWithSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                 "   \"_links\":{" +
@@ -842,10 +830,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesWithMultipleSubtypes() {
+    public void shouldGetDeeplyNestedEmbeddedHalRepresentationWithCuriesWithMultipleSubtypes() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                 "   \"_links\":{" +
@@ -886,10 +874,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetSingleEmbeddedHalRepresentationAsSubtype() {
+    public void shouldGetSingleEmbeddedHalRepresentationAsSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{\"_embedded\":{\"foo\":[{\"someProperty\":\"bar\"}]}}");
         // when
@@ -902,10 +890,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldGetSingleExtendedHalWithEmbeddedHalRepresentationAsSubtype() {
+    public void shouldGetSingleExtendedHalWithEmbeddedHalRepresentationAsSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{\"someProperty\":\"42\", \"_embedded\":{\"foo\":[{\"someOtherProperty\":\"0815\"}]}}");
         // when
@@ -919,10 +907,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldStreamLinkedObjectsAsSubtype() {
+    public void shouldStreamLinkedObjectsAsSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}" +
@@ -947,10 +935,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldStreamLinkedObjectsWithExtendedSubtype() {
+    public void shouldStreamLinkedObjectsWithExtendedSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}}");
         when(mock.apply(link("foo","http://example.com/example/foo/1"))).thenReturn(
@@ -974,10 +962,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldStreamLinkedObjectsWithMultipleExtendedSubtypes() {
+    public void shouldStreamLinkedObjectsWithMultipleExtendedSubtypes() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"foo\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]}}");
         when(mock.apply(link("foo","http://example.com/example/foo/1"))).thenReturn(
@@ -1004,10 +992,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldStreamEmbeddedObjectsWithSubtype() {
+    public void shouldStreamEmbeddedObjectsWithSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "\"_embedded\":{\"foo\":[{\"someProperty\":\"first\"},{\"someProperty\":\"second\"}]}" +
@@ -1024,10 +1012,10 @@ public class TraversonTest {
     }
 
     @Test
-    public void shouldStreamDeeplyNestedEmbeddedObjectsWithCuriesAsSubtype() {
+    public void shouldStreamDeeplyNestedEmbeddedObjectsWithCuriesAsSubtype() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(any(Link.class))).thenReturn(
                 "{" +
                         "   \"_links\":{" +

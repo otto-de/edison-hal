@@ -9,12 +9,11 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.slf4j.Logger;
 
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.Link.link;
@@ -40,10 +39,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldPageOverLinksUsingNext() {
+    public void shouldPageOverLinksUsingNext() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
@@ -76,10 +75,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldStreamLinkedItemsOfNextPage() {
+    public void shouldStreamLinkedItemsOfNextPage() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
@@ -120,10 +119,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldNotPageAfterLastPage() {
+    public void shouldNotPageAfterLastPage() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn("{}");
 
         // when we getResource the next page
@@ -136,10 +135,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldPageOverLinksUsingPrev() {
+    public void shouldPageOverLinksUsingPrev() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo?page=2"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
@@ -172,10 +171,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldNotPageBeforeFirstPage() {
+    public void shouldNotPageBeforeFirstPage() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
@@ -195,10 +194,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldPageOverLinksUsingFirstAndLast() {
+    public void shouldPageOverLinksUsingFirstAndLast() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
@@ -257,10 +256,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllItemsOfMultiplePages() {
+    public void shouldIterateOverAllItemsOfMultiplePages() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\",\"_links\":{" +
                         "\"self\":{\"href\":\"http://example.com/example/foo?page=1\"}," +
@@ -303,10 +302,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginateNext() throws MalformedURLException {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginateNext() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
@@ -341,10 +340,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginatePrev() throws MalformedURLException {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginatePrev() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{" +
@@ -379,10 +378,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginateNext() {
+    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginateNext() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{\"next\":{\"href\":\"http://example.com/example/foo?page=2\"}}," +
@@ -411,10 +410,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginatePrev() {
+    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginatePrev() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{" +
                         "\"_links\":{\"prev\":{\"href\":\"http://example.com/example/foo?page=2\"}}," +
@@ -443,10 +442,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldStopPagination() {
+    public void shouldStopPagination() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\",\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
@@ -471,10 +470,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginateNextAs() {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginateNextAs() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\",\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
@@ -512,10 +511,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginatePrevAs() {
+    public void shouldIterateOverAllItemsOfMultiplePagesUsingPaginatePrevAs() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\",\"_links\":{" +
                         "\"item\":[{\"href\":\"/example/foo/1\"},{\"href\":\"/example/foo/2\"}]," +
@@ -553,10 +552,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginateNextAs() {
+    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginateNextAs() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\"," +
                         "\"_links\":{\"next\":{\"href\":\"/example/foo?page=2\"}}," +
@@ -590,10 +589,10 @@ public class TraversonPagingTest {
     }
 
     @Test
-    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginatePrevAs() {
+    public void shouldIterateOverAllEmbeddedItemsOfMultiplePagesUsingPaginatePrevAs() throws IOException {
         // given
         @SuppressWarnings("unchecked")
-        final Function<Link,String> mock = mock(Function.class);
+        final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("self", "http://example.com/example/foo"))).thenReturn(
                 "{\"someProperty\":\"firstPage\"," +
                         "\"_links\":{\"prev\":{\"href\":\"/example/foo?page=2\"}}," +
