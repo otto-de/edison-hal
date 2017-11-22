@@ -39,11 +39,11 @@ import java.io.IOException;
  * <pre><code>
  *     Traverson.traverson(this::fetchJson)
  *          .startWith("http://example.com/example/collection")
- *          .paginateNext( (Traverson pageTraverson) -> {
+ *          .paginateNext( (Traverson pageTraverson) -&gt; {
  *              pageTraverson
  *                      .follow("item")
  *                      .streamAs(OtherExtendedHalRepresentation.class)
- *                      .forEach(x -> values.add(x.someOtherProperty));
+ *                      .forEach(x -&gt; values.add(x.someOtherProperty));
  *              return true;
  *          });
  * </code></pre>

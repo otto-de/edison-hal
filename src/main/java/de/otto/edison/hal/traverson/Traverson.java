@@ -733,6 +733,7 @@ public class Traverson {
      * </p>
      * @param type the specific type of the returned HalRepresentations
      * @param embeddedTypeInfo specification of the type of embedded items
+     * @param moreEmbeddedTypeInfos more embedded type-infos
      * @param <T> type of the returned HalRepresentations
      * @return this
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
