@@ -102,7 +102,7 @@ Otherwise, you can derive a class from HalRepresentation to add extra attributes
 A resource may have multiple links that share the same link relation.
 
 For link relations that may have multiple links, we use an array of links.
-```
+```json
 {
     "_links": {
         "item": [
@@ -488,7 +488,7 @@ Using Spring MVC, you can directly return HalRepresentations from you controller
     }
 ```
 
-### 4.8 Using the Traverson:
+### 4.8 Using the Traverson
 
 Traverson is a utility to make it easy to traverse linked and/or embedded resources using link-relation types:
 
@@ -527,7 +527,42 @@ Traverson is a utility to make it easy to traverse linked and/or embedded resour
 The Traverson is automatically taking care of embedded resources: if a linked resource is already embedded, it is used 
 instead of resolving the link. Only if it is not embedded, the Traverson is following the links. 
 
-### 4.9 Paging over HAL resources:
+### 4.9 Selecting Links
+
+In some situations, there are multiple links to the same resource, but with different `profile`,
+`name` or `type` attributes. The type, for example, could be used to distinguish links to a web page
+from links pointing to a JSON representation of the resource:
+
+```json
+{
+    "_links": {
+        "user": [
+            { "href": "http://example.com/users/42.json", "type": "application/json"},
+            { "href": "http://example.com/users/42.html", "type": "text/html"}
+        ]
+    }
+}
+```
+
+The `Traverson` can be used to navigate linked resources using predicates to select one of multiple links:    
+
+```java
+User user = traverson(this::getHalJson)
+        .startWith("http://example.com/baskets/4711")
+        .follow("user", LinkPredicates.havingType("application/json"))
+        .getResourceAs(User.class);
+```
+
+Because `Traverson.follow()` only expects a `java.util.function.Predicate<Link>`, you are free to write your own 
+predicates, of simply compose them:
+```java
+Predicate<Link> selectJsonOrHal = havingType("application/json").or(havingType("application/hal+json"));
+
+...
+traverson.follow("user", selectJsonOrHal)
+...
+```
+### 4.10 Paging over HAL resources
 
 Iterating over pages of items is supported by the Traverson, too. `Traverson.paginateNext()` can be used
 to iterate pages by following 'next' links. The callback function provided to `paginateNext()` is
@@ -554,7 +589,7 @@ The `Traverson` parameter of the callback function is then used to traverse the 
 ```
 
 It is also possible to page by following other link-relation types using `Traverson.paginatePrev` (for 'prev') or
-`Traverson.paginate()`.
+`Traverson.paginate()` for other rels.
 
 If the page is needed as a subtype of `HalRepresentation` (for example, if it contains required extra attributes),
 `paginateNextAs()` or `paginatePrevAs()` can be used:
@@ -645,7 +680,41 @@ in different ways.
 
 ## 7. Version History
 
-### 1.0.0
+### 2.0.0 (CURRENT SNAPSHOT)
+
+*Breaking Changes*
+
+* The error handling in the Traverson API has been changed in that exceptions are now thrown instead of catching them 
+and exposing a `Traverson.getLastError()`. In 1.0.0, the client had to check for the last error. This is rather unusual 
+and is easy to overlook. Beginning with 2.0.0, `getLastError` is removed and the following method-signatures are now 
+throwing `java.io.IOException`:
+  * Traverson.paginateNext()  
+  * Traverson.paginateNextAs()  
+  * Traverson.paginatePrev()  
+  * Traverson.paginatePrevAs()
+  * Traverson.stream()
+  * Traverson.streamAs()
+  * Traverson.getResource()  
+  * Traverson.getResourceAs()
+* The static factory method `Traverson.traverson()` does not accept a `java.util.function.Function<Link,String>` 
+anymore. Instead, a `de.otto.edison.hal.traverson.LinkResolver` was introduced. The major difference between the new
+`PageHandler` and the previous `Function` is that the `PageHandler.apply(Link)` is now throwing `IOException` while
+`Function` does not allow this.
+* For the same reasons (being able to throw IOExceptions), the different `paginate*` methods now expect a 
+`de.otto.edison.hal.traverson.PageHandler` instead of a `java.util.function.Function<Traverson,Boolean>`. Beside of this,
+using dedicated functional interfaces instead of generic Functions is a little easier to understand.    
+  
+
+*New Features / API extensions* 
+
+* The `Traverson` now supports traversing linked resources while ignoring embedded resources: instead of returning an 
+embedded item, clients are now able to force the `Traverson` to follow the links instead. This is especially helpful,
+if only a reduced set of attributes is embedded into a resource. A set of `Traverson.followLink()` methods was added
+to support this.
+* Added new methods `Traverson.paginate()` and `Traverson.paginateAs()` to paginate over paged resources using 
+link-relation types other than `next` or `prev`.  
+
+### 1.0.0 (CURRENT RELEASE)
 
 *New Features / API extensions* 
 * It is now possible to configure the link-relation types that are serialized as an array of links.
