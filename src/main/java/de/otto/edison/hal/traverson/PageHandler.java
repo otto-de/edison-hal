@@ -1,27 +1,3 @@
-/*
- * Copyright (c) 2010, 2013, Oracle and/or its affiliates. All rights reserved.
- * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- */
 package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -33,7 +9,7 @@ import java.io.IOException;
 /**
  * Functional interface used to traverse pages of linked or embedded resources.
  * <p>
- *     The different {@link Traverson#paginate(String, Class, EmbeddedTypeInfo, PageHandler) pagination} methods
+ *     The different {@link Traverson#paginateAs(String, Class, EmbeddedTypeInfo, PageHandler) pagination} methods
  *     of the {@link Traverson} make use of PageHandlers to traverse a single page.
  * </p>
  * <pre><code>

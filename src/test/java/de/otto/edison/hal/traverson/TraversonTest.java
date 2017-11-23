@@ -493,6 +493,52 @@ public class TraversonTest {
         assertThat(self.get().getHref(), is("http://example.com/example/foo"));
     }
 
+    @Test
+    public void shouldFollowLinkIgnoringEmbeddedObjects() throws IOException {
+        // given
+        @SuppressWarnings("unchecked")
+        final LinkResolver mock = mock(LinkResolver.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                        "\"_links\":{\"foo\":[{\"href\":\"http://example.com/example/foo\"}]}," +
+                        "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}]}" +
+                "}",
+                "{" +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}" +
+                "}");
+        // when
+        final HalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .followLink("foo")
+                .getResource()
+                .get();
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
+    }
+
+    @Test
+    public void shouldFollowEmbeddedIfLinkIsMissing() throws IOException {
+        // given
+        @SuppressWarnings("unchecked")
+        final LinkResolver mock = mock(LinkResolver.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                        "\"_embedded\":{\"foo\":[{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}]}" +
+                "}");
+        // when
+        final HalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .followLink("foo")
+                .getResource()
+                .get();
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
+    }
+
     //////////////////////////
     // Streaming
     //////////////////////////
@@ -1136,7 +1182,7 @@ public class TraversonTest {
     }
 
     private Traverson.Hop hop(final String rel) {
-        return new Traverson.Hop(rel, null, null);
+        return new Traverson.Hop(rel, null, null, false);
     }
 
     static class ExtendedHalRepresentation extends HalRepresentation {

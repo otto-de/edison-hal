@@ -2,10 +2,7 @@ package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import de.otto.edison.hal.Embedded;
-import de.otto.edison.hal.EmbeddedTypeInfo;
-import de.otto.edison.hal.HalRepresentation;
-import de.otto.edison.hal.Link;
+import de.otto.edison.hal.*;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -21,6 +18,7 @@ import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.copyOf;
 import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.LinkPredicates.always;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -68,13 +66,17 @@ public class Traverson {
         final Predicate<Link> predicate;
         /** URI-template variables used when following the hop. */
         final Map<String,Object> vars;
+        /** Ignore possibly embedded items. */
+        final boolean ignoreEmbedded;
 
         Hop(final String rel,
             final Predicate<Link> predicate,
-            final Map<String, Object> vars) {
+            final Map<String, Object> vars,
+            final boolean ignoreEmbedded) {
             this.rel = rel;
             this.predicate = predicate;
             this.vars = vars;
+            this.ignoreEmbedded = ignoreEmbedded;
         }
     }
 
@@ -246,32 +248,73 @@ public class Traverson {
     }
 
     /**
-     * Follow the first {@link Link} of the current resource, selected by it's link-relation type.
+     * Follow the first {@link Link} of the current resource, selected by its link-relation type.
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
+     *     these items are used instead of resolving the associated {@link Link}.
+     * </p>
+     * <p>
+     *     Sometimes, only a subset of a linked resource is embedded into the resource. In this case,
+     *     embedded items can be ignored by using {@link #followLink(String)} instead of this method.
      * </p>
      * @param rel the link-relation type of the followed link
      * @return this
      */
     public Traverson follow(final String rel) {
-        return follow(rel, emptyMap());
+        return follow(rel, always(), emptyMap());
+    }
+
+    /**
+     * Follow the first {@link Link} of the current resource, selected by its link-relation type.
+     * <p>
+     *     Other than {@link #follow(String)}, this method will ignore embedded resources, if a link with matching
+     *     link-relation type is present, Only if the link is missing, an optional embedded resource is used.
+     * </p>
+     * @param rel the link-relation type of the followed link
+     * @return this
+     * @since 2.0.0
+     */
+    public Traverson followLink(final String rel) {
+        return followLink(rel, always(), emptyMap());
     }
 
     /**
      * Follow the first {@link Link} of the current resource that is matching the link-relation type and
-     * the predicate.
+     * the {@link LinkPredicates predicate}.
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
+     *     these items are used instead of resolving the associated {@link Link}.
+     * </p>
+     * <p>
+     *     Sometimes, only a subset of a linked resource is embedded into the resource. In this case,
+     *     embedded items can be ignored by using {@link #followLink(String,Predicate)} instead of this method.
      * </p>
      * @param rel the link-relation type of the followed link
      * @param predicate the predicate used to select the link to follow
      * @return this
      * @since 1.0.0
      */
-    public Traverson follow(final String rel, final Predicate<Link> predicate) {
+    public Traverson follow(final String rel,
+                            final Predicate<Link> predicate) {
         return follow(rel, predicate, emptyMap());
+    }
+
+    /**
+     * Follow the first {@link Link} of the current resource that is matching the link-relation type and
+     * the {@link LinkPredicates predicate}.
+     * <p>
+     *     Other than {@link #follow(String, Predicate)}, this method will ignore embedded resources, if a link
+     *     with matching link-relation type is present, Only if the link is missing, an optional embedded resource is
+     *     used.
+     * </p>
+     * @param rel the link-relation type of the followed link
+     * @param predicate the predicate used to select the link to follow
+     * @return this
+     * @since 2.0.0
+     */
+    public Traverson followLink(final String rel,
+                                final Predicate<Link> predicate) {
+        return followLink(rel, predicate, emptyMap());
     }
 
     /**
@@ -282,13 +325,15 @@ public class Traverson {
      *
      * @param rels the link-relation types of the followed links
      * @return this
+     * @since 1.0.0
      */
     public Traverson follow(final List<String> rels) {
-        return follow(rels, (link)->true, emptyMap());
+        return follow(rels, always(), emptyMap());
     }
 
     /**
-     * Follow multiple link-relation types, one by one, and select the links using the specified predicate.
+     * Follow multiple link-relation types, one by one, and select the links using the specified
+     * {@link LinkPredicates predicate}.
      * <p>
      *     Embedded items are used instead of resolving links, if present in the returned HAL documents.
      * </p>
@@ -298,14 +343,15 @@ public class Traverson {
      * @return this
      * @since 1.0.0
      */
-    public Traverson follow(final List<String> rels, final Predicate<Link> predicate) {
+    public Traverson follow(final List<String> rels, 
+                            final Predicate<Link> predicate) {
         return follow(rels, predicate, emptyMap());
     }
 
     /**
      * Follow multiple link-relation types, one by one.
      * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
+     *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
      *     Embedded items are used instead of resolving links, if present in the returned HAL documents.
@@ -314,18 +360,21 @@ public class Traverson {
      * @param rels the link-relation types of the followed links
      * @param vars uri-template variables used to build links.
      * @return this
+     * @since 1.0.0
      */
-    public Traverson follow(final List<String> rels, final Map<String, Object> vars) {
+    public Traverson follow(final List<String> rels, 
+                            final Map<String, Object> vars) {
         for (String rel : rels) {
-            follow(rel, (link)->true, vars);
+            follow(rel, always(), vars);
         }
         return this;
     }
 
     /**
-     * Follow multiple link-relation types, one by one.
+     * Follow multiple link-relation types, one by one. The {@link LinkPredicates predicate} is used to select
+     * the matching links, if there are more than one per link-relation type.
      * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
+     *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
      *     Embedded items are used instead of resolving links, if present in the returned HAL documents.
@@ -337,7 +386,9 @@ public class Traverson {
      * @return this
      * @since 1.0.0
      */
-    public Traverson follow(final List<String> rels, final Predicate<Link> predicate, final Map<String, Object> vars) {
+    public Traverson follow(final List<String> rels, 
+                            final Predicate<Link> predicate, 
+                            final Map<String, Object> vars) {
         for (String rel : rels) {
             follow(rel, predicate, vars);
         }
@@ -345,42 +396,98 @@ public class Traverson {
     }
 
     /**
-     * Follow the first {@link Link} of the current resource, selected by it's link-relation type.
+     * Follow the first {@link Link} of the current resource, selected by its link-relation type.
      * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
+     *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
+     *     these items are used instead of resolving the associated {@link Link}.
+     * </p>
+     * <p>
+     *     Sometimes, only a subset of a linked resource is embedded into the resource. In this case,
+     *     embedded items can be ignored by using {@link #followLink(String,Map)} instead of this method.
      * </p>
      * @param rel the link-relation type of the followed link
      * @param vars uri-template variables used to build links.
      * @return this
+     * @since 1.0.0
      */
-    public Traverson follow(final String rel, final Map<String, Object> vars) {
-        return follow(rel, (link)->true, vars);
+    public Traverson follow(final String rel, 
+                            final Map<String, Object> vars) {
+        return follow(rel, always(), vars);
     }
 
     /**
-     * Follow the first {@link Link} of the current resource, selected by it's link-relation type.
+     * Follow the first {@link Link} of the current resource, selected by its link-relation type.
      * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
+     *     Templated links are expanded to URIs using the specified template variables.
+     * </p>
+     * <p>
+     *     Other than {@link #follow(String, Map)}, this method will ignore embedded resources, if a link
+     *     with matching link-relation type is present, Only if the link is missing, an optional embedded resource is
+     *     used.
+     * </p>
+     * @param rel the link-relation type of the followed link
+     * @param vars uri-template variables used to build links.
+     * @return this
+     * @since 2.0.0
+     */
+    public Traverson followLink(final String rel, 
+                                final Map<String, Object> vars) {
+        return followLink(rel, always(), vars);
+    }
+
+    /**
+     * Follow the first {@link Link} of the current resource, selected by its link-relation type. The
+     * {@link LinkPredicates predicate} is used to select the matching link, if multiple links per link-relation type
+     * are available.
+     * <p>
+     *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
+     *     these items are used instead of resolving the associated {@link Link}.
      * </p>
      * @param rel the link-relation type of the followed link
      * @param predicate the predicate used to select the link to follow.
      * @param vars uri-template variables used to build links.
      * @return this
+     * @since 1.0.0
      */
-    public Traverson follow(final String rel, final Predicate<Link> predicate, final Map<String, Object> vars) {
+    public Traverson follow(final String rel, 
+                            final Predicate<Link> predicate, 
+                            final Map<String, Object> vars) {
         checkState();
-        hops.add(new Hop(rel, predicate, vars));
+        hops.add(new Hop(rel, predicate, vars, false));
         return this;
     }
 
+    /**
+     * Follow the first {@link Link} of the current resource, selected by its link-relation type. The
+     * {@link LinkPredicates predicate} is used to select the matching link, if multiple links are available for the
+     * specified link-relation type.
+     * <p>
+     *     Templated links are expanded to URIs using the specified template variables.
+     * </p>
+     * <p>
+     *     Other than {@link #follow(String, Predicate, Map)}, this method will ignore embedded resources, if a link
+     *     with matching link-relation type is present, Only if the link is missing, an optional embedded resource is
+     *     used.
+     * </p>
+     * @param rel the link-relation type of the followed link
+     * @param predicate the predicate used to select the link to follow.
+     * @param vars uri-template variables used to build links.
+     * @return this
+     * @since 2.0.0
+     */
+    public Traverson followLink(final String rel, 
+                                final Predicate<Link> predicate, 
+                                final Map<String, Object> vars) {
+        checkState();
+        hops.add(new Hop(rel, predicate, vars, true));
+        return this;
+    }
 
     /**
      * Iterates over pages by following 'next' links. For every page, a {@code Traverson} is created and provided as a
@@ -412,7 +519,7 @@ public class Traverson {
      * @since 1.0.0
      */
     public void paginateNext(final PageHandler pageHandler) throws IOException {
-        paginate("next", HalRepresentation.class, null, pageHandler);
+        paginateAs("next", HalRepresentation.class, null, pageHandler);
     }
 
     /**
@@ -445,7 +552,7 @@ public class Traverson {
      */
     public void paginateNext(final EmbeddedTypeInfo embeddedTypeInfo,
                              final PageHandler pageHandler) throws IOException {
-        paginate("next", HalRepresentation.class, embeddedTypeInfo, pageHandler);
+        paginateAs("next", HalRepresentation.class, embeddedTypeInfo, pageHandler);
     }
 
     /**
@@ -488,7 +595,7 @@ public class Traverson {
      */
     public <T extends HalRepresentation> void paginateNextAs(final Class<T> pageType,
                                                              final PageHandler pageHandler) throws IOException {
-        paginate("next", pageType, null, pageHandler);
+        paginateAs("next", pageType, null, pageHandler);
     }
 
     /**
@@ -526,7 +633,7 @@ public class Traverson {
     public <T extends HalRepresentation> void paginateNextAs(final Class<T> pageType,
                                                              final EmbeddedTypeInfo embeddedTypeInfo,
                                                              final PageHandler pageHandler) throws IOException {
-        paginate("next", pageType, embeddedTypeInfo, pageHandler);
+        paginateAs("next", pageType, embeddedTypeInfo, pageHandler);
     }
 
     /**
@@ -559,7 +666,7 @@ public class Traverson {
      * @since 1.0.0
      */
     public void paginatePrev(final PageHandler pageHandler) throws IOException {
-        paginate("prev", HalRepresentation.class, null, pageHandler);
+        paginateAs("prev", HalRepresentation.class, null, pageHandler);
     }
 
     /**
@@ -592,7 +699,7 @@ public class Traverson {
      */
     public void paginatePrev(final EmbeddedTypeInfo embeddedTypeInfo,
                              final PageHandler pageHandler) throws IOException {
-        paginate("prev", HalRepresentation.class, embeddedTypeInfo, pageHandler);
+        paginateAs("prev", HalRepresentation.class, embeddedTypeInfo, pageHandler);
     }
 
     /**
@@ -634,7 +741,7 @@ public class Traverson {
      */
     public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
                                                              final PageHandler pageHandler) throws IOException {
-        paginate("prev", pageType, null, pageHandler);
+        paginateAs("prev", pageType, null, pageHandler);
     }
 
     /**
@@ -672,15 +779,96 @@ public class Traverson {
     public <T extends HalRepresentation> void paginatePrevAs(final Class<T> pageType,
                                                              final EmbeddedTypeInfo embeddedTypeInfo,
                                                              final PageHandler pageHandler) throws IOException {
-        paginate("prev", pageType, embeddedTypeInfo, pageHandler);
+        paginateAs("prev", pageType, embeddedTypeInfo, pageHandler);
     }
 
     /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * Iterates over pages by following {code rel} links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the {@link PageHandler} function.
+     *
+     * <pre>
+     *                         &lt;rel&gt;
+     *     ... --&gt; &lt;page type&gt; --&gt; &lt;page type&gt;
+     *                  |                |
+     *                  v N item         v N item
+     *           &lt;embedded type&gt;   &lt;embedded type&gt;
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a {@link HalRepresentation} with {@link EmbeddedTypeInfo}.
+     *     This way it is possible to access items embedded into the page resources as specific subtypes of
+     *     HalRepresentation.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param rel link-relation type of the links used to traverse pages
+     * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
+     * @param pageHandler callback function called for every page
+     * @param <T> subtype of HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @since 2.0.0
+     */
+    public <T extends HalRepresentation> void paginate(final String rel,
+                                                       final EmbeddedTypeInfo embeddedTypeInfo,
+                                                       final PageHandler pageHandler) throws IOException {
+        paginateAs(rel, HalRepresentation.class, embeddedTypeInfo, pageHandler);
+    }
+
+    /**
+     * Iterates over pages by following {code rel} links. For every page, a {@code Traverson} is created and provided as a
+     * parameter to the {@link PageHandler} function.
+     *
+     * <pre>
+     *                         &lt;rel&gt;
+     *     ... --&gt; &lt;page type&gt; --&gt; &lt;page type&gt;
+     *                  |                |
+     *                  v N item         v N item
+     *           &lt;embedded type&gt;   &lt;embedded type&gt;
+     * </pre>
+     *
+     * <p>
+     *     The {@code Traverson} is backed by a representation of {@code pageType} with {@link EmbeddedTypeInfo}.
+     *     This way it is possible to access items embedded into the page resources as specific subtypes of
+     *     HalRepresentation.
+     * </p>
+     *
+     * <p>
+     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
+     * </p>
+     *
+     * @param rel link-relation type of the links used to traverse pages
+     * @param pageType the subtype of HalRepresentation of the page resources
+     * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
+     * @param pageHandler callback function called for every page
+     * @param <T> subtype of HalRepresentation
+     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
+     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
+     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @since 2.0.0
+     */
+    public <T extends HalRepresentation> void paginateAs(final String rel,
+                                                         final Class<T> pageType,
+                                                         final EmbeddedTypeInfo embeddedTypeInfo,
+                                                         final PageHandler pageHandler) throws IOException {
+        Optional<T> currentPage = getResourceAs(pageType, embeddedTypeInfo);
+        while (currentPage.isPresent()
+                && pageHandler.apply(traverson(linkResolver).startWith(contextUrl, currentPage.get()))
+                && currentPage.get().getLinks().getRels().contains(rel)) {
+            currentPage = follow(rel).getResourceAs(pageType, embeddedTypeInfo);
+        }
+    }
+
+    /**
+     * Follow the {@link Link}s of the current resource, selected by its link-relation type and returns a {@link Stream}
      * containing the returned {@link HalRepresentation HalRepresentations}.
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
+     *     these items are used instead of resolving the associated {@link Link}.
      * </p>
      * <p>
      *     Many times, you do not need the HalRepresentations, but subtypes of HalRepresentation,
@@ -692,20 +880,21 @@ public class Traverson {
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
      * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
      * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @since 1.0.0
      */
     public Stream<HalRepresentation> stream() throws IOException {
         return streamAs(HalRepresentation.class, null);
     }
 
     /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * Follow the {@link Link}s of the current resource, selected by its link-relation type and returns a {@link Stream}
      * containing the returned {@link HalRepresentation HalRepresentations}.
      * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
+     *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
+     *     these items are used instead of resolving the associated {@link Link}.
      * </p>
      * @param type the specific type of the returned HalRepresentations
      * @param <T> type of the returned HalRepresentations
@@ -713,23 +902,24 @@ public class Traverson {
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
      * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
      * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @since 1.0.0
      */
     public <T extends HalRepresentation> Stream<T> streamAs(final Class<T> type) throws IOException {
         return streamAs(type, null);
     }
 
     /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * Follow the {@link Link}s of the current resource, selected by its link-relation type and returns a {@link Stream}
      * containing the returned {@link HalRepresentation HalRepresentations}.
      * <p>
      *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
      * </p>
      * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
+     *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
+     *     these items are used instead of resolving the associated {@link Link}.
      * </p>
      * @param type the specific type of the returned HalRepresentations
      * @param embeddedTypeInfo specification of the type of embedded items
@@ -756,17 +946,17 @@ public class Traverson {
     }
 
     /**
-     * Follow the {@link Link}s of the current resource, selected by it's link-relation type and returns a {@link Stream}
+     * Follow the {@link Link}s of the current resource, selected by its link-relation type and returns a {@link Stream}
      * containing the returned {@link HalRepresentation HalRepresentations}.
      * <p>
      *     The EmbeddedTypeInfo is used to define the specific type of embedded items.
      * </p>
      * <p>
-     *     Templated links are resolved to URIs using the specified template variables.
+     *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
-     *     these items are used instead of following the associated {@link Link}.
+     *     these items are used instead of resolving the associated {@link Link}.
      * </p>
      * @param type the specific type of the returned HalRepresentations
      * @param embeddedTypeInfo specification of the type of embedded items
@@ -809,6 +999,7 @@ public class Traverson {
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
      * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
      * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @since 1.0.0
      */
     public Optional<HalRepresentation> getResource() throws IOException {
         return getResourceAs(HalRepresentation.class, null);
@@ -825,6 +1016,7 @@ public class Traverson {
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
      * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
      * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @since 1.0.0
      */
     public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type) throws IOException {
         return getResourceAs(type, null);
@@ -878,7 +1070,8 @@ public class Traverson {
      * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 1.0.0
      */
-    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, final List<EmbeddedTypeInfo> embeddedTypeInfos) throws IOException {
+    public <T extends HalRepresentation> Optional<T> getResourceAs(final Class<T> type, 
+                                                                   final List<EmbeddedTypeInfo> embeddedTypeInfos) throws IOException {
         checkState();
         try {
             if (startWith != null) {
@@ -908,50 +1101,6 @@ public class Traverson {
      */
     public URL getCurrentContextUrl() {
         return contextUrl;
-    }
-
-    /**
-     * Iterates over pages by following {code rel} links. For every page, a {@code Traverson} is created and provided as a
-     * parameter to the callback function.
-     *
-     * <pre>
-     *                         &lt;rel&gt;
-     *     ... --&gt; &lt;page type&gt; --&gt; &lt;page type&gt;
-     *                  |                |
-     *                  v N item         v N item
-     *           &lt;embedded type&gt;   &lt;embedded type&gt;
-     * </pre>
-     *
-     * <p>
-     *     The {@code Traverson} is backed by a representation of {@code pageType} with {@link EmbeddedTypeInfo}.
-     *     This way it is possible to access items embedded into the page resources as specific subtypes of
-     *     HalRepresentation.
-     * </p>
-     *
-     * <p>
-     *     Iteration stops if the callback returns {@code false}, or if the last page is processed.
-     * </p>
-     *
-     * @param rel link-relation type of the links used to traverse pages
-     * @param pageType the subtype of HalRepresentation of the page resources
-     * @param embeddedTypeInfo type information of the (possibly embedded) items of a page
-     * @param pageHandler callback function called for every page
-     * @param <T> subtype of HalRepresentation
-     * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
-     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
-     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
-     * @since 1.0.0
-     */
-    private <T extends HalRepresentation> void paginate(final String rel,
-                                                        final Class<T> pageType,
-                                                        final EmbeddedTypeInfo embeddedTypeInfo,
-                                                        final PageHandler pageHandler) throws IOException {
-        Optional<T> currentPage = getResourceAs(pageType, embeddedTypeInfo);
-        while (currentPage.isPresent()
-                && pageHandler.apply(traverson(linkResolver).startWith(contextUrl, currentPage.get()))
-                && currentPage.get().getLinks().getRels().contains(rel)) {
-            currentPage = follow(rel).getResourceAs(pageType, embeddedTypeInfo);
-        }
     }
 
     /**
@@ -1045,25 +1194,27 @@ public class Traverson {
     private <T extends HalRepresentation> List<T> traverseHop(final HalRepresentation current,
                                                               final Class<T> resultType,
                                                               final List<EmbeddedTypeInfo> embeddedTypeInfo,
-                                                              boolean retrieveAll) throws IOException {
+                                                              final boolean retrieveAll) throws IOException {
 
         final List<T> response;
         final Hop currentHop = hops.remove(0);
         LOG.trace("Following {}", currentHop.rel);
-        // the next hop could possibly be already available as an embedded object:
-        final List<? extends HalRepresentation> embeddedItems = hops.isEmpty()
-                ? current.getEmbedded().getItemsBy(currentHop.rel, resultType)
-                : current.getEmbedded().getItemsBy(currentHop.rel);
-
-        if (!embeddedItems.isEmpty()) {
-            LOG.trace("Returning {} embedded {}", embeddedItems.size(), currentHop.rel);
-            return hops.isEmpty()
-                    ? (List<T>) embeddedItems
-                    : traverseHop(embeddedItems.get(0), resultType, embeddedTypeInfo, retrieveAll);
-        }
         final List<Link> links = current
                 .getLinks()
                 .getLinksBy(currentHop.rel, currentHop.predicate);
+        if (!currentHop.ignoreEmbedded || links.isEmpty()) {
+            // the next hop could possibly be already available as an embedded object:
+            final List<? extends HalRepresentation> embeddedItems = hops.isEmpty()
+                    ? current.getEmbedded().getItemsBy(currentHop.rel, resultType)
+                    : current.getEmbedded().getItemsBy(currentHop.rel);
+
+            if (!embeddedItems.isEmpty()) {
+                LOG.trace("Returning {} embedded {}", embeddedItems.size(), currentHop.rel);
+                return hops.isEmpty()
+                        ? (List<T>) embeddedItems
+                        : traverseHop(embeddedItems.get(0), resultType, embeddedTypeInfo, retrieveAll);
+            }
+        }
         if (!links.isEmpty()) {
             final Link expandedLink = resolve(this.contextUrl, expand(links.get(0), currentHop.vars));
             if (hops.isEmpty()) { // last hop
@@ -1095,7 +1246,8 @@ public class Traverson {
         return response;
     }
 
-    private Link expand(final Link link, final Map<String,Object> vars) {
+    private Link expand(final Link link, 
+                        final Map<String,Object> vars) {
         if (link.isTemplated()) {
             final String href = fromTemplate(link.getHref()).expand(vars);
             return copyOf(link)
@@ -1136,7 +1288,9 @@ public class Traverson {
      * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
      * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      */
-    private <T extends HalRepresentation> T getResource(final Link link, final Class<T> type, final List<EmbeddedTypeInfo> embeddedType) throws IOException {
+    private <T extends HalRepresentation> T getResource(final Link link, 
+                                                        final Class<T> type, 
+                                                        final List<EmbeddedTypeInfo> embeddedType) throws IOException {
         LOG.trace("Fetching resource href={} rel={} as type={} with embeddedType={}", link.getHref(), link.getRel(), type.getSimpleName(), embeddedType);
         final String json;
         try {
@@ -1163,7 +1317,8 @@ public class Traverson {
      * @return absolute Link
      * @throws IllegalArgumentException if resolving the link is failing
      */
-    private static Link resolve(final URL contextUrl, final Link link) {
+    private static Link resolve(final URL contextUrl, 
+                                final Link link) {
         if (link != null && link.isTemplated()) {
             final String msg = "Link must not be templated";
             LOG.error(msg);
