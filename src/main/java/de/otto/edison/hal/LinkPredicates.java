@@ -12,6 +12,15 @@ public final class LinkPredicates {
     private LinkPredicates() {}
 
     /**
+     * Returns a Predicate that is matching every link.
+     *
+     * @return Predicate used to select links
+     */
+    public static Predicate<Link> always() {
+        return link -> true;
+    }
+
+    /**
      * Returns a Predicate that is matching links having the specified type {@link Link#getType() type}
      *
      * @param type the expected media type of the link
