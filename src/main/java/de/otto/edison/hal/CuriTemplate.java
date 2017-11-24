@@ -13,6 +13,7 @@ import java.util.Optional;
  * <pre><code>
  *     Link curi = Link.curi("x", "http://example.org/rels/{rel}");
  *     String rel = "http://example.org/rels/product";
+ *     String curiedRel = "x:product";
  *
  *     curiTemplateFor(curi).matches(rel) =&gt; true
  *
@@ -20,10 +21,13 @@ import java.util.Optional;
  *
  *     curiTemplateFor(curi).relPlaceHolderFrom(rel) =&gt; "product"
  *
+ *     curiTemplateFor(curi).expand(rel) =&gt; "http://example.org/rels/product"
+ *     curiTemplateFor(curi).expand(curiedRel) =&gt; "http://example.org/rels/product"
+ *
  * </code></pre>
- * @since 0.3.0
+ * @since 2.0.0
  */
-class CuriTemplate {
+public class CuriTemplate {
 
     private static final String REL_PLACEHOLDER = "{rel}";
 
@@ -88,5 +92,15 @@ class CuriTemplate {
         } else {
             throw new IllegalArgumentException("Rel is not matching the CURI template.");
         }
+    }
+
+    /**
+     * Returns an expanded / full URI for a link-relation type.
+     *
+     * @param rel the - possibly curied - link-relation type to expand.
+     * @return URL
+     */
+    public String expand(final String rel) {
+         return curi.getHrefAsTemplate().set("rel", relPlaceHolderFrom(rel)).expand();
     }
 }
