@@ -712,7 +712,8 @@ embedded item, clients are now able to force the `Traverson` to follow the links
 if only a reduced set of attributes is embedded into a resource. A set of `Traverson.followLink()` methods was added
 to support this.
 * Added new methods `Traverson.paginate()` and `Traverson.paginateAs()` to paginate over paged resources using 
-link-relation types other than `next` or `prev`.  
+link-relation types other than `next` or `prev`.
+* Added a `CuriTemplate` helper to expand / shorten link-relation types using a CURI.  
 
 ### 1.0.0 (CURRENT RELEASE)
 
