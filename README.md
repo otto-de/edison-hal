@@ -680,7 +680,7 @@ in different ways.
 
 ## 7. Version History
 
-### 2.0.0 (CURRENT SNAPSHOT)
+### 2.0.0-m1
 
 *Breaking Changes*
 
