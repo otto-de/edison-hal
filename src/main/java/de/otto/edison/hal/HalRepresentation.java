@@ -24,12 +24,13 @@ import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(NON_NULL)
 public class HalRepresentation {
 
     @JsonProperty(value = "_links")
+    @JsonInclude(NON_NULL)
     private volatile Links links;
     @JsonProperty(value = "_embedded")
+    @JsonInclude(NON_NULL)
     private volatile Embedded embedded;
     @JsonAnySetter
     private Map<String,JsonNode> attributes = new LinkedHashMap<>();

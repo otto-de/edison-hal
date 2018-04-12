@@ -680,6 +680,14 @@ in different ways.
 
 ## 7. Version History
 
+### 2.0.0-m2
+
+*Breaking Changes*
+
+* HalRepresentation was previously annotated with @JsonInclude(NON_NULL). This was changed so that only _links and
+  _embedded are now annotated this way. This might change the behaviour / structure of existing server applications.
+  You should now annotate classes extending HalRepresentation, or attributes of such classes appropriately.
+  
 ### 2.0.0-m1
 
 *Breaking Changes*
