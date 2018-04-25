@@ -5,21 +5,15 @@ import org.junit.Test;
 import java.util.List;
 
 import static de.otto.edison.hal.Embedded.Builder.copyOf;
-import static de.otto.edison.hal.Embedded.embedded;
-import static de.otto.edison.hal.Embedded.embeddedBuilder;
-import static de.otto.edison.hal.Embedded.emptyEmbedded;
+import static de.otto.edison.hal.Embedded.*;
 import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;
-import static de.otto.edison.hal.RelRegistry.relRegistry;
-import static de.otto.edison.hal.Links.*;
+import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 
 public class EmbeddedTest {
@@ -114,8 +108,9 @@ public class EmbeddedTest {
         Embedded embedded = embeddedBuilder()
                 .with("http://example.com/rels/foo", singletonList(
                         new HalRepresentation(
-                                linkingTo(
-                                        link("http://example.com/rels/bar", "http://example.com"))
+                                linkingTo()
+                                        .single(link("http://example.com/rels/bar", "http://example.com"))
+                                        .build()
                         )))
                 .using(relRegistry)
                 .build();

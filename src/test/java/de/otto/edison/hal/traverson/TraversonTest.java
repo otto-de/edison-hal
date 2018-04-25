@@ -20,26 +20,16 @@ import java.util.Optional;
 
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
-import static de.otto.edison.hal.Link.link;
-import static de.otto.edison.hal.Link.linkBuilder;
-import static de.otto.edison.hal.Link.self;
-import static de.otto.edison.hal.LinkPredicates.havingName;
-import static de.otto.edison.hal.LinkPredicates.havingType;
-import static de.otto.edison.hal.LinkPredicates.optionallyHavingType;
+import static de.otto.edison.hal.Link.*;
+import static de.otto.edison.hal.LinkPredicates.*;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.traverson.Traverson.embeddedTypeInfoFor;
-import static de.otto.edison.hal.traverson.Traverson.hops;
-import static de.otto.edison.hal.traverson.Traverson.traverson;
-import static de.otto.edison.hal.traverson.Traverson.withVars;
+import static de.otto.edison.hal.traverson.Traverson.*;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -92,7 +82,7 @@ public class TraversonTest {
     public void shouldNotCreateTraversonFromHalRepresentationWithoutSelfLinkButWithRelativeLinks() {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
-                linkingTo(link("search", "/example/foo"))
+                linkingTo().single(link("search", "/example/foo")).build()
         );
 
         // when
@@ -105,7 +95,7 @@ public class TraversonTest {
     public void shouldCreateTraversonFromContextUrlAndHalRepresentationWithoutSelfLinkButWithRelativeLinks() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
-                linkingTo(link("search", "/example/foo"))
+                linkingTo().array(link("search", "/example/foo")).build()
         );
 
         // when
@@ -128,7 +118,7 @@ public class TraversonTest {
     public void shouldCreateTraversonFromHalRepresentationWithoutSelfLinkButWithAbsoluteLinks() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
-                linkingTo(link("search", "http://example.com/example/"))
+                linkingTo().array(link("search", "http://example.com/example/")).build()
         );
         final LinkResolver mock = mock(LinkResolver.class);
         when(mock.apply(link("search", "http://example.com/example/"))).thenReturn(
@@ -241,7 +231,7 @@ public class TraversonTest {
     public void shouldFollowLinkStartingWithHalRepresentationHavingAbsoluteLinks() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
-                linkingTo(link("search", "http://example.com/example/foo"))
+                linkingTo().single(link("search", "http://example.com/example/foo")).build()
         );
         // and
         @SuppressWarnings("unchecked")
@@ -263,10 +253,10 @@ public class TraversonTest {
     public void shouldFollowLinkStartingWithHalRepresentationHavingSelfLink() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
-                linkingTo(
-                        link("search", "/example/foo"),
-                        self("http://example.com")
-                )
+                linkingTo()
+                        .single(link("search", "/example/foo"))
+                        .self("http://example.com")
+                        .build()
         );
         // and
         @SuppressWarnings("unchecked")
@@ -288,7 +278,7 @@ public class TraversonTest {
     public void shouldFollowLinkStartingWithHalRepresentationAndContextUrl() throws IOException {
         // given
         final HalRepresentation existingRepresentation = new HalRepresentation(
-                linkingTo(link("search", "/example/foo")));
+                linkingTo().single(link("search", "/example/foo")).build());
         // and
         @SuppressWarnings("unchecked")
         final LinkResolver mock = mock(LinkResolver.class);

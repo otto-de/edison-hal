@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 
 import static de.otto.edison.hal.Link.linkBuilder;
-import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.linkingTo;
 
 @RestController
@@ -28,13 +27,13 @@ public class HomeController {
     public HalRepresentation getHomeDocument(final HttpServletRequest request) {
         final String homeUrl = request.getRequestURL().toString();
         return new HalRepresentation(
-                linkingTo(
-                        self(homeUrl),
-                        linkBuilder("search", "/api/products{?q,embedded}")
+                linkingTo()
+                        .self(homeUrl)
+                        .single(linkBuilder("search", "/api/products{?q,embedded}")
                                 .withTitle("Search Products")
                                 .withType("application/hal+json")
-                                .build()
-                )
+                                .build())
+                        .build()
         );
     }
 }

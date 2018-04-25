@@ -7,15 +7,10 @@ import org.junit.Test;
 import java.util.EnumSet;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
-import static de.otto.edison.hal.Links.linkingTo;
 import static de.otto.edison.hal.paging.NumberedPaging.zeroBasedNumberedPaging;
-import static de.otto.edison.hal.paging.PagingRel.NEXT;
-import static de.otto.edison.hal.paging.PagingRel.PREV;
-import static de.otto.edison.hal.paging.PagingRel.SELF;
+import static de.otto.edison.hal.paging.PagingRel.*;
 import static java.lang.Integer.MAX_VALUE;
-import static java.util.EnumSet.allOf;
-import static java.util.EnumSet.of;
-import static java.util.EnumSet.range;
+import static java.util.EnumSet.*;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -97,7 +92,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBuildLinksForEmptyPage() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(0, 100, 0).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = zeroBasedNumberedPaging(0, 100, 0).links(URI_TEMPLATE, ALL_RELS);
 
         assertThat(hrefFrom(paging, "self"), is("/?page=0&pageSize=100"));
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=100"));
@@ -108,7 +103,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldOnlyBuildWantedLinks() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(3, 3, 10).links(URI_TEMPLATE, range(PREV, NEXT)));
+        Links paging = zeroBasedNumberedPaging(3, 3, 10).links(URI_TEMPLATE, range(PREV, NEXT));
 
         assertThat(isAbsent(paging, "self"), is(true));
         assertThat(isAbsent(paging, "first"), is(true));
@@ -120,7 +115,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBuildUriWithoutParams() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(0, MAX_VALUE, false).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = zeroBasedNumberedPaging(0, MAX_VALUE, false).links(URI_TEMPLATE, ALL_RELS);
 
         assertThat(hrefFrom(paging, "self"), is("/"));
         assertThat(hrefFrom(paging, "first"), is("/"));
@@ -131,7 +126,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBuildUrisForFirstPage() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(0, 2, true).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = zeroBasedNumberedPaging(0, 2, true).links(URI_TEMPLATE, ALL_RELS);
 
         assertThat(hrefFrom(paging, "self"), is("/?page=0&pageSize=2"));
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=2"));
@@ -142,7 +137,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBuildUrisForMiddlePage() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(3, 2, true).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = zeroBasedNumberedPaging(3, 2, true).links(URI_TEMPLATE, ALL_RELS);
 
         assertThat(hrefFrom(paging, "self"), is("/?page=3&pageSize=2"));
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=2"));
@@ -153,7 +148,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBuildUrisForLastPage() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(3, 3, false).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = zeroBasedNumberedPaging(3, 3, false).links(URI_TEMPLATE, ALL_RELS);
         assertThat(hrefFrom(paging, "self"), is("/?page=3&pageSize=3"));
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=3"));
         assertThat(isAbsent(paging, "next"), is(true));
@@ -163,7 +158,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBuildUrisForFirstPageWithKnownTotalCount() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(0, 3, 10).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = zeroBasedNumberedPaging(0, 3, 10).links(URI_TEMPLATE, ALL_RELS);
 
         assertThat(hrefFrom(paging, "self"), is("/?page=0&pageSize=3"));
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=3"));
@@ -174,7 +169,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBuildUrisForMiddlePageWithKnownTotalCount() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(2, 3, 10).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = zeroBasedNumberedPaging(2, 3, 10).links(URI_TEMPLATE, ALL_RELS);
 
         assertThat(hrefFrom(paging, "self"), is("/?page=2&pageSize=3"));
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=3"));
@@ -185,7 +180,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBuildUrisForLastPageWithKnownTotalCount() {
-        Links paging = linkingTo(zeroBasedNumberedPaging(4, 3, 10).links(URI_TEMPLATE, ALL_RELS));
+        Links paging = zeroBasedNumberedPaging(4, 3, 10).links(URI_TEMPLATE, ALL_RELS);
 
         assertThat(hrefFrom(paging, "self"), is("/?page=4&pageSize=3"));
         assertThat(hrefFrom(paging, "first"), is("/?page=0&pageSize=3"));
@@ -213,7 +208,7 @@ public class ZeroBasedNumberedPagingTest {
 
     @Test
     public void shouldBeAbleToOverrideTemplateVariables() {
-        Links paging = linkingTo(new TestNumberedPaging(8, 3, false).links(fromTemplate("/{?p,num}"), of(SELF)));
+        Links paging = new TestNumberedPaging(8, 3, false).links(fromTemplate("/{?p,num}"), of(SELF));
 
         assertThat(hrefFrom(paging, "self"), is("/?p=8&num=3"));
     }

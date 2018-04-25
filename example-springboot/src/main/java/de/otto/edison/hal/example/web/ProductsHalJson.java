@@ -8,10 +8,8 @@ import java.util.List;
 
 import static de.otto.edison.hal.Embedded.embeddedBuilder;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
-import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.linkBuilder;
-import static de.otto.edison.hal.Link.self;
-import static de.otto.edison.hal.Links.linksBuilder;
+import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentRequestUri;
 
@@ -27,14 +25,14 @@ class ProductsHalJson extends HalRepresentation {
 
     ProductsHalJson(final List<Product> products, final boolean embedded) {
         super(
-                linksBuilder()
-                        .with(self(fromCurrentRequestUri().toUriString()))
-                        .with(curi("ex", REL_EXAMPLE_TEMPLATE))
-                        .with(linkBuilder(REL_SEARCH, "/api/products{?q,embedded}")
+                linkingTo()
+                        .self(fromCurrentRequestUri().toUriString())
+                        .curi("ex", REL_EXAMPLE_TEMPLATE)
+                        .single(linkBuilder(REL_SEARCH, "/api/products{?q,embedded}")
                                 .withTitle("Search Products")
                                 .withType(APPLICATION_HAL_JSON)
                                 .build())
-                        .with(products
+                        .array(products
                                 .stream()
                                 .map(b -> linkBuilder(REL_EXAMPLE_PRODUCT, "/api/products/" + b.id)
                                         .withTitle(b.title)

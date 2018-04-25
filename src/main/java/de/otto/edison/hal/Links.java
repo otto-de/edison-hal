@@ -17,9 +17,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static de.otto.edison.hal.Link.linkBuilder;
-import static de.otto.edison.hal.RelRegistry.DEFAULT_ARRAY_LINK_RELATIONS;
-import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
-import static de.otto.edison.hal.RelRegistry.relRegistry;
+import static de.otto.edison.hal.RelRegistry.emptyRelRegistry;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -28,6 +26,20 @@ import static java.util.stream.Collectors.toMap;
 
 /**
  * Representation of a number of HAL _links.
+ * <p>
+ *     Links can be created using the {@link Links.Builder} using the factory-method {@link Links#linkingTo()}:
+ * </p>
+ * <pre><code>
+ *     final Links someLinks = Links.linkingTo()
+ *              .self("http://example.com/shopping-cart/42")
+ *              .curi("ex", "http://example.com/rels/{rel}")
+ *              .item("http://example.com/products/1"),
+ *              .item("http://example.com/products/2"),
+ *              .single(
+ *                      Link.link("ex:customer", "http://example.com/customers/4711"))
+ *              .build()
+ *
+ * </code></pre>
  *
  * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.1">draft-kelly-json-hal-08#section-4.1.1</a>
  * @since 0.1.0
@@ -38,9 +50,7 @@ public class Links {
 
     private static final String CURIES_REL = "curies";
 
-    private static final Links EMPTY_LINKS = new Links();
-
-    private final Map<String, List<Link>> links = new LinkedHashMap<>();
+    private final Map<String, Object> links = new LinkedHashMap<>();
     private final RelRegistry relRegistry;
 
 
@@ -49,7 +59,7 @@ public class Links {
      * @since 0.1.0
      */
     Links() {
-        this.relRegistry = defaultRelRegistry();
+        this.relRegistry = emptyRelRegistry();
     }
 
     /**
@@ -63,18 +73,17 @@ public class Links {
      *     The list of links for a link-relation type must have the same {@link Link#rel}
      * </p>
      * <p>
-     *     The {@link RelRegistry} contains the link-relation types that are serialized as an array event if
-     *     there is only a single link. CURIs, for example, should always be contained in arrayRels.
+     *     The {@link RelRegistry} may contain CURIs from the root resource, so curied rels can be resolved.
      * </p>
      *
      * @param links a map with link-relation types as key and the list of links as value.
      * @param relRegistry the RelRegistry used to CURI the link-relation types of the links.
      * @since 1.0.0
      */
-    private Links(final Map<String, List<Link>> links,
-                  final RelRegistry relRegistry) {
+    @SuppressWarnings("unchecked")
+    private Links(final Map<String, Object> links, final RelRegistry relRegistry) {
         this.relRegistry = relRegistry;
-        final List<Link> curies = links.getOrDefault(CURIES_REL, emptyList());
+        final List<Link> curies = (List<Link>)links.getOrDefault(CURIES_REL, emptyList());
         curies.forEach(this.relRegistry::register);
         links.keySet().forEach(rel -> {
                 this.links.put(relRegistry.resolve(rel), links.get(rel));
@@ -102,70 +111,10 @@ public class Links {
      * @since 0.1.0
      */
     public static Links emptyLinks() {
-        return EMPTY_LINKS;
+        return new Links();
     }
 
-    /**
-     * Factory method used to build a Links instance from one or more {@link Link} objects.
-     *
-     * @param link a Link
-     * @param more optionally more Links
-     * @return Links
-     *
-     * @since 0.1.0
-     */
-    public static Links linkingTo(final Link link, final Link... more) {
-        return linkingTo(new ArrayList<Link>() {{
-            add(link);
-            if (more != null) {
-                addAll(asList(more));
-            }
-        }});
-    }
-
-    /**
-     * Creates a Links object from a list of links with {@link RelRegistry#defaultRelRegistry()} used
-     * to serialize _links for a link-relation type as an array.
-     *
-     * @param links the list of links.
-     * @return Links
-     *
-     * @since 0.2.0
-     */
-    public static Links linkingTo(final List<Link> links) {
-        return linkingTo(links, DEFAULT_ARRAY_LINK_RELATIONS);
-    }
-
-    /**
-     * Creates a Links object from a list of links with arrayRels used to serialize _links
-     * for a link-relation type as an array.
-     *
-     * @param links the list of links.
-     * @param arrayRels the set of link-relation types that are always rendered as an array of links, even if there is
-     *                  only a single link having the link-relation type. For example, 'curies' and 'item' rels should
-     *                  always be arrays.
-     * @return Links
-     *
-     * @since 1.0.0
-     */
-    public static Links linkingTo(final List<Link> links,
-                                  final Collection<String> arrayRels) {
-        final Map<String,List<Link>> allLinks = new LinkedHashMap<>();
-        links.forEach(l -> {
-            if (!allLinks.containsKey(l.getRel())) {
-                allLinks.put(l.getRel(), new ArrayList<>());
-            }
-            allLinks.get(l.getRel()).add(l);
-        });
-        return new Links(allLinks, RelRegistry.relRegistry(arrayRels));
-    }
-
-    /**
-     * Factory method used to build a Links.Builder.
-     *
-     * @return Links.Builder
-     */
-    public static Builder linksBuilder() {
+    public static Builder linkingTo() {
         return new Builder();
     }
 
@@ -184,8 +133,17 @@ public class Links {
      *
      * @return Stream of Links
      */
+    @SuppressWarnings("rawtypes")
     public Stream<Link> stream() {
-        return links.values().stream()
+        return links.values()
+                .stream()
+                .map(obj -> {
+                    if (obj instanceof List) {
+                        return (List) obj;
+                    } else {
+                        return singletonList(obj);
+                    }
+                })
                 .flatMap(Collection::stream);
     }
 
@@ -267,11 +225,17 @@ public class Links {
      * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
      * @since 0.1.0
      */
+    @SuppressWarnings("unchecked")
     public List<Link> getLinksBy(final String rel) {
         final String curiedRel = relRegistry.resolve(rel);
-        final List<Link> links = this.links.get(curiedRel);
-
-        return links != null ? links : emptyList();
+        if (this.links.containsKey(curiedRel)) {
+            final Object links = this.links.get(curiedRel);
+            return links instanceof List
+                    ? (List<Link>) links
+                    : singletonList((Link)links);
+        } else {
+            return emptyList();
+        }
     }
 
     /**
@@ -300,6 +264,14 @@ public class Links {
     }
 
     /**
+     * Removes the links with link-relation type {@code rel} from the Links object.
+     * @param rel link-relation type
+     */
+    public void remove(final String rel) {
+        links.remove(rel);
+    }
+
+    /**
      * Checks the existence of a link with link-relation type {@code rel}
      * @param rel the link-relation type
      * @return true, if links exists, false otherwise
@@ -308,6 +280,19 @@ public class Links {
      */
     public boolean hasLink(final String rel) {
         return links.containsKey(rel);
+    }
+
+    /**
+     * Returns true if there is at least one link with link-relation type {@code rel}, and if the link will
+     * be rendered as an array of link-objects.
+     *
+     * @param rel the link-relation type
+     * @return boolean
+     *
+     * @since 2.0.0
+     */
+    public boolean isArray(final String rel) {
+        return hasLink(rel) && (links.get(rel) instanceof List);
     }
 
     /**
@@ -364,33 +349,176 @@ public class Links {
      * @since 0.2.0
      */
     public static class Builder {
-        private final Map<String,List<Link>> links = new LinkedHashMap<>();
-        private RelRegistry relRegistry = defaultRelRegistry();
+        private final Map<String,Object> links = new LinkedHashMap<>();
+        private RelRegistry relRegistry = emptyRelRegistry();
+
 
 
         /**
-         * Adds a list of links.
+         * Adds a 'self' link and returns the Builder.
          * <p>
-         *     {@link Link#isEquivalentTo(Link) Equivalent} links are NOT added but silently ignored.
+         *     Using this method is equivalent to {@link #single(Link, Link...) single(Link.self(href))}
          * </p>
-         * @param links the list of links.
+         *
+         * @param href href of the linked resource
+         * @return Builder
+         *
+         * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
+         * @since 2.0.0
+         */
+        public Builder self(final String href) {
+            single(Link.self(href));
+            return this;
+        }
+
+        /**
+         * <p>
+         *     Adds a 'curies' link (compact URI) with name and a URI template for the link-relation type.
+         * </p>
+         * <p>
+         *     Curies may be used for brevity for custom link-relation type URIs. Curies are established within a HAL document
+         *     via a set of Link Objects with the relation type "curies" on the root Resource Object.
+         *     These links contain a URI template with the token 'rel', and are named via the "name" property.
+         * </p>
+         * <pre><code>
+         *     {
+         *       "_links": {
+         *         "self": { "href": "/orders" },
+         *         "curies": [{
+         *           "name": "acme",
+         *           "href": "http://docs.acme.com/relations/{rel}",
+         *           "templated": true
+         *         }],
+         *         "acme:widgets": { "href": "/widgets" }
+         *       }
+         *     }
+         * </code></pre>
+         * <p>
+         *     Using this method is equivalent to {@link #array(Link, Link...) array(Link.curi(name, relTemplate))}
+         * </p>
+         *
+         * @param name the short name of the CURI
+         * @param relTemplate the template used to build link-relation types. Must contain a {rel} placeholder
+         * @return Link
+         *
+         * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
+         * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-8.2">draft-kelly-json-hal-08#section-8.2</a>
+         * @since 2.0.0
+         */
+        public Builder curi(final String name, final String relTemplate) {
+            array(Link.curi(name, relTemplate));
+            return this;
+        }
+
+        /**
+         * Adds an 'item' link to the builder.
+         * <p>
+         *     If href is an URI template, the added link {@link Link#isTemplated() is templated}.
+         * </p>
+         * <p>
+         *     Using this method is equivalent to {@link #array(Link, Link...) array(Link.item(href))}
+         * </p>
+         *
+         * @param href the linked item
          * @return this
          *
-         * @since 0.2.0
+         * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
+         * @since 2.0.0
          */
-        public Builder with(final List<Link> links) {
-            links.forEach(l -> {
-                if (!this.links.containsKey(l.getRel())) {
-                    this.links.put(l.getRel(), new ArrayList<>());
+        public Builder item(final String href) {
+            array(Link.item(href));
+            return this;
+        }
+
+        /**
+         * Adds one or more link to the builder that will be rendered as a single link-object instead of an array of link-objects.
+         * <p>
+         *     The links must have different {@link Link#getRel() Link-Relation Types}, otherwise it would not be
+         *     possible to render them as single link-objects. If two or more links have the same Link-Relation Type,
+         *     an IllegalArgumentException is thrown.
+         * </p>
+         * <p>
+         *     Because curies must always be {@link #array(List) array} links, it is not possible to add links with
+         *     {@code rel='curies'} to the builder using {@link #single(Link, Link...)} or {@link #single(List)}.
+         * </p>
+         * <p>
+         *     As specified in <a href="https://tools.ietf.org/html/draft-kelly-json-hal-06#section-4.1.1">Section 4.1.1</a>
+         *     of the HAL specification, the {@code _links} object <em>"is an object whose property names are
+         *     link relation types (as defined by [RFC5988]) and values are either a Link Object or an array
+         *     of Link Objects"</em>.
+         * </p>
+         * <p>
+         *     Adding a link using {@code single(Link)} will result in a representation, where the link is rendered
+         *     as a Link Object.
+         * </p>
+         * <p>
+         *     Calling {@code single(Link)} with a {@link Link#getRel() link-relation type} that is already present, an
+         *     {@link IllegalStateException} is thrown.
+         * </p>
+         *
+         * @param link the added link. The Link-Relation Type of the link must not yet be added to the builder.
+         * @param more optionally more links having different Link-Relation Types
+         * @return this
+         * @throws IllegalStateException if the Link-Relation Type of the link is already associated with another Link.
+         *
+         * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
+         * @since 2.0.0
+         */
+        public Builder single(final Link link, final Link... more) {
+            if (link.getRel().equals(CURIES_REL)) {
+                throw new IllegalArgumentException("According to the spec, curies must always be arrays of links, not single links.");
+            } else {
+                if (!this.links.containsKey(link.getRel())) {
+                    this.links.put(link.getRel(), link);
+                } else {
+                    throw new IllegalStateException("The Link-Relation Type '" + link.getRel() + "' of the Link is already present.");
                 }
-                final List<Link> linksPerRel = this.links.get(l.getRel());
-                final boolean equivalentLinkExists = linksPerRel
-                        .stream()
-                        .anyMatch(link -> link.isEquivalentTo(l));
-                if (!equivalentLinkExists) {
-                    linksPerRel.add(l);
+                if (more != null) {
+                    Arrays.stream(more).forEach(this::single);
                 }
-            });
+            }
+            return this;
+        }
+
+        /**
+         * Adds a list of links to the builder that will be rendered as a single link-object instead of an array of
+         * link-objects.
+         * <p>
+         *     As specified in <a href="https://tools.ietf.org/html/draft-kelly-json-hal-06#section-4.1.1">Section 4.1.1</a>
+         *     of the HAL specification, the {@code _links} object <em>"is an object whose property names are
+         *     link relation types (as defined by [RFC5988]) and values are either a Link Object or an array
+         *     of Link Objects"</em>.
+         * </p>
+         * <p>
+         *     Adding a link using {@code single(Link)} will result in a representation, where the link is rendered
+         *     as a Link Object.
+         * </p>
+         * <p>
+         *     The List of links must not contain multiple links having the same link-relation type, otherwise an
+         *     IllegalArgumentException is thrown.
+         * </p>
+         * <p>
+         *     Because curies must always be {@link #array(List) array} links, it is not possible to add links with
+         *     {@code rel='curies'} to the builder using {@link #single(Link, Link...)} or {@link #single(List)}.
+         * </p>
+         * <p>
+         *     Calling {@code single(List<Link>)} with {@link Link#getRel() link-relation types} that are already
+         *     present, an {@link IllegalStateException} is thrown.
+         * </p>
+         *
+         * @param singleLinkObjects the added link. The Link-Relation Type of the link must not yet be added to the builder.
+         * @return this
+         * @throws IllegalArgumentException if the list contains multiple links having the same Link-Relation Type.
+         * @throws IllegalStateException if the Link-Relation Type of the link is already associated with another Link.
+         *
+         * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
+         * @since 2.0.0
+         */
+        public Builder single(final List<Link> singleLinkObjects) {
+            if (singleLinkObjects.stream().map(Link::getRel).count() != singleLinkObjects.size()) {
+                throw new IllegalArgumentException("Unable to add links as single link objects as there are multiple links having the same link-relation type.");
+            }
+            singleLinkObjects.forEach(this::single);
             return this;
         }
 
@@ -399,13 +527,25 @@ public class Links {
          * <p>
          *     {@link Link#isEquivalentTo(Link) Equivalent} links are NOT added but silently ignored.
          * </p>
+         * <p>
+         *     As specified in <a href="https://tools.ietf.org/html/draft-kelly-json-hal-06#section-4.1.1">Section 4.1.1</a>
+         *     of the HAL specification, the {@code _links} object <em>"is an object whose property names are
+         *     link relation types (as defined by [RFC5988]) and values are either a Link Object or an array
+         *     of Link Objects"</em>.
+         * </p>
+         * <p>
+         *     Adding a link using {@code array(Link, Link...)} will result in a representation, where the links are
+         *     rendered as an array of Link Objects, even if there are only single links for a given Link-Relation Type.
+         * </p>
          *
          * @param link a Link
          * @param more more links
          * @return this
+         *
+         * @since 2.0.0
          */
-        public Builder with(final Link link, final Link... more) {
-            with(new ArrayList<Link>() {{
+        public Builder array(final Link link, final Link... more) {
+            array(new ArrayList<Link>() {{
                 add(link);
                 if (more != null) {
                     addAll(asList(more));
@@ -415,26 +555,73 @@ public class Links {
         }
 
         /**
-         * Adds links from {@link Links}
+         * Adds a list of links to the builder that will  be rendered as an array of link-objects
          * <p>
          *     {@link Link#isEquivalentTo(Link) Equivalent} links are NOT added but silently ignored.
+         * </p>
+         * <p>
+         *     As specified in <a href="https://tools.ietf.org/html/draft-kelly-json-hal-06#section-4.1.1">Section 4.1.1</a>
+         *     of the HAL specification, the {@code _links} object <em>"is an object whose property names are
+         *     link relation types (as defined by [RFC5988]) and values are either a Link Object or an array
+         *     of Link Objects"</em>.
+         * </p>
+         * <p>
+         *     Adding a link using {@code array(List<Link>)} will result in a representation, where the links are
+         *     rendered as an array of Link Objects, even if there are only single links for a given Link-Relation Type.
+         * </p>
+         *
+         * @param links the list of links.
+         * @return this
+         *
+         * @since 2.0.0
+         */
+        @SuppressWarnings("unchecked")
+        public Builder array(final List<Link> links) {
+            links.forEach(link -> {
+                if (!this.links.containsKey(link.getRel())) {
+                    this.links.put(link.getRel(), new ArrayList<>());
+                }
+                final Object linkOrList = this.links.get(link.getRel());
+                if (linkOrList instanceof List) {
+                    final List<Link> linksForRel = (List<Link>) linkOrList;
+                    final boolean equivalentLinkExists = linksForRel
+                            .stream()
+                            .anyMatch(l -> l.isEquivalentTo(link));
+                    if (!equivalentLinkExists) {
+                        linksForRel.add(link);
+                    }
+                } else {
+                    throw new IllegalStateException("Unable to add links with rel=" + link.getRel() + " as there is already a single Link Object added for this link-relation type");
+                }
+            });
+            return this;
+        }
+
+        /**
+         * Adds all links from {@link Links} to the builder.
+         * <p>
+         *     {@link Link#isEquivalentTo(Link) Equivalent} links are NOT added but silently ignored in order to
+         *     avoid duplicate links.
          * </p>
          *
          * @param moreLinks the added links.
          * @return this
          *
-         * @since 0.4.2
+         * @since 2.0.0
          */
         public Builder with(final Links moreLinks) {
-            this.relRegistry = moreLinks.relRegistry;
             for (final String rel : moreLinks.getRels()) {
-                with(moreLinks.getLinksBy(rel));
+                if (moreLinks.isArray(rel)) {
+                    array(moreLinks.getLinksBy(rel));
+                } else {
+                    single(moreLinks.getLinksBy(rel));
+                }
             }
             return this;
         }
 
         public Builder using(final RelRegistry relRegistry) {
-            this.relRegistry = relRegistry;
+            this.relRegistry = this.relRegistry != null ? this.relRegistry.mergeWith(relRegistry) : relRegistry;
             return this;
         }
 
@@ -460,23 +647,21 @@ public class Links {
          */
         @Override
         @SuppressWarnings("unchecked")
-        public void serialize(final Links value, final JsonGenerator gen, final SerializerProvider serializers) throws IOException {
+        public void serialize(final Links links, final JsonGenerator gen, final SerializerProvider serializers) throws IOException {
             gen.writeStartObject();
-            for (final String rel : value.links.keySet()) {
-                final List<Link> links = value.links.get(rel);
-                if (links.size() > 1 || value.relRegistry.isArrayRel(rel)) {
+            for (final String rel : links.links.keySet()) {
+                if (links.isArray(rel)) {
                     gen.writeArrayFieldStart(rel);
-                    for (final Link link : links) {
+                    for (final Link link : links.getLinksBy(rel)) {
                         gen.writeObject(link);
                     }
                     gen.writeEndArray();
                 } else {
-                    gen.writeObjectField(rel, links.get(0));
+                    gen.writeObjectField(rel, links.getLinkBy(rel).orElseThrow(IllegalStateException::new));
                 }
             }
             gen.writeEndObject();
         }
-
     }
 
     /**
@@ -486,6 +671,7 @@ public class Links {
      */
     public static class LinksDeserializer extends JsonDeserializer<Links> {
 
+
         private static final TypeReference<Map<String, ?>> TYPE_REF_LINK_MAP = new TypeReference<Map<String, ?>>() {};
 
         /**
@@ -494,20 +680,34 @@ public class Links {
         @Override
         public Links deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             final Map<String,?> linksMap = p.readValueAs(TYPE_REF_LINK_MAP);
-            final Map<String, List<Link>> links = linksMap
+            final Map<String, Object> links = linksMap
                     .entrySet()
                     .stream()
-                    .collect(toMap(Map.Entry::getKey, e -> asListOfLinks(e.getKey(), e.getValue())));
+                    .collect(toMap(Map.Entry::getKey, e -> asArrayOrObject(e.getKey(), e.getValue())));
+
+            fixPossibleIssueWithCuriesAsSingleLinkObject(links);
+
             return new Links(
                     links,
-                    defaultRelRegistry()
+                    emptyRelRegistry()
             );
         }
 
+        private void fixPossibleIssueWithCuriesAsSingleLinkObject(Map<String, Object> links) {
+            // CURIES should always have a List of Links. Because this might not aways be the case, we have to fix this:
+            if (links.containsKey(CURIES_REL)) {
+                if (links.get(CURIES_REL) instanceof Link) {
+                    links.put(CURIES_REL, new ArrayList<Link>() {{
+                        add((Link) links.get(CURIES_REL));
+                    }});
+                }
+            }
+        }
+
         @SuppressWarnings({"unchecked", "rawtypes"})
-        private List<Link> asListOfLinks(final String rel, final Object value) {
+        private Object asArrayOrObject(final String rel, final Object value) {
             if (value instanceof Map) {
-                return singletonList(asLink(rel, (Map)value));
+                return asLink(rel, (Map)value);
             } else {
                 try {
                     return ((List<Map>) value).stream().map(o -> asLink(rel, o)).collect(toList());

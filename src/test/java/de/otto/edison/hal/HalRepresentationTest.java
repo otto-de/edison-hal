@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
-import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.linkingTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -18,7 +17,7 @@ public class HalRepresentationTest {
     public void shouldRenderNullAttributes() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(self("http://example.org/test/bar")),
+                linkingTo().self("http://example.org/test/bar").build(),
                 emptyEmbedded())
         {
             public String someNullAttr=null;
@@ -37,7 +36,7 @@ public class HalRepresentationTest {
     public void shouldSkipAnnotatedNullAttributes() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(self("http://example.org/test/bar")),
+                linkingTo().self("http://example.org/test/bar").build(),
                 emptyEmbedded())
         {
             @JsonInclude(NON_NULL)

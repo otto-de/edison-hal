@@ -3,7 +3,6 @@ package de.otto.edison.hal;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -12,10 +11,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.util.*;
 
-import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonMap;
+import static de.otto.edison.hal.RelRegistry.emptyRelRegistry;
+import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -69,7 +66,7 @@ public class Embedded {
      */
     Embedded() {
         items = null;
-        relRegistry = defaultRelRegistry();
+        relRegistry = emptyRelRegistry();
     }
 
     /**
@@ -81,7 +78,7 @@ public class Embedded {
      */
     private Embedded(final Map<String, List<HalRepresentation>> items) {
         this.items = items;
-        this.relRegistry = defaultRelRegistry();
+        this.relRegistry = emptyRelRegistry();
     }
 
     private Embedded(final Map<String, List<HalRepresentation>> items, final RelRegistry relRegistry) {
@@ -246,7 +243,7 @@ public class Embedded {
 
     public final static class Builder {
         private final Map<String,List<HalRepresentation>> _embedded = new LinkedHashMap<>();
-        private RelRegistry relRegistry = defaultRelRegistry();
+        private RelRegistry relRegistry = emptyRelRegistry();
 
         /**
          * <p>

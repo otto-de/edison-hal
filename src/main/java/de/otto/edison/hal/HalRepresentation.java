@@ -12,8 +12,7 @@ import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Links.copyOf;
 import static de.otto.edison.hal.Links.emptyLinks;
-import static de.otto.edison.hal.Links.linksBuilder;
-import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
+import static de.otto.edison.hal.RelRegistry.emptyRelRegistry;
 
 /**
  * Representation used to parse and create HAL+JSON documents from Java classes.
@@ -42,7 +41,7 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     public HalRepresentation() {
-        this(null, null, defaultRelRegistry());
+        this(null, null, emptyRelRegistry());
     }
 
     /**
@@ -52,7 +51,7 @@ public class HalRepresentation {
      * @since 0.1.0
      */
     public HalRepresentation(final Links links) {
-        this(links, null, defaultRelRegistry());
+        this(links, null, emptyRelRegistry());
     }
 
     /**
@@ -60,7 +59,7 @@ public class HalRepresentation {
      * to configure the link-relation types that should always be rendered as an array of links.
      *
      * @param links the Links of the HalRepresentation
-     * @param relRegistry the RelRegistry used to resolve curies and determine array rels
+     * @param relRegistry the RelRegistry used to resolve curies
      * @since 1.0.0
      */
     public HalRepresentation(final Links links, final RelRegistry relRegistry) {
@@ -82,7 +81,7 @@ public class HalRepresentation {
     @JsonCreator
     public HalRepresentation(final @JsonProperty("_links") Links links,
                              final @JsonProperty("_embedded") Embedded embedded) {
-        this.relRegistry = defaultRelRegistry();
+        this.relRegistry = emptyRelRegistry();
         this.links = links == null || links.isEmpty()
                 ? null
                 : links.using(this.relRegistry);
@@ -93,8 +92,8 @@ public class HalRepresentation {
 
     /**
      * <p>
-     *     Creates a HalRepresentation with {@link Links}, {@link Embedded} objects and a RelRegistry that can be used
-     *     to configure the link-relation types that should always be rendered as an array of links.
+     *     Creates a HalRepresentation with {@link Links}, {@link Embedded} objects and a RelRegistry used to
+     *     resolve curies from parent representations.
      * </p>
      * <p>
      *     If the Links do contain CURIs, the matching link-relation types of links and embedded objects are shortened.
@@ -102,7 +101,7 @@ public class HalRepresentation {
      *
      * @param links the Links of the HalRepresentation
      * @param embedded the Embedded items of the HalRepresentation
-     * @param relRegistry the RelRegistry used to resolve curies and determine array rels
+     * @param relRegistry the RelRegistry used to resolve curies
      * @since 1.0.0
      */
     public HalRepresentation(final Links links,
@@ -142,33 +141,13 @@ public class HalRepresentation {
      *     Links are only added if they are not {@link Link#isEquivalentTo(Link) equivalent}
      *     to already existing links.
      * </p>
-     * @param link a link
-     * @param moreLinks optionally more links
+     * @param links links that are added to this HalRepresentation
      * @return this
      */
-    protected HalRepresentation withLinks(final Link link, final Link... moreLinks) {
-        this.links = this.links != null
-                ? copyOf(this.links).with(link, moreLinks).build()
-                : linksBuilder().using(this.relRegistry).with(link, moreLinks).build();
-        if (embedded != null) {
-            embedded = embedded.using(this.relRegistry);
-        }
-        return this;
-    }
-
-    /**
-     * Add links to the HalRepresentation.
-     * <p>
-     *     Links are only added if they are not {@link Link#isEquivalentTo(Link) equivalent}
-     *     to already existing links.
-     * </p>
-     * @param links added links
-     * @return this
-     */
-    protected HalRepresentation withLinks(final List<Link> links) {
+    protected HalRepresentation add(final Links links) {
         this.links = this.links != null
                 ? copyOf(this.links).with(links).build()
-                : linksBuilder().using(this.relRegistry).with(links).build();
+                : links.using(this.relRegistry);
         if (embedded != null) {
             embedded = embedded.using(this.relRegistry);
         }
@@ -223,8 +202,8 @@ public class HalRepresentation {
     }
 
     /**
-     * Merges the RelRegistry of an embedded resource with RelRegistry of this resource and updates link-relation types
-     * in _links and _embedded items.
+     * Merges the RelRegistry of an embedded resource with the RelRegistry of this resource and updates
+     * link-relation types in _links and _embedded items.
      *
      * @param relRegistry the RelRegistry of the embedding resource
      * @return this

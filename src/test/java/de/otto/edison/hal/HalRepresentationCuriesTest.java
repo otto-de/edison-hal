@@ -10,7 +10,6 @@ import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.RelRegistry.defaultRelRegistry;
 import static de.otto.edison.hal.RelRegistry.relRegistry;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -24,10 +23,12 @@ public class HalRepresentationCuriesTest {
     public void shouldRenderSingleCuriAsArray() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("x", "http://example.org/rels/{rel}"),
-                        link("x:foo", "http://example.org/test"),
-                        link("x:bar", "http://example.org/test"))
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .single(
+                                link("x:foo", "http://example.org/test"),
+                                link("x:bar", "http://example.org/test"))
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -39,11 +40,12 @@ public class HalRepresentationCuriesTest {
     public void shouldRenderCuries() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("x", "http://example.org/rels/{rel}"),
-                        curi("y", "http://example.com/rels/{rel}"),
-                        link("x:foo", "http://example.org/test"),
-                        link("y:bar", "http://example.org/test"))
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .curi("y", "http://example.com/rels/{rel}")
+                        .single(link("x:foo", "http://example.org/test"))
+                        .single(link("y:bar", "http://example.org/test"))
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -55,9 +57,10 @@ public class HalRepresentationCuriesTest {
     public void shouldReplaceFullRelWithCuri() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("x", "http://example.org/rels/{rel}"),
-                        link("http://example.org/rels/foo", "http://example.org/test"))
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .single(link("http://example.org/rels/foo", "http://example.org/test"))
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -76,7 +79,7 @@ public class HalRepresentationCuriesTest {
     public void shouldConstructWithLinksAndRelRegistry() {
         final RelRegistry relRegistry = relRegistry(asList(curi("x", "http://example.com/rels/{rel}")));
         final HalRepresentation hal = new HalRepresentation(
-                linkingTo(link("http://example.com/rels/foo", "http://example.com")),
+                linkingTo().single(link("http://example.com/rels/foo", "http://example.com")).build(),
                 emptyEmbedded(),
                 relRegistry);
         assertThat(hal.getLinks().getRels(), contains("x:foo"));
@@ -92,7 +95,7 @@ public class HalRepresentationCuriesTest {
                 embedded(
                         "http://example.com/rels/nested",
                         singletonList(new HalRepresentation(
-                                linkingTo(link("http://example.com/rels/foo", "http://example.com")),
+                                linkingTo().single(link("http://example.com/rels/foo", "http://example.com")).build(),
                                 emptyEmbedded()
                         ))),
                 relRegistry);

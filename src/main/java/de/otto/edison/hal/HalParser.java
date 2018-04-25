@@ -38,7 +38,7 @@ import static java.util.Arrays.asList;
  * <pre><code>
  *     final FooHalRepresentation result = HalParser
  *             .parse(json)
- *             .as(FooHalRepresentation.class, with("bar", BarHalRepresentation.class));
+ *             .as(FooHalRepresentation.class, withEmbedded("bar", BarHalRepresentation.class));
  * </code></pre>
  * @since 0.1.0
  */

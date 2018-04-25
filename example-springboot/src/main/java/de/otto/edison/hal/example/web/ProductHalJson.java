@@ -26,16 +26,16 @@ class ProductHalJson extends HalRepresentation {
 
     public ProductHalJson(final Product product) {
         super(
-                linkingTo(
-                        linkBuilder("self", "/api/products/" + product.id)
+                linkingTo()
+                        .single(linkBuilder("self", "/api/products/" + product.id)
                                 .withType("application/hal+json")
                                 .withTitle(product.title)
-                                .build(),
-                        linkBuilder("collection", "/api/products")
+                                .build())
+                        .single(linkBuilder("collection", "/api/products")
                                 .withTitle("All Products")
                                 .withType("application/hal+json")
-                                .build()
-                )
+                                .build())
+                        .build()
         );
 
         title = product.title;

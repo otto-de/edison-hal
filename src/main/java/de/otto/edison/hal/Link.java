@@ -439,8 +439,9 @@ public class Link {
     }
 
     /**
-     * Two links are considerered equivalent, if they have the same link-relation type and are pointing to the same resource
-     * in the same representation.
+     * Two links are considerered equivalent, if they have the same {@link #getRel() link-relation type} and are
+     * pointing to the {@link #getHref() same resource} in the same {@link #getType() representation} and
+     * {@link #getProfile() profile}.
      *
      * @param other other link
      * @return true if the links are equivalent, false otherwise.

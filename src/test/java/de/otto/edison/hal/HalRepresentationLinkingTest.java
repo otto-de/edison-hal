@@ -6,14 +6,11 @@ import org.junit.Test;
 
 import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Link.*;
-import static de.otto.edison.hal.RelRegistry.relRegistry;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 public class HalRepresentationLinkingTest {
 
@@ -49,8 +46,9 @@ public class HalRepresentationLinkingTest {
     public void shouldRenderSelfLinkAndProperty() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        self("http://example.org/test/foo"))
+                linkingTo()
+                        .self("http://example.org/test/foo")
+                        .build()
         ) {
             public final String test = "foo";
         };
@@ -64,9 +62,9 @@ public class HalRepresentationLinkingTest {
     public void shouldRenderSingleCuriAsArray() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("x", "http://example.org/rels/{rel}")
-                )
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -78,8 +76,9 @@ public class HalRepresentationLinkingTest {
     public void shouldRenderSingleItemAsArray() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        item("http://example.org/items/1"))
+                linkingTo()
+                        .item("http://example.org/items/1")
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -91,10 +90,10 @@ public class HalRepresentationLinkingTest {
     public void shouldRenderConfiguredRelAsArray() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        link("foo", "http://example.org/items/1"),
-                        link("bar", "http://example.org/items/2")),
-                relRegistry(asList("foo"))
+                linkingTo()
+                        .array(link("foo", "http://example.org/items/1"))
+                        .single(link("bar", "http://example.org/items/2"))
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -103,14 +102,15 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderConfiguredCuriedRelAsArray() throws JsonProcessingException {
+    public void shouldRenderCuriedRelAsArray() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("ex", "http://example.org/rels/{rel}"),
-                        link("ex:foo", "http://example.org/items/1"),
-                        link("http://example.org/rels/bar", "http://example.org/items/2")),
-                relRegistry(asList("http://example.org/rels/foo", "ex:bar"))
+                linkingTo()
+                        .curi("ex", "http://example.org/rels/{rel}")
+                        .array(
+                                link("ex:foo", "http://example.org/items/1"),
+                                link("http://example.org/rels/bar", "http://example.org/items/2"))
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -122,17 +122,38 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderNestedConfiguredCuriedRelAsArray() throws JsonProcessingException {
+    public void shouldRenderCuriedRelAsLinkObject() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo()
+                        .curi("ex", "http://example.org/rels/{rel}")
+                        .single(
+                                link("ex:foo", "http://example.org/items/1"),
+                                link("http://example.org/rels/bar", "http://example.org/items/2"))
+                        .build()
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{\"_links\":{" +
+                "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]," +
+                "\"ex:foo\":{\"href\":\"http://example.org/items/1\"}," +
+                "\"ex:bar\":{\"href\":\"http://example.org/items/2\"}}}"));
+    }
+
+    @Test
+    public void shouldRenderNestedCuriedRelAsArray() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 emptyLinks(),
                 embedded("http://example.org/rels/nested", asList(new HalRepresentation(
-                        linkingTo(
-                                curi("ex", "http://example.org/rels/{rel}"),
-                                link("ex:foo", "http://example.org/items/1"),
-                                link("http://example.org/rels/bar", "http://example.org/items/2"))
-                ))),
-                relRegistry(asList("http://example.org/rels/foo", "ex:bar"))
+                        linkingTo()
+                                .curi("ex", "http://example.org/rels/{rel}")
+                                .array(
+                                        link("ex:foo", "http://example.org/items/1"),
+                                        link("http://example.org/rels/bar", "http://example.org/items/2"))
+                                .build()
+                )))
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -146,18 +167,43 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderNestedConfiguredCuriedRelAsArrayWithCuriAtTopLevel() throws JsonProcessingException {
+    public void shouldRenderNestedCuriedRelAsLinkObject() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        asList(curi("ex", "http://example.org/rels/{rel}")),
-                        asList("http://example.org/rels/foo", "ex:bar")),
+                emptyLinks(),
                 embedded("http://example.org/rels/nested", asList(new HalRepresentation(
-                        linkingTo(
-                                link("ex:foo", "http://example.org/items/1"),
-                                link("http://example.org/rels/bar", "http://example.org/items/2"))
-                ))),
-                relRegistry(asList("http://example.org/rels/foo", "ex:bar"))
+                        linkingTo()
+                                .curi("ex", "http://example.org/rels/{rel}")
+                                .single(link("ex:foo", "http://example.org/items/1"))
+                                .single(link("http://example.org/rels/bar", "http://example.org/items/2"))
+                                .build()
+                )))
+        );
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is("{" +
+                "\"_embedded\":{\"http://example.org/rels/nested\":[{\"_links\":{" +
+                "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]," +
+                "\"ex:foo\":{\"href\":\"http://example.org/items/1\"}," +
+                "\"ex:bar\":{\"href\":\"http://example.org/items/2\"}}}" +
+                "]}}"));
+    }
+
+    @Test
+    public void shouldRenderNestedCuriedRelAsArrayWithCuriAtTopLevel() throws JsonProcessingException {
+        // given
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo()
+                        .curi("ex", "http://example.org/rels/{rel}")
+                        .build(),
+                embedded("http://example.org/rels/nested", asList(new HalRepresentation(
+                        linkingTo()
+                                .array(
+                                        link("ex:foo", "http://example.org/items/1"),
+                                        link("http://example.org/rels/bar", "http://example.org/items/2"))
+                                .build()
+                )))
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -175,9 +221,11 @@ public class HalRepresentationLinkingTest {
     public void shouldRenderMultipleLinks() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        self("http://example.org/test/foo"),
-                        collection("http://example.org/test"))
+                linkingTo()
+                        .self("http://example.org/test/foo")
+                        .single(
+                                collection("http://example.org/test"))
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -185,26 +233,24 @@ public class HalRepresentationLinkingTest {
         assertThat(json, is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"},\"collection\":{\"href\":\"http://example.org/test\"}}}"));
     }
 
-    @Test
-    public void shouldRenderMultipleLinksForSingleRel() throws JsonProcessingException {
+    @Test(expected = IllegalStateException.class)
+    public void shouldFailToAddMultipleSingleLinksForSameRel() {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        link("test", "http://example.org/test/foo"),
-                        link("test", "http://example.org/test/bar"))
+                linkingTo()
+                        .single(link("test", "http://example.org/test/foo"))
+                        .single(link("test", "http://example.org/test/bar"))
+                        .build()
         );
-        // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
-        // then
-        assertThat(json, is("{\"_links\":{\"test\":[{\"href\":\"http://example.org/test/foo\"},{\"href\":\"http://example.org/test/bar\"}]}}"));
     }
 
     @Test
     public void shouldRenderTemplatedLink() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        link("search", "/test{?bar}"))
+                linkingTo()
+                        .single(link("search", "/test{?bar}"))
+                        .build()
         );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -216,24 +262,25 @@ public class HalRepresentationLinkingTest {
     public void shouldRenderEvenMoreComplexLinks() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        linkBuilder("search", "/test{?bar}")
+                linkingTo()
+                        .single(linkBuilder("search", "/test{?bar}")
                                 .withType("application/hal+json")
                                 .withHrefLang("de-DE")
                                 .withTitle("Some Title")
                                 .withName("Foo")
                                 .withProfile("http://example.org/profiles/test-profile")
                                 .withDeprecation("http://example.org/deprecations/4711.html")
-                                .build(),
-                        linkBuilder("foo", "/test/bar")
+                                .build())
+                        .single(linkBuilder("foo", "/test/bar")
                                 .withType("application/hal+json")
                                 .withHrefLang("de-DE")
                                 .withTitle("Some Title")
                                 .withName("Foo")
                                 .withProfile("http://example.org/profiles/test-profile")
                                 .withDeprecation("http://example.org/deprecations/4711.html")
-                                .build()
-        ));
+                                .build())
+                        .build()
+        );
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
@@ -247,14 +294,14 @@ public class HalRepresentationLinkingTest {
     public void shouldBeAbleToAddLinksAfterConstruction() {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        self("/"),
-                        item("/i/1")
-                )
+                linkingTo()
+                        .self("/")
+                        .item("/i/1")
+                        .build()
         );
         // when
-        representation.withLinks(link("foo", "/foo/1"));
-        representation.withLinks(asList(item("/i/2"),item("/i/3")));
+        representation.add(linkingTo().array(link("foo", "/foo/1")).build());
+        representation.add(linkingTo().array(item("/i/2"), item("/i/3")).build());
         // then
         assertThat(representation.getLinks().getRels(), hasSize(3));
         assertThat(representation.getLinks().getLinkBy("foo").isPresent(), is(true));
@@ -266,7 +313,7 @@ public class HalRepresentationLinkingTest {
         // given
         final HalRepresentation representation = new HalRepresentation();
         // when
-        representation.withLinks(link("foo", "/foo/1"));
+        representation.add(linkingTo().single(link("foo", "/foo/1")).build());
         // then
         assertThat(representation.getLinks().getRels(), hasSize(1));
         assertThat(representation.getLinks().getLinkBy("foo").isPresent(), is(true));

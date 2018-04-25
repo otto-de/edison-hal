@@ -6,12 +6,8 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static de.otto.edison.hal.Embedded.embedded;
-import static de.otto.edison.hal.Embedded.embeddedBuilder;
-import static de.otto.edison.hal.Embedded.emptyEmbedded;
-import static de.otto.edison.hal.Link.curi;
+import static de.otto.edison.hal.Embedded.*;
 import static de.otto.edison.hal.Link.link;
-import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
@@ -25,7 +21,7 @@ public class HalRepresentationEmbeddingTest {
     public void shouldNotRenderEmptyEmbedded() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(self("http://example.org/test/bar")),
+                linkingTo().self("http://example.org/test/bar").build(),
                 emptyEmbedded())
         {
             public String total="4753€";
@@ -44,12 +40,12 @@ public class HalRepresentationEmbeddingTest {
     public void shouldRenderEmbeddedResourcesWithProperties() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
-                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))) {public String amount="42€";},
-                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02"))) {public String amount="4711€";}
+                new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()) {public String amount="42€";},
+                new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build()) {public String amount="4711€";}
         );
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(self("http://example.org/test/bar")),
-                Embedded.embedded("orders", items)) {public String total="4753€";};
+                linkingTo().self("http://example.org/test/bar").build(),
+                embedded("orders", items)) {public String total="4753€";};
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
@@ -75,9 +71,9 @@ public class HalRepresentationEmbeddingTest {
         // given
         final List<HalRepresentation> items = asList(
                 new HalRepresentation(
-                        linkingTo(self("http://example.org/test/bar/01")),
+                        linkingTo().self("http://example.org/test/bar/01").build(),
                         embedded("foo", singletonList(
-                                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02"))) {
+                                new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build()) {
                                     public String amount="4711€";
                                 })
                         )) {
@@ -86,8 +82,8 @@ public class HalRepresentationEmbeddingTest {
 
         );
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(self("http://example.org/test/bar")),
-                Embedded.embedded("orders", items)) {public String total="4753€";};
+                linkingTo().self("http://example.org/test/bar").build(),
+                embedded("orders", items)) {public String total="4753€";};
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
@@ -109,13 +105,13 @@ public class HalRepresentationEmbeddingTest {
     public void shouldRenderEmbeddedResourcesWithMultipleLinks() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
-                new HalRepresentation(linkingTo(
+                new HalRepresentation(linkingTo().array(
                         link("test", "http://example.org/test/bar/01"),
-                        link("test", "http://example.org/test/bar/02"))) {public String amount="42€";}
+                        link("test", "http://example.org/test/bar/02")).build()) {public String amount="42€";}
         );
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(self("http://example.org/test/bar")),
-                Embedded.embedded("orders", items)) {public String total="4753€";};
+                linkingTo().self("http://example.org/test/bar").build(),
+                embedded("orders", items)) {public String total="4753€";};
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
@@ -136,15 +132,15 @@ public class HalRepresentationEmbeddingTest {
     public void shouldRenderMultipleEmbeddedResources() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(self("http://example.org/test/bar")),
+                linkingTo().self("http://example.org/test/bar").build(),
                 embeddedBuilder()
                         .with("foo", asList(
-                                new HalRepresentation(linkingTo(self("http://example.org/test/foo/01"))),
-                                new HalRepresentation(linkingTo(self("http://example.org/test/foo/02")))
+                                new HalRepresentation(linkingTo().self("http://example.org/test/foo/01").build()),
+                                new HalRepresentation(linkingTo().self("http://example.org/test/foo/02").build())
                         ))
                         .with("bar", asList(
-                                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
-                                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))
+                                new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()),
+                                new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build())
                         )).build());
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -171,13 +167,13 @@ public class HalRepresentationEmbeddingTest {
     public void shouldUseCuriesInEmbedded() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
-                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
-                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))
+                new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()),
+                new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build())
         );
         // when
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("x", "http://example.org/rels/{rel}")),
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}").build(),
                 embedded("x:orders", items)) {};
         // then
         assertThat(representation.getEmbedded().getItemsBy("x:orders"), is(items));
@@ -187,13 +183,13 @@ public class HalRepresentationEmbeddingTest {
     public void shouldUseCuriesByFullRelInEmbedded() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
-                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
-                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))
+                new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()),
+                new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build())
         );
         // when
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("x", "http://example.org/rels/{rel}")),
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}").build(),
                 embedded("x:orders", items)) {};
         // then
         assertThat(representation.getEmbedded().getItemsBy("http://example.org/rels/orders"), is(items));
@@ -202,17 +198,17 @@ public class HalRepresentationEmbeddingTest {
     @Test
     public void shouldUseCuriesInNestedEmbedded() throws JsonProcessingException {
         // given
-        final List<HalRepresentation> nestedEmbedded = singletonList(new HalRepresentation(linkingTo(self("http://example.org/test/bar/02"))));
+        final List<HalRepresentation> nestedEmbedded = singletonList(new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build()));
         final List<HalRepresentation> items = singletonList(
                 new HalRepresentation(
-                        linkingTo(
-                                self("http://example.org/test/bar/01")),
+                        linkingTo()
+                                .self("http://example.org/test/bar/01").build(),
                         embedded("x:foo", nestedEmbedded))
         );
         // when
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("x", "http://example.org/rels/{rel}")),
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}").build(),
                 embedded("x:orders", items)) {};
         // then
         final List<HalRepresentation> orders = representation.getEmbedded().getItemsBy("x:orders");
@@ -225,13 +221,14 @@ public class HalRepresentationEmbeddingTest {
     public void shouldReplaceEmbeddedFullRelWithCuri() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
-                new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
-                new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))
+                new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()),
+                new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build())
         );
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        self("http://example.org/test/bar"),
-                        curi("x", "http://example.org/rels/{rel}")),
+                linkingTo()
+                        .self("http://example.org/test/bar")
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .build(),
                 embedded("http://example.org/rels/orders", items)) {};
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -254,17 +251,17 @@ public class HalRepresentationEmbeddingTest {
     public void shouldReplaceNestedEmbeddedFullRelWithCuri() throws JsonProcessingException {
         // given
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        self("http://example.org/test/toplevel"),
-                        curi("x", "http://example.org/rels/{rel}")),
+                linkingTo()
+                        .self("http://example.org/test/toplevel")
+                        .curi("x", "http://example.org/rels/{rel}").build(),
                 embedded("http://example.org/rels/orders", singletonList(
                         new HalRepresentation(
-                                linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/01")),
+                                linkingTo().single(link("http://example.org/rels/bar", "http://example.org/test/bar/01")).build(),
                                 embedded("http://example.org/rels/foo", singletonList(
-                                        new HalRepresentation(linkingTo(link("http://example.org/rels/foobar", "http://example.org/test/bar/02")))
+                                        new HalRepresentation(linkingTo().single(link("http://example.org/rels/foobar", "http://example.org/test/bar/02")).build()
                                 ))
                         )
-                )));
+                ))));
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
@@ -287,12 +284,12 @@ public class HalRepresentationEmbeddingTest {
     public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinks() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
-                new HalRepresentation(linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/01"))),
-                new HalRepresentation(linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/02")))
+                new HalRepresentation(linkingTo().single(link("http://example.org/rels/bar", "http://example.org/test/bar/01")).build()),
+                new HalRepresentation(linkingTo().single(link("http://example.org/rels/bar", "http://example.org/test/bar/02")).build())
         );
         final HalRepresentation representation = new HalRepresentation(
-                linkingTo(
-                        curi("x", "http://example.org/rels/{rel}")),
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}").build(),
                 embedded("http://example.org/rels/foo", items)) {};
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
@@ -315,14 +312,14 @@ public class HalRepresentationEmbeddingTest {
     public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinksAfterConstruction() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
-                new HalRepresentation(linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/01"))),
-                new HalRepresentation(linkingTo(link("http://example.org/rels/bar", "http://example.org/test/bar/02")))
+                new HalRepresentation(linkingTo().single(link("http://example.org/rels/bar", "http://example.org/test/bar/01")).build()),
+                new HalRepresentation(linkingTo().single(link("http://example.org/rels/bar", "http://example.org/test/bar/02")).build())
         );
         final HalRepresentation representation = new HalRepresentation(
                 emptyLinks(),
                 embedded("http://example.org/rels/foo", items)) {};
         // when
-        representation.withLinks(curi("x", "http://example.org/rels/{rel}"));
+        representation.add(linkingTo().curi("x", "http://example.org/rels/{rel}").build());
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
         assertThat(json, is(

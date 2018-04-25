@@ -69,39 +69,83 @@ the properties defined in application/hal+json, you can create a
 HalRepresentations like this:
 
 ```java
+public class Example_4_2_1 {
+    
     final HalRepresentation representation = new HalRepresentation(
-            linkingTo(
-                    self("http://example.org/test/bar")),
+            linkingTo()
+                    .self("http://example.org/test/bar")
+                    .item("http://example.org/test/01")
+                    .item("http://example.org/test/02")
+                    .build(),
             embeddedBuilder()
-                    .with("foo", asList(
-                            new HalRepresentation(linkingTo(self("http://example.org/test/foo/01"))),
-                            new HalRepresentation(linkingTo(self("http://example.org/test/foo/02")))))
-                    .with("bar", asList(
-                            new HalRepresentation(linkingTo(self("http://example.org/test/bar/01"))),
-                            new HalRepresentation(linkingTo(self("http://example.org/test/bar/02")))))
+                    .with("item", asList(
+                            new HalRepresentation(linkingTo().self("http://example.org/test/01").build()),
+                            new HalRepresentation(linkingTo().self("http://example.org/test/02").build())))
                     .build());
-
+}
 ```
 
-Otherwise, you can derive a class from HalRepresentation to add extra attributes:
+Using Jackson's ObjectMapper (e.g. `new ObjectMapper().writeValueAsString(representation)), this will will be 
+serialized into the following application/hal+json document:
+
+```json
+{
+  "_links" : {
+    "self" : {
+      "href" : "http://example.org/test/bar"
+    },
+    "item" : [ {
+      "href" : "http://example.org/test/01"
+    }, {
+      "href" : "http://example.org/test/02"
+    } ]
+  },
+  "_embedded" : {
+    "item" : [ {
+      "_links" : {
+        "self" : {
+          "href" : "http://example.org/test/01"
+        }
+      }
+    }, {
+      "_links" : {
+        "self" : {
+          "href" : "http://example.org/test/02"
+        }
+      }
+    } ]
+  }
+}
+```
+
+In many cases, you will need custom attributes in addition to HAL's `_links` and `_embedded` properties. Extending
+`HalRepresentation` and adding attributes as you would do in other types (de-)serialized using Jackson is easy:
 
 ```java
-    public class MySpecialHalRepresentation extends HalRepresentation {
-        @JsonProperty("someProperty")
-        private String someProperty;
-        @JsonProperty("someOtherProperty")
-        private String someOtherProperty;
-        
-        // ...
-    }
+public class Example_4_2_2 extends HalRepresentation {
+    @JsonProperty("someProperty")
+    private String someProperty = "some value";
+    @JsonProperty("someOtherProperty")
+    private String someOtherProperty = "some other value";
 
+    Example_4_2_2() {
+        super(linkingTo()
+                .self("http://example.org/test/bar")
+                .build()
+        );
+    }
+}
 ```
 
-### 4.3 Multiple Links
+### 4.3 Single Link-Objects vs. Arrays of Link-Objects
 
 A resource may have multiple links that share the same link relation.
 
-For link relations that may have multiple links, we use an array of links.
+For link relations that may have multiple links, we use an array of links - even if there is no or only a single
+link available.
+
+The `item` Link-Relation Type, for example, is often used for items of a collection resource. Because a collection
+may have multiple items, an array is used:
 ```json
 {
     "_links": {
@@ -113,50 +157,78 @@ For link relations that may have multiple links, we use an array of links.
 }
 ```
 
->Note: If you're unsure whether the link should be singular, assume it will be multiple.
->If you pick singular and find you need to change it, you will need to create a new link
->relation or face breaking existing clients.
+A collection with only a single item link, should still use an array of link objects, because otherwise clients (at
+least those not implemented using Edison HAL) would have to handle both arrays and single link objects for the same 
+Link-Relation Type. 
+
+```json
+{
+    "_links": {
+        "item": [
+            { "href": "http://example.com/items/the-single-item" }
+        ]
+    }
+}
+```
+
+While `item` links will most likely be rendered as an array, links like `self`, `next`, `prev` etc. generally are 
+single link objects:
+```json
+{
+    "_links": {
+        "self": { "href": "http://example.com/foo/42" },
+        "next": { "href": "http://example.com/foo/43" },
+        "prev": { "href": "http://example.com/foo/41" }
+        
+    }
+}
+```
+
+> Note: If you're unsure whether the link should be singular, assume it will be multiple.
+> If you pick singular and find you need to change it, you will need to create a new link
+> relation or face breaking existing clients.
 
 _[text + example taken from http://stateless.co/hal_specification.html)_
 
-By default, links with link-relation type `curies`, `item`, and `items` are serialized as 
-an array of links.
+When creating a `HalRepresentation` object, a `de.otto.edison.hal.Links` object is used to specify the `_links` section
+of the document. In order to create an instance of `Links`, a `Links.Builder` is used: 
 
-Using Edison HAL, you can override this default behaviour when you build a ```HalRepresentation```:
 ```java
+public class Example_4_3 {
     final HalRepresentation representation = new HalRepresentation(
-            linkingTo(
-                    link("foo", "http://example.org/test/foo")
-                    link("bar", "http://example.org/test/bar")
-            ),
-            RelRegistry.relRegistry("foo", "bar")
+            linkingTo()                                                 // this creates a Links.Builder instance 
+                    .self("http://example.com/foo/42")                  // adds a single 'self' link
+                    .single(link("next", "http://example.com/foo/43"))  // adds a single 'next' link
+                    .single(link("prev", "http://example.com/foo/41"))  
+                    .array(                                             // now we add some links that will become arrays 
+                            link("item", "http://example.com/bar/01"),  // of links
+                            link("item", "http://example.com/bar/02"),  
+                            link("item", "http://example.com/bar/03")
+                    )
+                    .build()                                            // Finally, we build the Links object
     );
-```
+}
+```   
 
-Curies, however, are always rendered as an array.
+The `Links.Builder` has a number of methods used to add links with a predefined Link-Relation Types like, for example,
+`self`, `curies` or `item`. The JavaDoc specifies, which links will be rendered as an array, and which as a single 
+link object. Other links can be explicitly added using `single(Link, Link...)`, `single(List<Link>)`, 
+`array(Link, Link...)` or `array(List<Link>)`. 
 
-### 4.4 Serializing HalRepresentations
-
-To convert your representation class into a application/hal+json document, you can use Jackson's 
-ObjectMapper directly:
-```java
-    final ObjectMapper mapper = new ObjectMapper();
-    
-    final String json = mapper.writeValueAsString(representation);
-```
-
-### 4.5 Curies
+### 4.4 Curies
 
 The semantics of links in application/hal+json documents are specified by the link-relation type (rel). It is 
 recommended to use [predfined and documented rels](https://www.iana.org/assignments/link-relations/link-relations.xhtml) 
 like, for example, `self`, `prev` or `next`. 
 
-In case of custom link-relation types, fully qualified URIs should be used: a link to a product, for example, could be
+In case of custom Link-Relation Types, fully qualified URIs should be used: a link to a product, for example, could be
 specified by something like `http://spec.example.com/link-relations/product`. The URI should be resolvable, pointing to
-some human readable documentation. 
+some human readable documentation that describes the semantics of the Link-Relation Type. 
 
 
-A curi (compact URI) is a feature in HAL+JSON that is helpful to use URIs while keeping the link-relation types compact.
+A curi ('compact URI') is a feature in HAL+JSON that is helpful to use URIs for custom Link-Relation Types while 
+keeping the document format compact.
+
 For example:
 ```json
 {
@@ -192,6 +264,7 @@ For example:
   }
 }
 ```  
+
 By specifying a curi, the same document would look like this:
 ```json
 {
@@ -232,33 +305,49 @@ By specifying a curi, the same document would look like this:
 ```  
 
 Curies are fully supported by edison-hal: By just adding a curi to the links of a HalRepresentation, the library
-takes care of matching link-relation types and replaces them during serialization:
+takes care of matching link-relation types and replacing them during serialization:
 
 ```java
-final HalRepresentation representation = new HalRepresentation(
-        linkingTo(
-                curi("x", "http://example.org/rels/{rel}"),
-                curi("y", "http://example.com/rels/{rel}"),
-                link("http://example.org/rels/foo", "http://example.org/test"),
-                link("http://example.com/rels/bar", "http://example.org/test")),
-        
-);
+public class Example_4_4_1 {
+    final HalRepresentation representation = new HalRepresentation(
+            linkingTo()
+                    .curi("x", "http://example.org/rels/{rel}")
+                    .curi("y", "http://example.com/rels/{rel}")
+                    .single(
+                            link("http://example.org/rels/foo", "http://example.org/test"))
+                    .array(
+                            link("http://example.com/rels/bar", "http://example.org/test/1"),
+                            link("http://example.com/rels/bar", "http://example.org/test/2"))
+                    .build()
+            );
+}
 ``` 
 ...will be rendered as
 ```json
 {
   "_links" : {
-    "curies" : [
-      {"name" : "x", "href" : "http://example.org/rels/{rel}", "templated" : true},
-      {"name" : "y", "href" : "http://example.com/rels/{rel}", "templated" : true}
-    ],
-    "x:foo" : {"href" : "http://example.org/test"},
-    "y:bar" : {"href" : "http://example.org/test"}
+    "curies" : [ {
+      "href" : "http://example.org/rels/{rel}",
+      "templated" : true,
+      "name" : "x"
+    }, {
+      "href" : "http://example.com/rels/{rel}",
+      "templated" : true,
+      "name" : "y"
+    } ],
+    "x:foo" : {
+      "href" : "http://example.org/test"
+    },
+    "y:bar" : [ {
+      "href" : "http://example.org/test/1"
+    }, {
+      "href" : "http://example.org/test/2"
+    } ]
   }
 }
 ```  
 In the same way, curies are automatically applied to link-relation types in embedded resources, even if the embedded
-resources have nested embedded resources.
+resources itself have nested embedded resources.
 ```json
 {
   "_links" : {
@@ -288,41 +377,96 @@ resources have nested embedded resources.
 }
 ```  
 
-### 4.6 Parsing application/hal+json documents
+### 4.5 Serializing HalRepresentations
 
-A HAL document can be parsed using Jackson, too:
+To convert your representation class into a application/hal+json document, you can use Jackson's 
+ObjectMapper directly:
+```java
+    final ObjectMapper mapper = new ObjectMapper();
+    
+    final String json = mapper.writeValueAsString(representation);
+```
+
+Using Spring MVC, you can directly return HalRepresentations from your controller methods:
 
 ```java
-    @Test public void shouldParseHal() {
+    @RequestMapping(
+            value = "/my/hal/resource",
+            produces = {
+                    "application/hal+json",
+                    "application/json"},
+            method = GET
+    )
+    public MyHalRepresentation getMyHalResource() {    
+        return new MyHalRepresentation(getTheInputData());
+    }
+```
+
+### 4.6 Parsing application/hal+json documents
+
+A HAL document can be parsed using Jackson, too. 
+
+Given some custom `HalRepresentation` with links, attributes and embedded objects like this:
+
+```java
+public class TestHalRepresentation extends HalRepresentation {
+    @JsonProperty("someProperty")
+    private String someProperty;
+    @JsonProperty("someOtherProperty")
+    private String someOtherProperty;
+
+    TestHalRepresentation() {
+        super(
+                linkingTo()
+                        .self("http://example.org/test/foo")
+                        .build(),
+                embedded("bar", singletonList(new HalRepresentation(
+                        linkingTo()
+                                .self("http://example.org/test/bar/01")
+                                .build()
+                )))
+        );
+    }
+}
+
+```
+
+The following code will parse a HAL document into an instance of `TestHalRepresentation`:
+```java
+public class Example_4_6_1 {
+    @Test 
+    public void shouldParseHal() throws IOException {
+
         // given
         final String json =
                 "{" +
-                    "\"someProperty\":\"1\"," +
-                    "\"someOtherProperty\":\"2\"," +
-                    "\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}}," +
-                    "\"_embedded\":{\"bar\":[" +
-                        "{" +
-                            "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
-                        "}" +
-                    "]}" +
+                        "\"someProperty\":\"1\"," +
+                        "\"someOtherProperty\":\"2\"," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}}," +
+                        "\"_embedded\":{\"bar\":[" +
+                                "{" +
+                                "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                                "}" +
+                        "]}" +
                 "}";
-        
+
         // when
         final TestHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), TestHalRepresentation.class);
-        
+
         // then
         assertThat(result.someProperty, is("1"));
         assertThat(result.someOtherProperty, is("2"));
-        
+
         // and
         final Links links = result.getLinks();
         assertThat(links.getLinkBy("self").get(), is(self("http://example.org/test/foo")));
-        
+
         // and
         final List<HalRepresentation> embeddedItems = result.getEmbedded().getItemsBy("bar");
         assertThat(embeddedItems, hasSize(1));
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
+}
 ```
 #### 4.6.1 Configuring the ObjectMapper
 There are some special cases, where it is required to configure the ObjectMapper as follows:
@@ -330,6 +474,7 @@ There are some special cases, where it is required to configure the ObjectMapper
     final ObjectMapper mapper = new ObjectMapper();
     mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 ```
+
 This will be necessary, if there are single embedded items for a link-relation type, instead of an array of items:
 ```json
 {
@@ -345,24 +490,29 @@ This will be necessary, if there are single embedded items for a link-relation t
     }
 }
 ```
+
+In general, this should not be necessary as it should be specified, whether a Link-Relation Type is rendered as an 
+array or as a single link-object.
+
 #### 4.6.2 Using the HalParser
 
 If you want to parse embedded resources as a sub-class of HalRepresentation, you need to use the *HalParser*:
 
 ```java
+class Example_4_6_2 {
     @Test
     public void shouldParseEmbeddedItemsWithSpecificType() throws IOException {
         // given
         final String json =
                 "{" +
-                        "\"_embedded\":{\"bar\":[" +
-                        "   {" +
-                        "       \"someProperty\":\"3\"," +
-                        "       \"someOtherProperty\":\"3\"," +
-                        "       \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
-                        "   }" +
-                        "]}" +
-                        "}";
+                "   \"_embedded\":{\"bar\":[" +
+                "       {" +
+                "           \"someProperty\":\"3\"," +
+                "           \"someOtherProperty\":\"3\"," +
+                "           \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
+                "       }" +
+                "   ]}" +
+                "}";
         
         // when
         final HalRepresentation result = HalParser
@@ -378,6 +528,7 @@ If you want to parse embedded resources as a sub-class of HalRepresentation, you
         assertThat(embeddedItems.get(0).getClass(), equalTo(EmbeddedHalRepresentation.class));
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
+}
 ```
 
 ### 4.6.3 Nested embedded resources
@@ -433,12 +584,12 @@ final ShoppingCart cart = HalParser
         );
 ```  
 `EmbeddedTypeInfo.withEmbedded()` is a factory method used to specify the types of embedded items. By nesting
-the type infos, you can tell the HalParser about the types of any embedded item type, event deeply nested in complex
+the type infos, you can tell the HalParser about the types of any embedded item type, even deeply nested in complex
 HAL representations.
 
 ### 4.6.4 Unmapped attributes
 
-HalRepresentation supports access to attributes, that could not be mapped to properties. For example:
+`HalRepresentation` supports access to attributes, that could not be mapped to properties. For example:
 ```json
 {
   "foo" : "Hello World",
@@ -448,7 +599,7 @@ HalRepresentation supports access to attributes, that could not be mapped to pro
   ]
 }
 ```
-Using HalParser or Jackson's ObjectMapper, this plain json document can be parsed into a HalRepresentation:
+Using `HalParser` or Jackson's `ObjectMapper`, this plain json document can be parsed into a HalRepresentation:
 ```java
         HalRepresentation resource = HalParser.parse(json).as(HalRepresentation.class);
 ```
@@ -471,24 +622,7 @@ such attributes are Jackson `JsonNode` objects:
 
 ```
  
-### 4.7 Using HAL in Spring controllers
-
-Using Spring MVC, you can directly return HalRepresentations from you controller methods:
-
-```java
-    @RequestMapping(
-            value = "/my/hal/resource",
-            produces = {
-                    "application/hal+json",
-                    "application/json"},
-            method = GET
-    )
-    public TestHalRepresentation getMyHalResource() {    
-        return new TestHalRepresentation(getTheInputData());
-    }
-```
-
-### 4.8 Using the Traverson
+### 4.7 Using the Traverson
 
 Traverson is a utility to make it easy to traverse linked and/or embedded resources using link-relation types:
 
@@ -527,7 +661,7 @@ Traverson is a utility to make it easy to traverse linked and/or embedded resour
 The Traverson is automatically taking care of embedded resources: if a linked resource is already embedded, it is used 
 instead of resolving the link. Only if it is not embedded, the Traverson is following the links. 
 
-### 4.9 Selecting Links
+### 4.8 Selecting Links
 
 In some situations, there are multiple links to the same resource, but with different `profile`,
 `name` or `type` attributes. The type, for example, could be used to distinguish links to a web page
@@ -562,7 +696,7 @@ Predicate<Link> selectJsonOrHal = havingType("application/json").or(havingType("
 traverson.follow("user", selectJsonOrHal)
 ...
 ```
-### 4.10 Paging over HAL resources
+### 4.9 Paging over HAL resources
 
 Iterating over pages of items is supported by the Traverson, too. `Traverson.paginateNext()` can be used
 to iterate pages by following 'next' links. The callback function provided to `paginateNext()` is
@@ -684,8 +818,18 @@ in different ways.
 
 *Breaking Changes*
 
+* The API to create Links instances has changed: the former `Links.linkingTo(List<Link>)`, 
+`Links.linkingTo(Link, Link...)` is now replaced by `Links.linkingTo()` which is returning a `Links.Builder`. The 
+reason for this is that it is now possible to specify more easily, whether a `Link` should be rendered as a single
+link object, or an array of link objects. The `Links.Builder` has now methods for this like, for example, 
+`single(Link, Link...)` or `array(Link, Link...)`. Have a look at 
+[section 4.3](#4.3-single-link-objects-vs.-arrays-of-link-objects) for more details about adding links to a
+`HalRepresentation`.  
+* Because the `Links.Builder` is now able to create single link objects as well as arrays of link objects, the 
+corresponding functionality to register link-relation types to be rendered as arrays has been removed from 
+`RelRegistry`.    
 * HalRepresentation was previously annotated with @JsonInclude(NON_NULL). This was changed so that only _links and
-  _embedded are now annotated this way. This might change the behaviour / structure of existing server applications.
+  _embedded are now annotated this way. This might change the behaviour / structure of existing applications.
   You should now annotate classes extending HalRepresentation, or attributes of such classes appropriately.
   
 ### 2.0.0-m1

@@ -2,6 +2,7 @@ package de.otto.edison.hal.paging;
 
 import com.damnhandy.uri.template.UriTemplate;
 import de.otto.edison.hal.Link;
+import de.otto.edison.hal.Links;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -10,6 +11,7 @@ import java.util.OptionalInt;
 
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.Links.linkingTo;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.OptionalInt.empty;
 import static java.util.OptionalInt.of;
@@ -26,29 +28,37 @@ import static java.util.OptionalInt.of;
  *     Both zero- and one-based paging is supported.
  * </p>
  * <p>
+ *     As specified in <a href="https://tools.ietf.org/html/draft-kelly-json-hal-06#section-4.1.1">Section 4.1.1</a>
+ *     of the HAL specification, the {@code _links} object <em>"is an object whose property names are
+ *     link relation types (as defined by [RFC5988]) and values are either a Link Object or an array
+ *     of Link Objects"</em>.
+ * </p>
+ * <p>
+ *     Paging links like 'first', 'next', and so on should generally be rendered as single Link Objects, so adding these
+ *     links to an resource should be done using {@link Links.Builder#single(List)}.
+ * </p>
+ * <p>
  *     Usage:
  * </p>
  * <pre><code>
  * public class MyHalRepresentation extends HalRepresentation {
- *    public MyHalRepresentation(final NumberedPaging page, final List&lt;Stuff&gt; pagedStuff) {
- *          super(linksBuilder()
- *                  .with(page.links(
- *                          fromTemplate(contextPath + "/api/stuff{?pageNumber,pageSize}"),
- *                          allOf(PagingRel.class)
- *                   ))
- *                   .with(pagedStuff.stream()
- *                          .limit(page.pageNumber*pageSize)
- *                          .map(stuff -&gt; linkBuilder("item", stuff.selfHref)
- *                                  .withTitle(stuff.title)
- *                                  .build())
- *                          .collect(toList()))
- *                   .build()
+ *     public MyHalRepresentation(final NumberedPaging page, final List&lt;Stuff&gt; pagedStuff) {
+ *          super(linkingTo()
+ *              .single(page.links(
+ *                      fromTemplate("http://example.com/api/stuff{?pageNumber,pageSize}"),
+ *                      EnumSet.allOf(PagingRel.class)))
+ *              .array(pagedStuff
+ *                      .stream()
+ *                      .limit(page.pageNumber*pageSize)
+ *                      .map(stuff -&gt; linkBuilder("item", stuff.href).withTitle(stuff.title).build())
+ *                      .collect(toList()))
+ *              .build()
  *          );
- *    }
+ *     }
+ * }
  * </code></pre>
  */
 public class NumberedPaging {
-
     /**
      * The default template-variable name used to identify the number of the page.
      */
@@ -201,9 +211,9 @@ public class NumberedPaging {
      * </p>
      * @param pageUriTemplate the URI template used to create paging links.
      * @param rels the links expected to be created.
-     * @return List of links
+     * @return paging links
      */
-    public final List<Link> links(final UriTemplate pageUriTemplate, final EnumSet<PagingRel> rels) {
+    public final Links links(final UriTemplate pageUriTemplate, final EnumSet<PagingRel> rels) {
         final List<Link> links = new ArrayList<>();
         if (rels.contains(PagingRel.SELF)) {
             links.add(
@@ -230,7 +240,7 @@ public class NumberedPaging {
                     link("last", pageUri(pageUriTemplate, calcLastPage(this.total.getAsInt(), this.pageSize), pageSize))
             );
         }
-        return links;
+        return linkingTo().single(links).build();
     }
 
     /**
