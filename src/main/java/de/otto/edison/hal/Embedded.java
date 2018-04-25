@@ -19,29 +19,22 @@ import static java.util.stream.Collectors.toList;
  * <p>
  *     The embedded items of a HalResource.
  * </p>
- * <p>
- *     Provides access to embedded items by link-relation type.
- * </p>
  * <pre><code>
- *     {
- *         "_embedded": {
- *             "item": [
- *                  {
- *                      "_links": {
- *                          ...
- *                      },
- *                      "_embedded": {
- *                          ...
- *                      },
- *                      "someAttribute" : "Foo"
- *                  },
- *                  {
- *                      ...
- *                  },
- *             ]
- *         }
- *
- *     }
+ * {
+ *      "_links": {
+ *          ...
+ *      },
+ *      "_embedded": {
+ *          "item" : [
+ *              {"description" : "first embedded item (resource object)"},
+ *              {"description" : "second embedded item (resource object"}
+ *          ],
+ *          "example" : {
+ *              "description" : "A single resource object"
+ *          }
+ *      },
+ *      "someAttribute" : "Foo"
+ * }
  * </code></pre>
  *
  * @see <a href="https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.2">draft-kelly-json-hal-08#section-4.1.2</a>
@@ -52,8 +45,12 @@ import static java.util.stream.Collectors.toList;
 public class Embedded {
     /**
      * The embedded items, mapped by link-relation type.
+     *
+     * <p>
+     *     The values are either List&lt;HalRepresentation&gt; or single HalRepresentation instances.
+     * </p>
      */
-    private final Map<String,List<HalRepresentation>> items;
+    private final Map<String,Object> items;
     /**
      * The RelRegistry used to resolve curies
      */
@@ -72,22 +69,29 @@ public class Embedded {
     /**
      * Create an Embedded instance from a Map of nested items.
      *
-     * @param items The embedded items, mapped by link-relation type
+     * @param items The embedded items, mapped by link-relation type. The values of the map must be of type
+     *              HalRepresentation or List&lt;HalRepresentation&gt;
      *
      * @since 0.1.0
      */
-    private Embedded(final Map<String, List<HalRepresentation>> items) {
+    private Embedded(final Map<String, Object> items) {
         this.items = items;
         this.relRegistry = emptyRelRegistry();
     }
 
-    private Embedded(final Map<String, List<HalRepresentation>> items, final RelRegistry relRegistry) {
-        final Map<String, List<HalRepresentation>> curiedItems = new LinkedHashMap<>();
+    @SuppressWarnings("unchecked")
+    private Embedded(final Map<String, Object> items, final RelRegistry relRegistry) {
+        final Map<String, Object> curiedItems = new LinkedHashMap<>();
         for (final String rel : items.keySet()) {
-            curiedItems.put(relRegistry.resolve(rel), items.get(rel)
-                    .stream()
-                    .map(halRepresentation -> halRepresentation.mergeWithEmbedding(relRegistry))
-                    .collect(toList()));
+            final Object itemOrListOfItems = items.get(rel);
+            if (itemOrListOfItems instanceof List) {
+                curiedItems.put(relRegistry.resolve(rel), ((List<HalRepresentation>) itemOrListOfItems)
+                        .stream()
+                        .map(halRepresentation -> halRepresentation.mergeWithEmbedding(relRegistry))
+                        .collect(toList()));
+            } else {
+                curiedItems.put(relRegistry.resolve(rel), ((HalRepresentation) itemOrListOfItems).mergeWithEmbedding(relRegistry));
+            }
         }
         this.items = curiedItems;
         this.relRegistry = relRegistry;
@@ -105,6 +109,21 @@ public class Embedded {
     }
 
     /**
+     * Create an Embedded instance with a single embedded HalRepresentations that will be rendered as a single
+     * item instead of an array of embedded items.
+     *
+     * @param rel the link-relation type of the embedded items
+     * @param embeddedItem the single embedded item
+     * @return Embedded
+     *
+     * @since 2.0.0
+     */
+    public static Embedded embedded(final String rel,
+                                    final HalRepresentation embeddedItem) {
+        return new Embedded(singletonMap(rel, embeddedItem));
+    }
+
+    /**
      * Create an Embedded instance with a list of nested HalRepresentations for a single link-relation type.
      *
      * @param rel the link-relation type of the embedded representations
@@ -116,6 +135,33 @@ public class Embedded {
     public static Embedded embedded(final String rel,
                                     final List<? extends HalRepresentation> embeddedRepresentations) {
         return new Embedded(singletonMap(rel, new ArrayList<>(embeddedRepresentations)));
+    }
+
+    /**
+     * Checks the existence of embedded items with link-relation type {@code rel}
+     *
+     * @param rel the link-relation type
+     * @return true, if item(s) exists, false otherwise
+     *
+     * @since 2.0.0
+     */
+    public boolean hasItem(final String rel) {
+        final String resolvedRel = relRegistry.resolve(rel);
+        return items != null && items.containsKey(resolvedRel);
+    }
+
+    /**
+     * Returns true if there is at least one embedded item with link-relation type {@code rel}, and if the item will
+     * be rendered as an array of embedded items instead of a single object.
+     *
+     * @param rel the link-relation type
+     * @return boolean
+     *
+     * @since 2.0.0
+     */
+    public boolean isArray(final String rel) {
+        final String resolvedRel = relRegistry.resolve(rel);
+        return hasItem(rel) && (items.get(resolvedRel) instanceof List);
     }
 
     /**
@@ -155,11 +201,15 @@ public class Embedded {
      * @since 0.1.0
      */
     @JsonIgnore
+    @SuppressWarnings("unchecked")
     public List<HalRepresentation> getItemsBy(final String rel) {
-        if (items != null) {
-            return items.getOrDefault(relRegistry.resolve(rel), emptyList());
-        } else {
+        if (!hasItem(rel)) {
             return emptyList();
+        } else {
+            final Object item = items.get(relRegistry.resolve(rel));
+            return item instanceof List
+                    ? (List<HalRepresentation>) item
+                    : singletonList((HalRepresentation) item);
         }
     }
 
@@ -242,7 +292,7 @@ public class Embedded {
     }
 
     public final static class Builder {
-        private final Map<String,List<HalRepresentation>> _embedded = new LinkedHashMap<>();
+        private final Map<String,Object> _embedded = new LinkedHashMap<>();
         private RelRegistry relRegistry = emptyRelRegistry();
 
         /**
@@ -267,6 +317,23 @@ public class Embedded {
 
         /**
          * Adds / replaces the embedded representations for a link-relation type.
+         * <p>
+         *     The HalRepresentations added using this method will be rendered as an array of object instead of
+         *     a {@link #with(String, HalRepresentation) single object}:
+         * </p>
+         * <pre><code>
+         *     {
+         *         "_embedded" : {
+         *             "foo" : [
+         *                 {
+             *                 "_links" : {
+             *                     "self" : { "href" : "http://example.com/a-single-embedded-foo-item}
+             *                 }
+         *                 }
+         *             ]
+         *         }
+         *     }
+         * </code></pre>
          *
          * @param rel the link-relation type
          * @param embeddedRepresentations the embedded items
@@ -276,6 +343,35 @@ public class Embedded {
          */
         public Builder with(final String rel, final List<? extends HalRepresentation> embeddedRepresentations) {
             _embedded.put(rel, new ArrayList<>(embeddedRepresentations));
+            return this;
+        }
+
+        /**
+         * Adds / replaces the embedded representation for a link-relation type.
+         * <p>
+         *     The single HalRepresentation added using this method will be rendered as a single object instead of
+         *     an {@link #with(String, List) array of objects}:
+         * </p>
+         * <pre><code>
+         *     {
+         *         "_embedded" : {
+         *             "foo" : {
+         *                 "_links" : {
+         *                     "self" : { "href" : "http://example.com/a-single-embedded-foo-item"}
+         *                 }
+         *             }
+         *         }
+         *     }
+         * </code></pre>
+         *
+         * @param rel the link-relation type
+         * @param embeddedRepresentation the single embedded item
+         * @return EmbeddedBuilder
+         *
+         * @since 0.2.0
+         */
+        public Builder with(final String rel, final HalRepresentation embeddedRepresentation) {
+            _embedded.put(rel, embeddedRepresentation);
             return this;
         }
 
@@ -334,7 +430,7 @@ public class Embedded {
         @Override
         public Embedded deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             try {
-                final Map<String, List<HalRepresentation>> items = p.readValueAs(TYPE_REF_LIST_OF_HAL_REPRESENTATIONS);
+                final Map<String, Object> items = p.readValueAs(TYPE_REF_LIST_OF_HAL_REPRESENTATIONS);
                 return new Embedded(items);
             } catch (final JsonMappingException e) {
                 if (e.getMessage().contains("Can not deserialize instance of java.util.ArrayList out of START_OBJECT token")) {

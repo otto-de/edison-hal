@@ -260,6 +260,27 @@ public class HalRepresentationParsingTest {
     }
 
     @Test
+    public void shouldParseSingleCuriedEmbeddeds() throws IOException {
+        // given
+        final String json = "{\"_links\":{" +
+                "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}}," +
+                "\"_embedded\":{\"x:foo\":" +
+                    "{" +
+                        "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar\"}}" +
+                    "}" +
+                "}" +
+                "}" +
+                "}";
+        // when
+        Embedded embedded = parse(json).as(HalRepresentation.class).getEmbedded();
+        // then
+        final List<HalRepresentation> items = embedded.getItemsBy("http://example.org/rels/foo");
+        assertThat(items, hasSize(1));
+        assertThat(embedded.isArray("x:foo"), is(true));
+        assertThat(embedded.isArray("http://example.org/rels/foo"), is(true));
+    }
+
+    @Test
     public void shouldIgnoreMissingEmbeddeds() throws IOException {
         // given
         final String json = "{\"_links\":{" +

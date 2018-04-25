@@ -32,6 +32,26 @@ public class EmbeddedTest {
     }
 
     @Test
+    public void shouldCreateSingleEmbedded() {
+        Embedded embedded = embedded("foo", new HalRepresentation());
+        assertThat(embedded.getItemsBy("foo"), hasSize(1));
+    }
+
+    @Test
+    public void shouldCreateEmbeddedAsArray() {
+        Embedded embedded = embedded("foo", singletonList(new HalRepresentation()));
+        assertThat(embedded.hasItem("foo"), is(true));
+        assertThat(embedded.isArray("foo"), is(true));
+    }
+
+    @Test
+    public void shouldCreateEmbeddedAsSingleObject() {
+        Embedded embedded = embedded("foo", new HalRepresentation());
+        assertThat(embedded.hasItem("foo"), is(true));
+        assertThat(embedded.isArray("foo"), is(false));
+    }
+
+    @Test
     public void shouldCreateEmbeddedWithBuilder() {
         Embedded embedded = embeddedBuilder()
                 .with("foo", singletonList(new HalRepresentation()))

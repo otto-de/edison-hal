@@ -13,6 +13,7 @@ import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
 public class HalRepresentationEmbeddingTest {
@@ -141,7 +142,9 @@ public class HalRepresentationEmbeddingTest {
                         .with("bar", asList(
                                 new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()),
                                 new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build())
-                        )).build());
+                        ))
+                        .with("foobar", new HalRepresentation(Links.linkingTo().self("http://example.org/test/foobar").build()))
+                        .build());
         // when
         final String json = new ObjectMapper().writeValueAsString(representation);
         // then
@@ -158,7 +161,10 @@ public class HalRepresentationEmbeddingTest {
                                     "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
                                 "},{" +
                                     "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/02\"}}" +
-                                "}]" +
+                                "}]," +
+                            "\"foobar\":{" +
+                                    "\"_links\":{\"self\":{\"href\":\"http://example.org/test/foobar\"}}" +
+                                "}" +
                         "}" +
                 "}"));
     }
@@ -177,6 +183,22 @@ public class HalRepresentationEmbeddingTest {
                 embedded("x:orders", items)) {};
         // then
         assertThat(representation.getEmbedded().getItemsBy("x:orders"), is(items));
+    }
+
+    @Test
+    public void shouldUseCuriesInSingleEmbedded() throws JsonProcessingException {
+        // given
+        final HalRepresentation item = new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build());
+        // when
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}").build(),
+                embedded("x:foo", item)) {};
+        // then
+        assertThat(representation.getEmbedded().getItemsBy("x:foo"), contains(item));
+        assertThat(representation.getEmbedded().getItemsBy("http://example.org/rels/foo"), contains(item));
+        assertThat(representation.getEmbedded().isArray("x:foo"), is(false));
+        assertThat(representation.getEmbedded().isArray("http://example.org/rels/foo"), is(false));
     }
 
     @Test
@@ -218,6 +240,30 @@ public class HalRepresentationEmbeddingTest {
     }
 
     @Test
+    public void shouldUseCuriesInSingleNestedEmbedded() throws JsonProcessingException {
+        // given
+        final HalRepresentation nestedEmbedded = new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build());
+        final List<HalRepresentation> items = singletonList(
+                new HalRepresentation(
+                        linkingTo()
+                                .self("http://example.org/test/bar/01").build(),
+                        embedded("x:foo", nestedEmbedded))
+        );
+        // when
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}").build(),
+                embedded("x:orders", items)) {};
+        // then
+        assertThat(representation.getEmbedded().isArray("x:orders"), is(true));
+        final List<HalRepresentation> orders = representation.getEmbedded().getItemsBy("x:orders");
+        assertThat(orders, is(items));
+        assertThat(orders.get(0).getEmbedded().isArray("x:foo"), is(false));
+        assertThat(orders.get(0).getEmbedded().getItemsBy("x:foo"), is(singletonList(nestedEmbedded)));
+        assertThat(orders.get(0).getEmbedded().getItemsBy("http://example.org/rels/foo"), is(singletonList(nestedEmbedded)));
+    }
+
+    @Test
     public void shouldReplaceEmbeddedFullRelWithCuri() throws JsonProcessingException {
         // given
         final List<HalRepresentation> items = asList(
@@ -244,6 +290,30 @@ public class HalRepresentationEmbeddingTest {
                         "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/02\"}}" +
                         "}" +
                         "]}" +
+                        "}"));
+    }
+
+    @Test
+    public void shouldReplaceSingleEmbeddedFullRelWithCuri() throws JsonProcessingException {
+        // given
+        final HalRepresentation item = new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build());
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo()
+                        .self("http://example.org/test/bar")
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .build(),
+                embedded("http://example.org/rels/foo", item)) {};
+        // when
+        final String json = new ObjectMapper().writeValueAsString(representation);
+        // then
+        assertThat(json, is(
+                "{" +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"},\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}," +
+                        "\"_embedded\":{\"x:foo\":" +
+                        "{" +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                        "}" +
+                        "}" +
                         "}"));
     }
 

@@ -202,6 +202,26 @@ public class HalRepresentation {
     }
 
     /**
+     * Adds an embedded item for a link-relation type to the HalRepresentation.
+     * <p>
+     *     The embedded item will be rendered as a single resource object.
+     * </p>
+     * <p>
+     *     If {@code rel} is already present, it is replaced by the new embedded items.
+     * </p>
+     *
+     * @param rel the link-relation type of the embedded item that is added or replaced
+     * @param embeddedItem the new value for the specified link-relation type
+     * @return this
+     *
+     * @since 2.0.0
+     */
+    protected HalRepresentation withEmbedded(final String rel, final HalRepresentation embeddedItem) {
+        embedded = copyOf(embedded).with(rel, embeddedItem).using(relRegistry).build();
+        return this;
+    }
+
+    /**
      * Merges the RelRegistry of an embedded resource with the RelRegistry of this resource and updates
      * link-relation types in _links and _embedded items.
      *

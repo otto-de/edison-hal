@@ -620,6 +620,19 @@ public class Links {
             return this;
         }
 
+        /**
+         * Removes registered links from the builder.
+         *
+         * @param rel Link-Relation Type of the links that should be removed.
+         * @return this
+         *
+         * @since 2.0.0
+         */
+        public Builder without(final String rel) {
+            this.links.remove(rel);
+            return this;
+        }
+
         public Builder using(final RelRegistry relRegistry) {
             this.relRegistry = this.relRegistry != null ? this.relRegistry.mergeWith(relRegistry) : relRegistry;
             return this;
