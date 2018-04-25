@@ -93,19 +93,19 @@ public class EmbeddedTest {
 
     @Test
     public void shouldReplaceRelsWithCuriedRels() {
-        RelRegistry relRegistry = RelRegistry.relRegistry(asList(
+        Curies curies = Curies.curies(asList(
                 curi("test", "http://example.com/rels/{rel}"))
         );
         Embedded embedded = embeddedBuilder()
                 .with("http://example.com/rels/foo", singletonList(new HalRepresentation()))
                 .with("http://example.com/rels/bar", singletonList(new HalRepresentation()))
                 .build();
-        assertThat(embedded.using(relRegistry).getRels(), contains("test:foo", "test:bar"));
+        assertThat(embedded.using(curies).getRels(), contains("test:foo", "test:bar"));
     }
 
     @Test
     public void shouldReplaceNestedRelsWithCuriedRels() {
-        RelRegistry relRegistry = RelRegistry.relRegistry(asList(
+        Curies curies = Curies.curies(asList(
                 curi("test", "http://example.com/rels/{rel}"))
         );
         Embedded embedded = embeddedBuilder()
@@ -114,7 +114,7 @@ public class EmbeddedTest {
                                 embeddedBuilder()
                                         .with("http://example.com/rels/bar", singletonList(new HalRepresentation()))
                                         .build())))
-                .using(relRegistry)
+                .using(curies)
                 .build();
         assertThat(embedded.getRels(), contains("test:foo"));
         assertThat(embedded.getItemsBy("test:foo").get(0).getEmbedded().getRels(), contains("test:bar"));
@@ -122,7 +122,7 @@ public class EmbeddedTest {
 
     @Test
     public void shouldReplaceNestedLinkRelsWithCuriedLinkRels() {
-        RelRegistry relRegistry = RelRegistry.relRegistry(asList(
+        Curies curies = Curies.curies(asList(
                 curi("test", "http://example.com/rels/{rel}"))
         );
         Embedded embedded = embeddedBuilder()
@@ -132,20 +132,20 @@ public class EmbeddedTest {
                                         .single(link("http://example.com/rels/bar", "http://example.com"))
                                         .build()
                         )))
-                .using(relRegistry)
+                .using(curies)
                 .build();
         assertThat(embedded.getItemsBy("test:foo").get(0).getLinks().getRels(), contains("test:bar"));
     }
 
     @Test
     public void shouldReplaceRelsWithCuriedRelsUsingBuilder() {
-        RelRegistry relRegistry = RelRegistry.relRegistry(asList(
+        Curies curies = Curies.curies(asList(
                 curi("test", "http://example.com/rels/{rel}"))
         );
         Embedded embedded = embeddedBuilder()
                 .with("http://example.com/rels/foo", singletonList(new HalRepresentation()))
                 .with("http://example.com/rels/bar", singletonList(new HalRepresentation()))
-                .using(relRegistry)
+                .using(curies)
                 .build();
         assertThat(embedded.getRels(), contains("test:foo", "test:bar"));
     }

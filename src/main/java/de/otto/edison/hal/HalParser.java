@@ -166,20 +166,20 @@ public final class HalParser {
         if (embeddedNodeForRel.isArray()) {
             for (int i = 0; i < embeddedNodeForRel.size(); i++) {
                 final JsonNode embeddedNode = embeddedNodeForRel.get(i);
-                embeddedValues.addAll(resolveSingleEmbedded(typeInfo, parent.getRelRegistry(), embeddedNode));
+                embeddedValues.addAll(resolveSingleEmbedded(typeInfo, parent.getCuries(), embeddedNode));
             }
         } else {
-            embeddedValues.addAll(resolveSingleEmbedded(typeInfo, parent.getRelRegistry(), embeddedNodeForRel));
+            embeddedValues.addAll(resolveSingleEmbedded(typeInfo, parent.getCuries(), embeddedNodeForRel));
         }
         parent.withEmbedded(typeInfo.getRel(), embeddedValues);
     }
 
     public List<? extends HalRepresentation> resolveSingleEmbedded(final EmbeddedTypeInfo typeInfo,
-                                                                   final RelRegistry parentRelRegistry,
+                                                                   final Curies parentCuries,
                                                                    final JsonNode embeddedNodeForRel) {
         final List<HalRepresentation> embeddedValues = new ArrayList<>();
         HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNodeForRel, typeInfo.getType())
-                .mergeWithEmbedding(parentRelRegistry);
+                .mergeWithEmbedding(parentCuries);
         if (embedded != null) {
             typeInfo.getNestedTypeInfo().forEach(nestedTypeInfo -> {
                 findPossiblyCuriedEmbeddedNode(embedded, embeddedNodeForRel, nestedTypeInfo.getRel())
@@ -206,10 +206,10 @@ public final class HalParser {
                                                               final String rel) {
         final JsonNode embedded = jsonNode.get("_embedded");
         if (embedded != null) {
-            final RelRegistry relRegistry = halRepresentation.getRelRegistry();
-            final JsonNode curiedNode = embedded.get(relRegistry.resolve(rel));
+            final Curies curies = halRepresentation.getCuries();
+            final JsonNode curiedNode = embedded.get(curies.resolve(rel));
             if (curiedNode == null) {
-                return Optional.ofNullable(embedded.get(relRegistry.expand(rel)));
+                return Optional.ofNullable(embedded.get(curies.expand(rel)));
             } else {
                 return Optional.of(curiedNode);
             }

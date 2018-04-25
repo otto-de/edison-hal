@@ -10,82 +10,82 @@ import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
 /**
  * Helper class used to resolve CURIs in links and embedded items.
  */
-public class RelRegistry {
+public class Curies {
 
     /**
      * The list of registered CURI links
      */
     private final List<Link> curies;
 
-    private RelRegistry() {
+    private Curies() {
         this.curies = new ArrayList<>();
     }
 
     /**
-     * Creates a RelRegistry from a list of CURI links.
+     * Creates a Curies from a list of CURI links.
      *
      * @param curies list of {@link Link links} with link-relation type 'curies'.
      * @throws IllegalArgumentException if the list contains non-CURI links.
      * @since 1.0.0
      */
-    private RelRegistry(final List<Link> curies) {
+    private Curies(final List<Link> curies) {
         this.curies = new ArrayList<>();
         curies.forEach(this::register);
     }
 
     /**
-     * Creates a clone from another RelRegistry instance.
+     * Creates a clone from another Curies instance.
      *
-     * @param other cloned RelRegistry
+     * @param other cloned Curies
      */
-    private RelRegistry(final RelRegistry other) {
+    private Curies(final Curies other) {
         this.curies = new ArrayList<>(other.curies);
     }
 
     /**
-     * Creates an empty RelRegistry without curi links.
+     * Creates an empty Curies without curi links.
      *
-     * @return default RelRegistry
+     * @return default Curies
      */
-    public static RelRegistry emptyRelRegistry() {
-        return new RelRegistry();
+    public static Curies emptyCuries() {
+        return new Curies();
     }
 
     /**
-     * Creates RelRegistry from some {@link Links}. CURIes contained in the Links are
+     * Creates Curies from some {@link Links}. CURIes contained in the Links are
      * {@link #register(Link) registered}.
      *
      * @param links Links possibly containing CURIes
-     * @return RelRegistry
+     * @return Curies
      */
-    public static RelRegistry relRegistry(final Links links) {
+    public static Curies curies(final Links links) {
         List<Link> curies = links.getLinksBy("curies");
-        return relRegistry(curies);
+        return curies(curies);
     }
 
     /**
-     * Creates RelRegistry from a list of CURI links.
+     * Creates Curies from a list of CURI links.
      *
      * @param curies list of {@link Link links} with link-relation type 'curies'.
-     * @return RelRegistry
+     * @return Curies
      * @throws IllegalArgumentException if the list contains non-CURI links.
      */
-    public static RelRegistry relRegistry(final List<Link> curies) {
-        return new RelRegistry(curies);
+    public static Curies curies(final List<Link> curies) {
+        return new Curies(curies);
     }
 
     /**
-     * Returns a copy of another RelRegistry instance.
+     * Returns a copy of another Curies instance.
      *
-     * @param registry copied RelRegistry
-     * @return copied LinkReRelRegistrylations
+     * @param other curies to copy
+     * @return copied Curies instance
      */
-    public static RelRegistry copyOf(final RelRegistry registry) {
-        return new RelRegistry(registry);
+    public static Curies copyOf(final Curies other) {
+        return new Curies(other);
     }
 
     /**
-     * Registers a CURI link in the RelRegistry instance.
+     * Registers a CURI link in the Curies instance.
      *
      * @param curi the CURI
      * @throws IllegalArgumentException if the link-relation type of the link is not equal to 'curies'
@@ -106,13 +106,13 @@ public class RelRegistry {
     }
 
     /**
-     * Merges this RelRegistry with another instance of RelRegistry and returns the merged instance.
+     * Merges this Curies with another instance of Curies and returns the merged instance.
      *
-     * @param other merged RelRegistry
+     * @param other merged Curies
      * @return a merged copy of this and other
      */
-    public RelRegistry mergeWith(final RelRegistry other) {
-        final RelRegistry merged = copyOf(this);
+    public Curies mergeWith(final Curies other) {
+        final Curies merged = copyOf(this);
         other.curies.forEach(merged::register);
         return merged;
     }
@@ -149,7 +149,7 @@ public class RelRegistry {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        RelRegistry that = (RelRegistry) o;
+        Curies that = (Curies) o;
         return Objects.equals(curies, that.curies);
     }
 
@@ -161,7 +161,7 @@ public class RelRegistry {
 
     @Override
     public String toString() {
-        return "RelRegistry{" +
+        return "Curies{" +
                 "curies=" + curies +
                 '}';
     }

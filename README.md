@@ -827,7 +827,8 @@ link object, or an array of link objects. The `Links.Builder` has now methods fo
 `HalRepresentation`.  
 * Because the `Links.Builder` is now able to create single link objects as well as arrays of link objects, the 
 corresponding functionality to register link-relation types to be rendered as arrays has been removed from 
-`RelRegistry`.    
+`RelRegistry`.
+* Renamed `RelRegistry` to `Curies`     
 * HalRepresentation was previously annotated with @JsonInclude(NON_NULL). This was changed so that only _links and
   _embedded are now annotated this way. This might change the behaviour / structure of existing applications.
   You should now annotate classes extending HalRepresentation, or attributes of such classes appropriately.

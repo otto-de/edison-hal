@@ -5,33 +5,33 @@ import org.junit.Test;
 import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.RelRegistry.emptyRelRegistry;
-import static de.otto.edison.hal.RelRegistry.relRegistry;
+import static de.otto.edison.hal.Curies.emptyCuries;
+import static de.otto.edison.hal.Curies.curies;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class RelRegistryTest {
+public class CuriesTest {
 
     @Test
     public void shouldBuildRegistryWithCuries() {
         // given
-        final RelRegistry relRegistry = relRegistry(
+        final Curies curies = Curies.curies(
                 linkingTo()
                         .curi("x", "http://example.com/rels/{rel}")
                         .curi("y", "http://example.org/rels/{rel}").build()
         );
         // then
-        assertThat(relRegistry.resolve("http://example.com/rels/foo"), is("x:foo"));
-        assertThat(relRegistry.resolve("http://example.org/rels/bar"), is("y:bar"));
+        assertThat(curies.resolve("http://example.com/rels/foo"), is("x:foo"));
+        assertThat(curies.resolve("http://example.org/rels/bar"), is("y:bar"));
     }
 
     @Test
     public void shouldExpandFullRel() {
         // given
-        final RelRegistry relRegistry = relRegistry(linkingTo().curi("x", "http://example.com/rels/{rel}").build());
+        final Curies curies = Curies.curies(linkingTo().curi("x", "http://example.com/rels/{rel}").build());
         // when
-        final String first = relRegistry.expand("http://example.com/rels/foo");
-        final String second = relRegistry.expand("item");
+        final String first = curies.expand("http://example.com/rels/foo");
+        final String second = curies.expand("item");
         // then
         assertThat(first, is("http://example.com/rels/foo"));
         assertThat(second, is("item"));
@@ -39,13 +39,13 @@ public class RelRegistryTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailToRegisterNonCuriLink() {
-        emptyRelRegistry().register(link("foo", "http://example.com/foo"));
+        emptyCuries().register(link("foo", "http://example.com/foo"));
     }
 
     @Test
     public void shouldResolveFullUri() {
         // given
-        final RelRegistry registry = emptyRelRegistry();
+        final Curies registry = emptyCuries();
         registry.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
         final String resolved = registry.resolve("http://spec.otto.de/rels/foo");
@@ -56,7 +56,7 @@ public class RelRegistryTest {
     @Test
     public void shouldResolveCuriedUri() {
         // given
-        final RelRegistry registry = emptyRelRegistry();
+        final Curies registry = emptyCuries();
         registry.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
         final String resolved = registry.resolve("o:foo");
@@ -67,7 +67,7 @@ public class RelRegistryTest {
     @Test
     public void shouldResolveUnknownFullUri() {
         // given
-        final RelRegistry registry = emptyRelRegistry();
+        final Curies registry = emptyCuries();
         registry.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
         final String resolved = registry.resolve("http://www.otto.de/some/other");
@@ -78,7 +78,7 @@ public class RelRegistryTest {
     @Test
     public void shouldResolveUnknownCuriedUri() {
         // given
-        final RelRegistry registry = emptyRelRegistry();
+        final Curies registry = emptyCuries();
         registry.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
         final String resolved = registry.resolve("x:other");
@@ -89,12 +89,12 @@ public class RelRegistryTest {
     @Test
     public void shouldMergeRegistries() {
         // given
-        final RelRegistry registry = emptyRelRegistry();
+        final Curies registry = emptyCuries();
         registry.register(curi("x", "http://x.otto.de/rels/{rel}"));
-        final RelRegistry other = emptyRelRegistry();
+        final Curies other = emptyCuries();
         other.register(curi("u", "http://u.otto.de/rels/{rel}"));
         // when
-        final RelRegistry merged = registry.mergeWith(other);
+        final Curies merged = registry.mergeWith(other);
         // then
         assertThat(merged.resolve("http://x.otto.de/rels/foo"), is("x:foo"));
         assertThat(merged.resolve("http://u.otto.de/rels/foo"), is("u:foo"));
@@ -103,12 +103,12 @@ public class RelRegistryTest {
     @Test
     public void shouldMergeByReplacingExistingWithOther() {
         // given
-        final RelRegistry registry = emptyRelRegistry();
+        final Curies registry = emptyCuries();
         registry.register(curi("x", "http://x.otto.de/rels/{rel}"));
-        final RelRegistry other = emptyRelRegistry();
+        final Curies other = emptyCuries();
         other.register(curi("x", "http://spec.otto.de/rels/{rel}"));
         // when
-        final RelRegistry merged = registry.mergeWith(other);
+        final Curies merged = registry.mergeWith(other);
         // then
         assertThat(merged.resolve("http://spec.otto.de/rels/foo"), is("x:foo"));
     }
@@ -116,22 +116,22 @@ public class RelRegistryTest {
     @Test
     public void shouldMergeEmptyRegistryWithNonEmpty() {
         // given
-        final RelRegistry empty = emptyRelRegistry();
-        final RelRegistry other = emptyRelRegistry();
+        final Curies empty = emptyCuries();
+        final Curies other = emptyCuries();
         other.register(curi("o", "http://spec.otto.de/rels/{rel}"));
         // when
-        final RelRegistry merged = empty.mergeWith(other);
+        final Curies merged = empty.mergeWith(other);
         // then
-        assertThat(empty, is(emptyRelRegistry()));
+        assertThat(empty, is(emptyCuries()));
         assertThat(merged.resolve("http://spec.otto.de/rels/foo"), is("o:foo"));
     }
 
     @Test
     public void shouldExpandCuri() {
         // given
-        final RelRegistry relRegistry = relRegistry(linkingTo().curi("x", "http://example.com/rels/{rel}").build());
+        final Curies curies = Curies.curies(linkingTo().curi("x", "http://example.com/rels/{rel}").build());
         // when
-        final String expanded = relRegistry.expand("x:foo");
+        final String expanded = curies.expand("x:foo");
         // then
         assertThat(expanded, is("http://example.com/rels/foo"));
     }
@@ -139,9 +139,9 @@ public class RelRegistryTest {
     @Test
     public void shouldReturnCuriIfNotResolvable() {
         // given
-        final RelRegistry relRegistry = emptyRelRegistry();
+        final Curies curies = emptyCuries();
         // when
-        final String expanded = relRegistry.expand("x:foo");
+        final String expanded = curies.expand("x:foo");
         // then
         assertThat(expanded, is("x:foo"));
     }
@@ -149,9 +149,9 @@ public class RelRegistryTest {
     @Test
     public void shouldReturnCuriIfAlreadyResolved() {
         // given
-        final RelRegistry relRegistry = relRegistry(linkingTo().curi("x", "http://example.com/rels/{rel}").build());
+        final Curies curies = Curies.curies(linkingTo().curi("x", "http://example.com/rels/{rel}").build());
         // when
-        final String expanded = relRegistry.expand("http://example.com/rels/foo");
+        final String expanded = curies.expand("http://example.com/rels/foo");
         // then
         assertThat(expanded, is("http://example.com/rels/foo"));
     }

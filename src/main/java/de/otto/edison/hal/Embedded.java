@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.util.*;
 
-import static de.otto.edison.hal.RelRegistry.emptyRelRegistry;
+import static de.otto.edison.hal.Curies.emptyCuries;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
@@ -52,9 +52,9 @@ public class Embedded {
      */
     private final Map<String,Object> items;
     /**
-     * The RelRegistry used to resolve curies
+     * The Curies instance used to resolve curies
      */
-    private final RelRegistry relRegistry;
+    private final Curies curies;
 
     /**
      * Used by Jackson to parse/create Embedded instances.
@@ -63,7 +63,7 @@ public class Embedded {
      */
     Embedded() {
         items = null;
-        relRegistry = emptyRelRegistry();
+        curies = emptyCuries();
     }
 
     /**
@@ -76,25 +76,25 @@ public class Embedded {
      */
     private Embedded(final Map<String, Object> items) {
         this.items = items;
-        this.relRegistry = emptyRelRegistry();
+        this.curies = emptyCuries();
     }
 
     @SuppressWarnings("unchecked")
-    private Embedded(final Map<String, Object> items, final RelRegistry relRegistry) {
+    private Embedded(final Map<String, Object> items, final Curies curies) {
         final Map<String, Object> curiedItems = new LinkedHashMap<>();
         for (final String rel : items.keySet()) {
             final Object itemOrListOfItems = items.get(rel);
             if (itemOrListOfItems instanceof List) {
-                curiedItems.put(relRegistry.resolve(rel), ((List<HalRepresentation>) itemOrListOfItems)
+                curiedItems.put(curies.resolve(rel), ((List<HalRepresentation>) itemOrListOfItems)
                         .stream()
-                        .map(halRepresentation -> halRepresentation.mergeWithEmbedding(relRegistry))
+                        .map(halRepresentation -> halRepresentation.mergeWithEmbedding(curies))
                         .collect(toList()));
             } else {
-                curiedItems.put(relRegistry.resolve(rel), ((HalRepresentation) itemOrListOfItems).mergeWithEmbedding(relRegistry));
+                curiedItems.put(curies.resolve(rel), ((HalRepresentation) itemOrListOfItems).mergeWithEmbedding(curies));
             }
         }
         this.items = curiedItems;
-        this.relRegistry = relRegistry;
+        this.curies = curies;
     }
 
     /**
@@ -146,7 +146,7 @@ public class Embedded {
      * @since 2.0.0
      */
     public boolean hasItem(final String rel) {
-        final String resolvedRel = relRegistry.resolve(rel);
+        final String resolvedRel = curies.resolve(rel);
         return items != null && items.containsKey(resolvedRel);
     }
 
@@ -160,7 +160,7 @@ public class Embedded {
      * @since 2.0.0
      */
     public boolean isArray(final String rel) {
-        final String resolvedRel = relRegistry.resolve(rel);
+        final String resolvedRel = curies.resolve(rel);
         return hasItem(rel) && (items.get(resolvedRel) instanceof List);
     }
 
@@ -175,8 +175,8 @@ public class Embedded {
         return new Builder();
     }
 
-    protected Embedded using(final RelRegistry relRegistry) {
-        return new Embedded(items, relRegistry);
+    protected Embedded using(final Curies curies) {
+        return new Embedded(items, curies);
     }
 
     /**
@@ -206,7 +206,7 @@ public class Embedded {
         if (!hasItem(rel)) {
             return emptyList();
         } else {
-            final Object item = items.get(relRegistry.resolve(rel));
+            final Object item = items.get(curies.resolve(rel));
             return item instanceof List
                     ? (List<HalRepresentation>) item
                     : singletonList((HalRepresentation) item);
@@ -293,7 +293,7 @@ public class Embedded {
 
     public final static class Builder {
         private final Map<String,Object> _embedded = new LinkedHashMap<>();
-        private RelRegistry relRegistry = emptyRelRegistry();
+        private Curies curies = emptyCuries();
 
         /**
          * <p>
@@ -388,8 +388,8 @@ public class Embedded {
             return this;
         }
 
-        public Builder using(final RelRegistry relRegistry) {
-            this.relRegistry = relRegistry;
+        public Builder using(final Curies curies) {
+            this.curies = curies;
             return this;
         }
 
@@ -401,7 +401,7 @@ public class Embedded {
          * @since 0.1.0
          */
         public Embedded build() {
-            return _embedded.isEmpty() ? emptyEmbedded() : new Embedded(_embedded, relRegistry);
+            return _embedded.isEmpty() ? emptyEmbedded() : new Embedded(_embedded, curies);
         }
     }
 

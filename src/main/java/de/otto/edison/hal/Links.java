@@ -17,7 +17,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static de.otto.edison.hal.Link.linkBuilder;
-import static de.otto.edison.hal.RelRegistry.emptyRelRegistry;
+import static de.otto.edison.hal.Curies.emptyCuries;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -51,7 +51,7 @@ public class Links {
     private static final String CURIES_REL = "curies";
 
     private final Map<String, Object> links = new LinkedHashMap<>();
-    private final RelRegistry relRegistry;
+    private final Curies curies;
 
 
     /**
@@ -59,7 +59,7 @@ public class Links {
      * @since 0.1.0
      */
     Links() {
-        this.relRegistry = emptyRelRegistry();
+        this.curies = emptyCuries();
     }
 
     /**
@@ -73,34 +73,34 @@ public class Links {
      *     The list of links for a link-relation type must have the same {@link Link#rel}
      * </p>
      * <p>
-     *     The {@link RelRegistry} may contain CURIs from the root resource, so curied rels can be resolved.
+     *     The {@link Curies} may contain CURIs from the root resource, so curied rels can be resolved.
      * </p>
      *
      * @param links a map with link-relation types as key and the list of links as value.
-     * @param relRegistry the RelRegistry used to CURI the link-relation types of the links.
+     * @param curies the Curies used to CURI the link-relation types of the links.
      * @since 1.0.0
      */
     @SuppressWarnings("unchecked")
-    private Links(final Map<String, Object> links, final RelRegistry relRegistry) {
-        this.relRegistry = relRegistry;
-        final List<Link> curies = (List<Link>)links.getOrDefault(CURIES_REL, emptyList());
-        curies.forEach(this.relRegistry::register);
+    private Links(final Map<String, Object> links, final Curies curies) {
+        this.curies = curies;
+        final List<Link> curiLinks = (List<Link>)links.getOrDefault(CURIES_REL, emptyList());
+        curiLinks.forEach(this.curies::register);
         links.keySet().forEach(rel -> {
-                this.links.put(relRegistry.resolve(rel), links.get(rel));
+                this.links.put(curies.resolve(rel), links.get(rel));
         });
     }
 
     /**
      * Returns a copy of this Links instance and replaces link-relation types with CURIed form, if applicable.
      * <p>
-     *     All CURIes are registered in the given RelRegistry, so the HalRepresentation can forward these
+     *     All CURIes are registered in the given Curies, so the HalRepresentation can forward these
      *     CURIes to embedded items.
      * </p>
-     * @param relRegistry RelRegistry used to replace CURIed rels
-     * @return Links having a reference to the given RelRegistry.
+     * @param curies Curies used to replace CURIed rels
+     * @return Links having a reference to the given Curies.
      */
-    Links using(final RelRegistry relRegistry) {
-        return new Links(links, relRegistry);
+    Links using(final Curies curies) {
+        return new Links(links, curies);
     }
 
     /**
@@ -227,7 +227,7 @@ public class Links {
      */
     @SuppressWarnings("unchecked")
     public List<Link> getLinksBy(final String rel) {
-        final String curiedRel = relRegistry.resolve(rel);
+        final String curiedRel = curies.resolve(rel);
         if (this.links.containsKey(curiedRel)) {
             final Object links = this.links.get(curiedRel);
             return links instanceof List
@@ -350,7 +350,7 @@ public class Links {
      */
     public static class Builder {
         private final Map<String,Object> links = new LinkedHashMap<>();
-        private RelRegistry relRegistry = emptyRelRegistry();
+        private Curies curies = emptyCuries();
 
 
 
@@ -633,8 +633,8 @@ public class Links {
             return this;
         }
 
-        public Builder using(final RelRegistry relRegistry) {
-            this.relRegistry = this.relRegistry != null ? this.relRegistry.mergeWith(relRegistry) : relRegistry;
+        public Builder using(final Curies curies) {
+            this.curies = this.curies != null ? this.curies.mergeWith(curies) : curies;
             return this;
         }
 
@@ -644,7 +644,7 @@ public class Links {
          * @return Links
          */
         public Links build() {
-            return new Links(links, relRegistry);
+            return new Links(links, curies);
         }
     }
 
@@ -702,7 +702,7 @@ public class Links {
 
             return new Links(
                     links,
-                    emptyRelRegistry()
+                    emptyCuries()
             );
         }
 

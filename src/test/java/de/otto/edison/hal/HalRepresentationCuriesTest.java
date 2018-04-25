@@ -10,7 +10,7 @@ import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.RelRegistry.relRegistry;
+import static de.otto.edison.hal.Curies.curies;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,27 +69,27 @@ public class HalRepresentationCuriesTest {
     }
 
     @Test
-    public void shouldConstructWithRelRegistry() {
-        final RelRegistry relRegistry = relRegistry(asList(curi("x", "http://example.com/rels/{rel}")));
-        final HalRepresentation hal = new HalRepresentation(emptyLinks(), emptyEmbedded(), relRegistry);
-        assertThat(hal.getRelRegistry().resolve("http://example.com/rels/foo"), is("x:foo"));
+    public void shouldConstructWithCuries() {
+        final Curies curies = curies(asList(curi("x", "http://example.com/rels/{rel}")));
+        final HalRepresentation hal = new HalRepresentation(emptyLinks(), emptyEmbedded(), curies);
+        assertThat(hal.getCuries().resolve("http://example.com/rels/foo"), is("x:foo"));
     }
 
     @Test
-    public void shouldConstructWithLinksAndRelRegistry() {
-        final RelRegistry relRegistry = relRegistry(asList(curi("x", "http://example.com/rels/{rel}")));
+    public void shouldConstructWithLinksAndCuries() {
+        final Curies curies = curies(asList(curi("x", "http://example.com/rels/{rel}")));
         final HalRepresentation hal = new HalRepresentation(
                 linkingTo().single(link("http://example.com/rels/foo", "http://example.com")).build(),
                 emptyEmbedded(),
-                relRegistry);
+                curies);
         assertThat(hal.getLinks().getRels(), contains("x:foo"));
         assertThat(hal.getLinks().getLinkBy("x:foo").isPresent(), is(true));
         assertThat(hal.getLinks().getLinkBy("http://example.com/rels/foo").isPresent(), is(true));
     }
 
     @Test
-    public void shouldConstructWithEmbeddedAndRelRegistry() {
-        final RelRegistry relRegistry = relRegistry(asList(curi("x", "http://example.com/rels/{rel}")));
+    public void shouldConstructWithEmbeddedAndCuries() {
+        final Curies curies = curies(asList(curi("x", "http://example.com/rels/{rel}")));
         final HalRepresentation hal = new HalRepresentation(
                 emptyLinks(),
                 embedded(
@@ -98,7 +98,7 @@ public class HalRepresentationCuriesTest {
                                 linkingTo().single(link("http://example.com/rels/foo", "http://example.com")).build(),
                                 emptyEmbedded()
                         ))),
-                relRegistry);
+                curies);
         assertThat(hal.getEmbedded().getRels(), contains("x:nested"));
         final HalRepresentation embedded = hal.getEmbedded().getItemsBy("http://example.com/rels/nested").get(0);
         assertThat(embedded.getLinks().getLinkBy("x:foo").isPresent(), is(true));
@@ -106,11 +106,11 @@ public class HalRepresentationCuriesTest {
     }
 
     @Test
-    public void shouldInheritRelRegistry() {
+    public void shouldInheritCuries() {
         final HalRepresentation embeddedHal = new HalRepresentation();
         final HalRepresentation representation = new HalRepresentation(emptyLinks(), embedded("http://example.com/rels/foo", singletonList(embeddedHal)));
-        representation.mergeWithEmbedding(relRegistry(singletonList(curi("x", "http://example.com/rels/{rel}"))));
-        assertThat(embeddedHal.getRelRegistry().resolve("http://example.com/rels/foo"), is("x:foo"));
+        representation.mergeWithEmbedding(curies(singletonList(curi("x", "http://example.com/rels/{rel}"))));
+        assertThat(embeddedHal.getCuries().resolve("http://example.com/rels/foo"), is("x:foo"));
     }
 
 }
