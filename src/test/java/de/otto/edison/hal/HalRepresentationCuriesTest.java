@@ -4,18 +4,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
+import static de.otto.edison.hal.Curies.curies;
 import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Link.curi;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static de.otto.edison.hal.Links.linkingTo;
-import static de.otto.edison.hal.Curies.curies;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 public class HalRepresentationCuriesTest {
 
@@ -111,6 +110,21 @@ public class HalRepresentationCuriesTest {
         final HalRepresentation representation = new HalRepresentation(emptyLinks(), embedded("http://example.com/rels/foo", singletonList(embeddedHal)));
         representation.mergeWithEmbedding(curies(singletonList(curi("x", "http://example.com/rels/{rel}"))));
         assertThat(embeddedHal.getCuries().resolve("http://example.com/rels/foo"), is("x:foo"));
+    }
+
+    @Test
+    public void shouldRemoveDuplicateCuries() {
+        // given
+        final HalRepresentation embeddedHal = new HalRepresentation(linkingTo().curi("x", "http://example.com/rels/{rel}").build());
+        final HalRepresentation representation = new HalRepresentation(linkingTo().curi("x", "http://example.com/rels/{rel}").build(), embedded("http://example.com/rels/foo", singletonList(embeddedHal)));
+        // when
+        final HalRepresentation embeddedAfterCreation = representation.getEmbedded().getItemsBy("x:foo").get(0);
+        // then
+        assertThat(embeddedAfterCreation.getCuries().resolve("http://example.com/rels/foo"), is("x:foo"));
+        assertThat(embeddedAfterCreation.getLinks().getLinksBy("curies"), is(empty()));
+        assertThat(representation.getLinks().getLinksBy("curies"), contains(curi("x", "http://example.com/rels/{rel}")));
+        // but
+        assertThat(embeddedHal.getLinks().getLinksBy("curies"), is(empty()));
     }
 
 }

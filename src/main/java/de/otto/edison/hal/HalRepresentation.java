@@ -3,16 +3,17 @@ package de.otto.edison.hal;
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static de.otto.edison.hal.Curies.emptyCuries;
 import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Links.copyOf;
 import static de.otto.edison.hal.Links.emptyLinks;
-import static de.otto.edison.hal.Curies.emptyCuries;
 
 /**
  * Representation used to parse and create HAL+JSON documents from Java classes.
@@ -230,8 +231,11 @@ public class HalRepresentation {
      */
     HalRepresentation mergeWithEmbedding(final Curies curies) {
         this.curies = this.curies.mergeWith(curies);
-        if (links != null) {
-            links = links.using(curies);
+        if (this.links != null) {
+
+            removeDuplicateCuriesFromEmbedding(curies);
+
+            this.links = this.links.using(this.curies);
             if (embedded != null) {
                 embedded = embedded.using(this.curies);
             }
@@ -241,6 +245,16 @@ public class HalRepresentation {
             }
         }
         return this;
+    }
+
+    private void removeDuplicateCuriesFromEmbedding(final Curies curies) {
+        if (this.links.hasLink("curies")) {
+            final List<Link> curiLinks = new ArrayList<>(this.links.getLinksBy("curies"));
+            curies.getCuries().forEach(curi -> {
+                curiLinks.removeIf((link -> link.isEquivalentTo(curi)));
+            });
+            this.links = copyOf(this.links).replace("curies", curiLinks).build();
+        }
     }
 
     /**

@@ -13,8 +13,7 @@ import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 public class HalRepresentationEmbeddingTest {
 
@@ -186,7 +185,61 @@ public class HalRepresentationEmbeddingTest {
     }
 
     @Test
-    public void shouldUseCuriesInSingleEmbedded() throws JsonProcessingException {
+    public void shouldRemoveDuplicateCuriesFromEmbedded() {
+        // given
+        final List<HalRepresentation> items = asList(
+                new HalRepresentation(linkingTo()
+                        .self("http://example.org/test/bar/01")
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .build()),
+                new HalRepresentation(linkingTo()
+                        .self("http://example.org/test/bar/02")
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .build())
+        );
+        // when
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}").build(),
+                embedded("x:orders", items)) {};
+        // then
+        List<HalRepresentation> embeddedItems = representation.getEmbedded().getItemsBy("x:orders");
+        assertThat(embeddedItems, hasSize(2));
+        embeddedItems.forEach(item -> {
+            assertThat(item.getLinks().getLinkBy("curies").isPresent(), is(false));
+        });
+    }
+
+    @Test
+    public void shouldRemoveDuplicateCuriesFromEmbeddedUsingWithEmbedded() {
+        // given
+        final List<HalRepresentation> items = asList(
+                new HalRepresentation(linkingTo()
+                        .self("http://example.org/test/bar/01")
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .build()),
+                new HalRepresentation(linkingTo()
+                        .self("http://example.org/test/bar/02")
+                        .curi("x", "http://example.org/rels/{rel}")
+                        .build())
+        );
+        // when
+        final HalRepresentation representation = new HalRepresentation(
+                linkingTo()
+                        .curi("x", "http://example.org/rels/{rel}").build());
+
+        final HalRepresentation embedding = representation.withEmbedded("x:orders", items);
+
+        // then
+        List<HalRepresentation> embeddedItems = embedding.getEmbedded().getItemsBy("x:orders");
+        assertThat(embeddedItems, hasSize(2));
+        embeddedItems.forEach(item -> {
+            assertThat(item.getLinks().getLinkBy("curies").isPresent(), is(false));
+        });
+    }
+
+    @Test
+    public void shouldUseCuriesInSingleEmbedded() {
         // given
         final HalRepresentation item = new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build());
         // when
@@ -202,7 +255,7 @@ public class HalRepresentationEmbeddingTest {
     }
 
     @Test
-    public void shouldUseCuriesByFullRelInEmbedded() throws JsonProcessingException {
+    public void shouldUseCuriesByFullRelInEmbedded() {
         // given
         final List<HalRepresentation> items = asList(
                 new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()),
@@ -218,7 +271,7 @@ public class HalRepresentationEmbeddingTest {
     }
 
     @Test
-    public void shouldUseCuriesInNestedEmbedded() throws JsonProcessingException {
+    public void shouldUseCuriesInNestedEmbedded() {
         // given
         final List<HalRepresentation> nestedEmbedded = singletonList(new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build()));
         final List<HalRepresentation> items = singletonList(
@@ -240,7 +293,7 @@ public class HalRepresentationEmbeddingTest {
     }
 
     @Test
-    public void shouldUseCuriesInSingleNestedEmbedded() throws JsonProcessingException {
+    public void shouldUseCuriesInSingleNestedEmbedded() {
         // given
         final HalRepresentation nestedEmbedded = new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build());
         final List<HalRepresentation> items = singletonList(

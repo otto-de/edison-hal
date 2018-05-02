@@ -16,8 +16,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static de.otto.edison.hal.Link.linkBuilder;
 import static de.otto.edison.hal.Curies.emptyCuries;
+import static de.otto.edison.hal.Link.linkBuilder;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -594,6 +594,40 @@ public class Links {
                     throw new IllegalStateException("Unable to add links with rel=" + link.getRel() + " as there is already a single Link Object added for this link-relation type");
                 }
             });
+            return this;
+        }
+
+        /**
+         * Replaces the link(s) currently associated with {@code rel} by a list of links to the builder that will  be
+         * rendered as an array of link-objects.
+         * <p>
+         *     All links must have the {@link Link#getRel() Link-Relation Type} specified in {@code rel}, otherwise
+         *     an {@link IllegalArgumentException} is thrown.
+         * </p>
+         * <p>
+         *     As specified in <a href="https://tools.ietf.org/html/draft-kelly-json-hal-06#section-4.1.1">Section 4.1.1</a>
+         *     of the HAL specification, the {@code _links} object <em>"is an object whose property names are
+         *     link relation types (as defined by [RFC5988]) and values are either a Link Object or an array
+         *     of Link Objects"</em>.
+         * </p>
+         * <p>
+         *     Replacing links using {@code replace(List<Link>)} will result in a representation, where the links are
+         *     rendered as an array of Link Objects, even if there are only single links for a given Link-Relation Type.
+         * </p>
+         *
+         * @param links the list of links.
+         * @return this
+         *
+         * @since 2.0.0
+         */
+        public Builder replace(final String rel, final List<Link> links) {
+            if (!links.stream().allMatch(link -> link.getRel().equals(rel))) {
+                throw new IllegalArgumentException("All links must have link-relation type " + rel);
+            }
+            if (!this.links.containsKey(rel)) {
+                return array(links);
+            }
+            this.links.replace(rel, links);
             return this;
         }
 
