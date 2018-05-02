@@ -816,6 +816,10 @@ in different ways.
 
 ### 2.0.0-m2
 
+*Bugfixes*
+
+* Issue 22: Duplicate curies are now removed from embedded objects, if they are specified in the embedding `HalRepresentation`.
+
 *Breaking Changes*
 
 * The API to create Links instances has changed: the former `Links.linkingTo(List<Link>)`, 
@@ -828,9 +832,11 @@ link object, or an array of link objects. The `Links.Builder` has now methods fo
 * Because the `Links.Builder` is now able to create single link objects as well as arrays of link objects, the 
 corresponding functionality to register link-relation types to be rendered as arrays has been removed from 
 `RelRegistry`.
+* Issue 21: Similar to the links, it is now possible to specify whether or not embedded resources are embedded as 
+single resource objects, or arrays of resources objects.
 * Renamed `RelRegistry` to `Curies`     
-* HalRepresentation was previously annotated with @JsonInclude(NON_NULL). This was changed so that only _links and
-  _embedded are now annotated this way. This might change the behaviour / structure of existing applications.
+* Issue 20: HalRepresentation was previously annotated with @JsonInclude(NON_NULL). This was changed so that only 
+_links and _embedded are now annotated this way. This might change the behaviour / structure of existing applications.
   You should now annotate classes extending HalRepresentation, or attributes of such classes appropriately.
   
 ### 2.0.0-m1

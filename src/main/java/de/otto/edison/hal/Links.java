@@ -615,6 +615,7 @@ public class Links {
          *     rendered as an array of Link Objects, even if there are only single links for a given Link-Relation Type.
          * </p>
          *
+         * @param rel the Link-Relation Type that is replaced by the links
          * @param links the list of links.
          * @return this
          *
