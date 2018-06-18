@@ -814,7 +814,7 @@ in different ways.
 
 ## 7. Version History
 
-### 2.0.0-m3
+### 2.0.0
 
 *New Features / API extensions*
 
