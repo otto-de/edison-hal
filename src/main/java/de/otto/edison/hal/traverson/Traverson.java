@@ -2,6 +2,7 @@ package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.otto.edison.hal.*;
 import org.slf4j.Logger;
 
@@ -14,6 +15,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
+import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.copyOf;
@@ -21,9 +23,7 @@ import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.LinkPredicates.always;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -82,14 +82,22 @@ public class Traverson {
 
     private static final Logger LOG = getLogger(Traverson.class);
 
+    public static final ObjectMapper DEFAULT_JSON_MAPPER = new ObjectMapper();
+    static {
+        DEFAULT_JSON_MAPPER.configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        DEFAULT_JSON_MAPPER.findAndRegisterModules();
+    }
+
+    private final ObjectMapper objectMapper;
     private final LinkResolver linkResolver;
     private final List<Hop> hops = new ArrayList<>();
     private URL startWith;
     private URL contextUrl;
     private List<? extends HalRepresentation> lastResult;
 
-    private Traverson(final LinkResolver linkResolver) {
+    private Traverson(final LinkResolver linkResolver, final ObjectMapper objectMapper) {
         this.linkResolver = linkResolver;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -110,7 +118,36 @@ public class Traverson {
      * @return Traverson
      */
     public static Traverson traverson(final LinkResolver linkResolver) {
-        return new Traverson(linkResolver);
+        return new Traverson(linkResolver, DEFAULT_JSON_MAPPER);
+    }
+
+    /**
+     * <p>
+     *     Create a Traverson that is using the given {@link Function} to resolve a Link and return a HAL+JSON document.
+     * </p>
+     * <p>
+     *     The function will be called by the Traverson, whenever a Link must be followed. The Traverson will
+     *     take care of URI templates (templated links), so the implementation of the function can rely on the
+     *     Link parameter to be not {@link Link#isTemplated() templated}.
+     * </p>
+     * <p>
+     *     Typical implementations of the Function will rely on some HTTP client. Especially in this case,
+     *     the function should take care of the link's {@link Link#getType() type} and {@link Link#getProfile()},
+     *     so the proper HTTP Accept header is used.
+     * </p>
+     * @param linkResolver A function that gets a Link of a resource and returns a HAL+JSON document.
+     * @param objectMapper The ObjectMapper instance used to parse documents.
+     * @return Traverson
+     */
+    public static Traverson traverson(final LinkResolver linkResolver,
+                                      final ObjectMapper objectMapper) {
+        if (objectMapper.isEnabled(ACCEPT_SINGLE_VALUE_AS_ARRAY)) {
+            return new Traverson(linkResolver, objectMapper);
+        } else {
+            return new Traverson(linkResolver, objectMapper
+                    .copy()
+                    .configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true));
+        }
     }
 
     /**
@@ -1301,8 +1338,8 @@ public class Traverson {
         }
         try {
             return embeddedType != null && !embeddedType.isEmpty()
-                    ? parse(json).as(type, embeddedType)
-                    : parse(json).as(type);
+                    ? parse(json, objectMapper).as(type, embeddedType)
+                    : parse(json, objectMapper).as(type);
         } catch (final RuntimeException e) {
             LOG.error("Failed to parse resource href={} rel={} as type={} with embeddedType={}", link.getHref(), link.getRel(), type.getSimpleName(), embeddedType);
             throw e;

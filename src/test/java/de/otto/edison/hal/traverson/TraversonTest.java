@@ -3,6 +3,7 @@ package de.otto.edison.hal.traverson;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
@@ -164,6 +165,30 @@ public class TraversonTest {
         final Optional<Link> self = hal.getLinks().getLinkBy("self");
         assertThat(self.isPresent(), is(true));
         assertThat(self.get().getHref(), is("http://example.com/example/foo"));
+    }
+
+    @Test
+    public void shouldFollowLinkUsingCustomObjectMapper() throws IOException {
+        // given
+        @SuppressWarnings("unchecked")
+        final LinkResolver mock = mock(LinkResolver.class);
+        when(mock.apply(self("http://example.com/example"))).thenReturn(
+                "{\"_links\":{\"foo\":[{\"href\":\"http://example.com/example/foo\"}]}}");
+        when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
+                "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
+        // when
+        final HalRepresentation hal = traverson(mock, new ObjectMapper())
+                .startWith("http://example.com/example")
+                .follow("foo")
+                .getResource()
+                .get();
+        final HalRepresentation expectedHalt = traverson(mock)
+                .startWith("http://example.com/example")
+                .follow("foo")
+                .getResource()
+                .get();
+        // then
+        assertThat(hal, is(expectedHalt));
     }
 
     @Test

@@ -44,33 +44,75 @@ import static java.util.Arrays.asList;
  */
 public final class HalParser {
 
-    /** The Jackson ObjectMapper used to parse application/hal+json documents. */
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    /**
+     * The Jackson ObjectMapper that is used to parse application/hal+json documents if not other instance
+     * is specified explicitly.
+     * <p>
+     *     The mapper will {@link ObjectMapper#findAndRegisterModules() find and register} all available Jackson
+     *     modules and configure the mapper to
+     *     {@link com.fasterxml.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
+     * </p>
+     */
+    public static final ObjectMapper DEFAULT_JSON_MAPPER = new ObjectMapper();
     static {
-        JSON_MAPPER.configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        DEFAULT_JSON_MAPPER.configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        DEFAULT_JSON_MAPPER.findAndRegisterModules();
     }
 
-    /** The JSON documents that is going to be parsed */
+    /** The JSON documents that is going to be parsed. */
     private final String json;
+    /** The ObjectMapper used to parse the JSON documents. */
+    private final ObjectMapper objectMapper;
 
     /**
      * Creates a HalParser for a given JSON document.
+     * <p>
+     *     The mapper will be configured the mapper to
+     *     {@link com.fasterxml.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
+     * </p>
      *
-     * @since 0.1.0
+     * @since 2.0.0
      */
-    private HalParser(final String json) {
+    private HalParser(final String json, final ObjectMapper objectMapper) {
         this.json = json;
+        this.objectMapper = objectMapper;
     }
 
     /**
      * Create a new HalParser for a JSON document.
+     * <p>
+     *     The {@link #DEFAULT_JSON_MAPPER} is used to parse documents.
+     * </p>
      * @param json the application/hal+json document to be parsed.
      * @return HalParser instance.
      *
      * @since 0.1.0
      */
     public static HalParser parse(final String json) {
-        return new HalParser(json);
+        return new HalParser(json, DEFAULT_JSON_MAPPER);
+    }
+
+    /**
+     * Create a new HalParser for a JSON document.
+     * <p>
+     *     The specified {@code objectMapper} is used to parse documents. If not already configured
+     *     appropriately, the {@code objectMapper} is copied and configured to
+     *     {@link com.fasterxml.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
+     * </p>
+     * @param json the application/hal+json document to be parsed.
+     * @param objectMapper the ObjectMapper instance used to parse documents.
+     * @return HalParser instance.
+     *
+     * @since 0.1.0
+     */
+    public static HalParser parse(final String json, final ObjectMapper objectMapper) {
+        if (objectMapper.isEnabled(ACCEPT_SINGLE_VALUE_AS_ARRAY)) {
+            return new HalParser(json, objectMapper);
+        } else {
+            return new HalParser(json, objectMapper
+                    .copy()
+                    .configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true));
+        }
     }
 
     /**
@@ -85,7 +127,7 @@ public final class HalParser {
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type) throws IOException {
-        return JSON_MAPPER.readValue(json, type);
+        return objectMapper.readValue(json, type);
     }
 
     /**
@@ -128,8 +170,8 @@ public final class HalParser {
      */
     public <T extends HalRepresentation> T as(final Class<T> type,
                                               final List<EmbeddedTypeInfo> typeInfo) throws IOException {
-        final JsonNode jsonNode = JSON_MAPPER.readTree(json);
-        final T halRepresentation = JSON_MAPPER.convertValue(jsonNode, type);
+        final JsonNode jsonNode = objectMapper.readTree(json);
+        final T halRepresentation = objectMapper.convertValue(jsonNode, type);
         resolveEmbeddedTypeInfo(typeInfo, jsonNode, halRepresentation);
         return halRepresentation;
     }
@@ -178,7 +220,7 @@ public final class HalParser {
                                                                    final Curies parentCuries,
                                                                    final JsonNode embeddedNodeForRel) {
         final List<HalRepresentation> embeddedValues = new ArrayList<>();
-        HalRepresentation embedded = JSON_MAPPER.convertValue(embeddedNodeForRel, typeInfo.getType())
+        HalRepresentation embedded = objectMapper.convertValue(embeddedNodeForRel, typeInfo.getType())
                 .mergeWithEmbedding(parentCuries);
         if (embedded != null) {
             typeInfo.getNestedTypeInfo().forEach(nestedTypeInfo -> {

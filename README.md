@@ -814,6 +814,12 @@ in different ways.
 
 ## 7. Version History
 
+### 2.0.0-m3
+
+*New Features / API extensions*
+
+* Issue 23: Allow customization of the Jackson ObjectMapper used in HalParser (and Traverson)
+
 ### 2.0.0-m2
 
 *Bugfixes*

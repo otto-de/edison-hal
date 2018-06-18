@@ -1,6 +1,7 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -12,9 +13,7 @@ import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 public class HalParserTest {
 
@@ -88,6 +87,25 @@ public class HalParserTest {
         assertThat(embeddedItems, hasSize(1));
         assertThat(embeddedItems.get(0).getClass(), equalTo(HalRepresentation.class));
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
+    }
+
+    @Test
+    public void shouldParseEmbeddedItemsAsPlainHalRepresentationWithSpecificObjectMapper() throws IOException {
+        // given
+        final String json =
+                "{" +
+                "   \"_embedded\":{\"bar\":[" +
+                "       {" +
+                "           \"value\":\"3\"," +
+                "           \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
+                "       }" +
+                "   ]}" +
+                "}";
+        // when
+        final SimpleHalRepresentation result = parse(json, new ObjectMapper()).as(SimpleHalRepresentation.class);
+        final SimpleHalRepresentation expectedResult = parse(json).as(SimpleHalRepresentation.class);
+        // then
+        assertThat(result, is(expectedResult));
     }
 
     @Test
@@ -216,6 +234,40 @@ public class HalParserTest {
         assertThat(embeddedBar, hasSize(1));
         assertThat(embeddedBar.get(0).getClass(), equalTo(EmbeddedHalRepresentation.class));
         assertThat(embeddedBar.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar")));
+    }
+
+    @Test
+    public void shouldParseNestedEmbeddedItemsWithDifferentSpecificTypesUsingCustomObjectMapper() throws IOException {
+        // given
+        final String json =
+                "{" +
+                "   \"_embedded\":{\"test\":[{" +
+                "      \"_embedded\":{" +
+                "          \"foo\":[{" +
+                "              \"fooValue\":\"1\"," +
+                "              \"_links\":{\"self\":[{\"href\":\"http://example.org/test/foo\"}]}" +
+                "          }]," +
+                "          \"bar\":[{" +
+                "              \"value\":\"2\"," +
+                "              \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar\"}]}" +
+                "          }]" +
+                "      }" +
+                "      }" +
+                "   ]}" +
+                "}";
+        final ObjectMapper objectMapper = new ObjectMapper();
+
+        // when
+        final SimpleHalRepresentation result = parse(json, objectMapper)
+                .as(SimpleHalRepresentation.class,
+                        withEmbedded("test", HalRepresentation.class,
+                                withEmbedded("bar", EmbeddedHalRepresentation.class))
+                );
+        // then
+        assertThat(result, is(parse(json)
+                .as(SimpleHalRepresentation.class,
+                        withEmbedded("test", HalRepresentation.class,
+                                withEmbedded("bar", EmbeddedHalRepresentation.class)))));
     }
 
     static class SimpleHalRepresentation extends HalRepresentation {
