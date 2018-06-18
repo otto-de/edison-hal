@@ -820,6 +820,10 @@ in different ways.
 
 * Issue 23: Allow customization of the Jackson ObjectMapper used in HalParser (and Traverson)
 
+*Dependency Updates*
+* Updated `com.fasterxml.jackson.core:jackson-databind` from 2.9.1 to 2.9.6
+* Updated `com.damnhandy:handy-uri-templates` from 2.1.6 to 2.1.7
+ 
 ### 2.0.0-m2
 
 *Bugfixes*
