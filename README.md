@@ -57,7 +57,7 @@ Before using this library, you should have a good understanding of the Hypertext
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:1.0.0",
+        compile "de.otto.edison:edison-hal:2.0.0",
         ...
     }
 ```
@@ -491,9 +491,6 @@ This will be necessary, if there are single embedded items for a link-relation t
 }
 ```
 
-In general, this should not be necessary as it should be specified, whether a Link-Relation Type is rendered as an 
-array or as a single link-object.
-
 #### 4.6.2 Using the HalParser
 
 If you want to parse embedded resources as a sub-class of HalRepresentation, you need to use the *HalParser*:
@@ -529,6 +526,15 @@ class Example_4_6_2 {
         assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 }
+```
+
+The 'ObjectMapper' used by the HalParser by default will automatically register all Jackson modules using `ObjectMapper#findAndRegisterModules()`. You may specify a different `ObjectMapper` instance like this:
+
+```java
+final ObjectMapper myObjectMapper = new ObjectMapper();
+final HalRepresentation result = HalParser
+        .parse(json, myObjectMapper)
+        .as(HalRepresentation.class);
 ```
 
 ### 4.6.3 Nested embedded resources
@@ -660,6 +666,9 @@ Traverson is a utility to make it easy to traverse linked and/or embedded resour
 
 The Traverson is automatically taking care of embedded resources: if a linked resource is already embedded, it is used 
 instead of resolving the link. Only if it is not embedded, the Traverson is following the links. 
+
+Just like the `HalParser`, the Traverson is using an `ObjectMapper` that is registering all Jackson Modules automatically. The default `ObjectMapper` can be replaced by a custom instance by creating the `Traverson` using the static factory method
+`Traverson.traverson(LinkResolver, ObjectMapper)`.
 
 ### 4.8 Selecting Links
 
@@ -818,7 +827,7 @@ in different ways.
 
 *New Features / API extensions*
 
-* Issue 23: Allow customization of the Jackson ObjectMapper used in HalParser (and Traverson)
+* Issue 23: Allow customization of the Jackson `ObjectMapper` used in `HalParser` `Traverson`.
 
 *Dependency Updates*
 * Updated `com.fasterxml.jackson.core:jackson-databind` from 2.9.1 to 2.9.6
