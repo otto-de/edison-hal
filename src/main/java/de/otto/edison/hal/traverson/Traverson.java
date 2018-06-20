@@ -138,6 +138,8 @@ public class Traverson {
      * @param linkResolver A function that gets a Link of a resource and returns a HAL+JSON document.
      * @param objectMapper The ObjectMapper instance used to parse documents.
      * @return Traverson
+     *
+     * @since 2.0.0
      */
     public static Traverson traverson(final LinkResolver linkResolver,
                                       final ObjectMapper objectMapper) {

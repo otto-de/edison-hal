@@ -103,7 +103,7 @@ public final class HalParser {
      * @param objectMapper the ObjectMapper instance used to parse documents.
      * @return HalParser instance.
      *
-     * @since 0.1.0
+     * @since 2.0.0
      */
     public static HalParser parse(final String json, final ObjectMapper objectMapper) {
         if (objectMapper.isEnabled(ACCEPT_SINGLE_VALUE_AS_ARRAY)) {
