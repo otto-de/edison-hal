@@ -9,7 +9,6 @@ representations of REST resources using Jackson.
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal)
 [![Javadoc](https://www.javadoc.io/badge/de.otto.edison/edison-hal.svg)](https://www.javadoc.io/doc/de.otto.edison/edison-hal)
 [![codecov](https://codecov.io/gh/otto-de/edison-hal/branch/master/graph/badge.svg)](https://codecov.io/gh/otto-de/edison-hal)
-[![Dependency Status](https://www.versioneye.com/user/projects/5790e6b326c1a40035ecd1e8/badge.svg?style=flat)](https://www.versioneye.com/user/projects/5790e6b326c1a40035ecd1e8)
 
 ## 2. About
 
