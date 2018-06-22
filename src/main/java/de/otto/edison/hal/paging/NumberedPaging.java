@@ -141,7 +141,8 @@ public class NumberedPaging {
         }
         this.pageNumber = pageNumber;
         this.pageSize = pageSize;
-        this.hasMore = pageNumber*pageSize < total;
+        int pageOffset = firstPage == 0 ? 1 : 0;
+        this.hasMore = (pageNumber + pageOffset)*pageSize < total;
         this.total = of(total);
         this.firstPage = firstPage;
     }
