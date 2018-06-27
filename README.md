@@ -822,6 +822,12 @@ in different ways.
 
 ## 7. Version History
 
+### 2.0.1
+
+*Bugfixes*
+
+* Fixes next page bug for zero-based paging (Issue #24)
+
 ### 2.0.0
 
 *New Features / API extensions*
