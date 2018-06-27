@@ -58,6 +58,7 @@ public class ZeroBasedNumberedPagingTest {
         assertThat(p.getPageSize(), is(100));
         assertThat(p.getTotal().getAsInt(), is(0));
         assertThat(p.getLastPage().getAsInt(), is(0));
+        assertThat(p.hasMore(), is(false));
     }
 
     @Test
@@ -68,6 +69,7 @@ public class ZeroBasedNumberedPagingTest {
         assertThat(p.getPageSize(), is(100));
         assertThat(p.getTotal().getAsInt(), is(1));
         assertThat(p.getLastPage().getAsInt(), is(0));
+        assertThat(p.hasMore(), is(false));
     }
 
     @Test
@@ -78,6 +80,7 @@ public class ZeroBasedNumberedPagingTest {
         assertThat(p.getPageSize(), is(100));
         assertThat(p.getTotal().getAsInt(), is(100));
         assertThat(p.getLastPage().getAsInt(), is(0));
+        assertThat(p.hasMore(), is(false));
     }
 
     @Test
@@ -88,6 +91,7 @@ public class ZeroBasedNumberedPagingTest {
         assertThat(p.getPageSize(), is(100));
         assertThat(p.getTotal().getAsInt(), is(201));
         assertThat(p.getLastPage().getAsInt(), is(2));
+        assertThat(p.hasMore(), is(true));
     }
 
     @Test
@@ -107,7 +111,7 @@ public class ZeroBasedNumberedPagingTest {
 
         assertThat(isAbsent(paging, "self"), is(true));
         assertThat(isAbsent(paging, "first"), is(true));
-        assertThat(isAbsent(paging, "next"), is(false));
+        assertThat(isAbsent(paging, "next"), is(true));
         assertThat(isAbsent(paging, "prev"), is(false));
         assertThat(isAbsent(paging, "last"), is(true));
     }

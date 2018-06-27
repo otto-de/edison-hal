@@ -82,6 +82,7 @@ public class OneBasedNumberedPagingTest {
         assertThat(p.getPageSize(), is(100));
         assertThat(p.getTotal().getAsInt(), is(1));
         assertThat(p.getLastPage().getAsInt(), is(1));
+        assertThat(p.hasMore(), is(false));
     }
 
     @Test
@@ -92,6 +93,7 @@ public class OneBasedNumberedPagingTest {
         assertThat(p.getPageSize(), is(100));
         assertThat(p.getTotal().getAsInt(), is(100));
         assertThat(p.getLastPage().getAsInt(), is(1));
+        assertThat(p.hasMore(), is(false));
     }
 
     @Test
@@ -102,6 +104,7 @@ public class OneBasedNumberedPagingTest {
         assertThat(p.getPageSize(), is(100));
         assertThat(p.getTotal().getAsInt(), is(201));
         assertThat(p.getLastPage().getAsInt(), is(3));
+        assertThat(p.hasMore(), is(true));
     }
 
     @Test
