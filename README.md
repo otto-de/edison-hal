@@ -56,7 +56,7 @@ Before using this library, you should have a good understanding of the Hypertext
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:2.0.0",
+        compile "de.otto.edison:edison-hal:2.0.2",
         ...
     }
 ```
