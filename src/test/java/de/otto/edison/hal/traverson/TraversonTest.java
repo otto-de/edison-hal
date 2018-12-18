@@ -68,6 +68,11 @@ public class TraversonTest {
     }
 
     @Test
+    public void shouldCreateEvenMoreParameters() {
+        assertThat(withVars("foo", "bar", "oof", "rab", "ofo", "abr").values(), contains("bar", "rab", "abr"));
+    }
+
+    @Test
     public void shouldGetEmptyHalRepresentation() throws IOException {
         final Traverson t = traverson(s->"{}").startWith("http://example.com/");
         assertThat(t.getResource().get().getLinks(), is(emptyLinks()));

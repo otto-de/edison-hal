@@ -822,6 +822,12 @@ in different ways.
 
 ## 7. Version History
 
+### 2.0.2
+
+*Bugfixes*
+
+Fixed issues when more than two parameters in the Traverson.withVars() function.
+
 ### 2.0.1
 
 *Bugfixes*
