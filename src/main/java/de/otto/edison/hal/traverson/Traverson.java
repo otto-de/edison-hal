@@ -176,7 +176,7 @@ public class Traverson {
         final Map<String, Object> map = new HashMap<>();
         map.put(key, value);
         if (more != null) {
-            for (int i=0; i<more.length/2; i+=2) {
+            for (int i=0; i<more.length; i+=2) {
                 map.put(more[i].toString(), more[i+1]);
             }
         }
