@@ -109,6 +109,39 @@ public class ReadmeExamples {
         assertThat(jsonOf("Example_4_4_1", representation), is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},{\"href\":\"http://example.com/rels/{rel}\",\"templated\":true,\"name\":\"y\"}],\"x:foo\":{\"href\":\"http://example.org/test\"},\"y:bar\":[{\"href\":\"http://example.org/test/1\"},{\"href\":\"http://example.org/test/2\"}]}}"));
     }
 
+    @Test
+    public void Example_4_6_1() throws IOException {
+
+        // given
+        final String json =
+                "{" +
+                        "\"someProperty\":\"1\"," +
+                        "\"someOtherProperty\":\"2\"," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}}," +
+                        "\"_embedded\":{\"bar\":[" +
+                                "{" +
+                                "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                                "}" +
+                        "]}" +
+                "}";
+
+        // when
+        final TestHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), TestHalRepresentation.class);
+
+        // then
+        assertThat(result.someProperty, is("1"));
+        assertThat(result.someOtherProperty, is("2"));
+
+        // and
+        final Links links = result.getLinks();
+        assertThat(links.getLinkBy("self").get(), is(self("http://example.org/test/foo")));
+
+        // and
+        final List<HalRepresentation> embeddedItems = result.getEmbedded().getItemsBy("bar");
+        assertThat(embeddedItems, hasSize(1));
+        assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
+    }
+
     static class TestHalRepresentation extends HalRepresentation {
         @JsonProperty("someProperty")
         private String someProperty;
