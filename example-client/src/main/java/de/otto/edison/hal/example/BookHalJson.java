@@ -9,7 +9,7 @@ import de.otto.edison.hal.HalRepresentation;
  * </p>
  * <p>
  * Note that this example does not use all properties from the server-side
- * {@link de.otto.edison.hal.example.web.ProductHalJson} HalRepresentation!
+ * {@code de.otto.edison.hal.example.web.ProductHalJson} HalRepresentation!
  * </p>
  * <p>
  * Book instances are only created by the parser, so we do not need to care about links.

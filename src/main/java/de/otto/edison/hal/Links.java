@@ -70,7 +70,7 @@ public class Links {
      *     If the links contain curies, the link-relation types are shortened to the curied format name:key.
      * </p>
      * <p>
-     *     The list of links for a link-relation type must have the same {@link Link#rel}
+     *     The list of links for a link-relation type must have the same {@link Link#getRel()}
      * </p>
      * <p>
      *     The {@link Curies} may contain CURIs from the root resource, so curied rels can be resolved.
