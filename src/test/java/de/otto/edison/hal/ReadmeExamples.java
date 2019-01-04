@@ -11,11 +11,13 @@ import java.util.List;
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Embedded.embeddedBuilder;
+import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.Link.link;
 import static de.otto.edison.hal.Link.self;
 import static de.otto.edison.hal.Links.linkingTo;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
@@ -107,6 +109,68 @@ public class ReadmeExamples {
                 );
         // /snippet
         assertThat(jsonOf("Example_4_4_1", representation), is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},{\"href\":\"http://example.com/rels/{rel}\",\"templated\":true,\"name\":\"y\"}],\"x:foo\":{\"href\":\"http://example.org/test\"},\"y:bar\":[{\"href\":\"http://example.org/test/1\"},{\"href\":\"http://example.org/test/2\"}]}}"));
+    }
+
+    @Test
+    public void Example_4_6_1() throws IOException {
+
+        // given
+        final String json =
+                "{" +
+                        "\"someProperty\":\"1\"," +
+                        "\"someOtherProperty\":\"2\"," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}}," +
+                        "\"_embedded\":{\"bar\":[" +
+                                "{" +
+                                "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                                "}" +
+                        "]}" +
+                "}";
+
+        // when
+        final TestHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), TestHalRepresentation.class);
+
+        // then
+        assertThat(result.someProperty, is("1"));
+        assertThat(result.someOtherProperty, is("2"));
+
+        // and
+        final Links links = result.getLinks();
+        assertThat(links.getLinkBy("self").get(), is(self("http://example.org/test/foo")));
+
+        // and
+        final List<HalRepresentation> embeddedItems = result.getEmbedded().getItemsBy("bar");
+        assertThat(embeddedItems, hasSize(1));
+        assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
+    }
+
+    @Test
+    public void Example_4_6_2() throws IOException {
+        // given
+        final String json =
+                "{" +
+                "   \"_embedded\":{\"bar\":[" +
+                "       {" +
+                "           \"someProperty\":\"3\"," +
+                "           \"someOtherProperty\":\"3\"," +
+                "           \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
+                "       }" +
+                "   ]}" +
+                "}";
+        
+        // when
+        final HalRepresentation result = HalParser
+                .parse(json)
+                .as(HalRepresentation.class, withEmbedded("bar", TestHalRepresentation.class));
+        
+        // then
+        final List<TestHalRepresentation> embeddedItems = result
+                .getEmbedded()
+                .getItemsBy("bar", TestHalRepresentation.class);
+        
+        assertThat(embeddedItems, hasSize(1));
+        assertThat(embeddedItems.get(0).getClass(), equalTo(TestHalRepresentation.class));
+        assertThat(embeddedItems.get(0).getLinks().getLinkBy("self").get(), is(link("self", "http://example.org/test/bar/01")));
     }
 
     static class TestHalRepresentation extends HalRepresentation {
