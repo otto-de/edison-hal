@@ -822,12 +822,17 @@ in different ways.
 
 ## 7. Version History
 
-### 2.0.3
+### 2.1.0
 
 *New Features / API extensions*
 
 * Adds method `Links.Builder#collection(String)` to add a collection link to a HalResource´s `_links` section.
 
+*Deprecations*
+
+* Addes deprecation for `HalRepresentation` constructors with `Curies` parameter. No expected usages - but please
+  contact me, if the removal in some future release 3.0 will break some use-cases for you.
+  
 ### 2.0.2
 
 *Bugfixes*

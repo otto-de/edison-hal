@@ -62,7 +62,10 @@ public class HalRepresentation {
      * @param links the Links of the HalRepresentation
      * @param curies the Curies used to resolve curies
      * @since 1.0.0
+     * @deprecated This method will most likely not be required by any users of edison-hal. Please contact me,
+     * if you need this, otherwise the constructor will be removed in 3.0.0
      */
+    @Deprecated
     public HalRepresentation(final Links links, final Curies curies) {
         this(links, null, curies);
     }
@@ -104,7 +107,10 @@ public class HalRepresentation {
      * @param embedded the Embedded items of the HalRepresentation
      * @param curies the Curies used to resolve curies
      * @since 1.0.0
+     * @deprecated This method will most likely not be required by any users of edison-hal. Please contact me,
+     * if you need this, otherwise the constructor will be removed in 3.0.0
      */
+    @Deprecated
     public HalRepresentation(final Links links,
                              final Embedded embedded,
                              final Curies curies) {
