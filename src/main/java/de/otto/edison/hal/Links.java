@@ -411,9 +411,34 @@ public class Links {
         }
 
         /**
+         * Adds a {@link #single(Link, Link...) single } {@link Link link} with
+         * {@link Link#getRel() link-relation type} 'collection' to the builder.
+         * <p>
+         *     If href is an URI template, the added link {@link Link#isTemplated() is templated}.
+         * </p>
+         * <p>
+         *     Using this method is equivalent to {@link #single(Link, Link...) single(Link.collection(href))}
+         * </p>
+         *
+         * @param href the linked collection resource
+         * @return this
+         * @throws IllegalStateException if a collection link is already present
+         * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
+         * @since 2.1.0
+         */
+        public Builder collection(final String href) {
+            single(Link.collection(href));
+            return this;
+        }
+
+        /**
          * Adds an 'item' link to the builder.
          * <p>
          *     If href is an URI template, the added link {@link Link#isTemplated() is templated}.
+         * </p>
+         * <p>
+         *     Links will be appended to already existing items, if the builder already has an array of
+         *     item links.
          * </p>
          * <p>
          *     Using this method is equivalent to {@link #array(Link, Link...) array(Link.item(href))}
@@ -421,7 +446,7 @@ public class Links {
          *
          * @param href the linked item
          * @return this
-         *
+         * @throws IllegalStateException if a single link with link-relation type item is already present
          * @see <a href="http://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA link-relations</a>
          * @since 2.0.0
          */

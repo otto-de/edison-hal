@@ -822,11 +822,17 @@ in different ways.
 
 ## 7. Version History
 
+### 2.0.3
+
+*New Features / API extensions*
+
+* Adds method `Links.Builder#collection(String)` to add a collection link to a HalResource´s `_links` section.
+
 ### 2.0.2
 
 *Bugfixes*
 
-Fixed issues when more than two parameters in the Traverson.withVars() function.
+* Fixed issues when more than two parameters in the Traverson.withVars() function.
 
 ### 2.0.1
 
@@ -904,7 +910,7 @@ to support this.
 link-relation types other than `next` or `prev`.
 * Added a `CuriTemplate` helper to expand / shorten link-relation types using a CURI.  
 
-### 1.0.0 (CURRENT RELEASE)
+### 1.0.0
 
 *New Features / API extensions* 
 * It is now possible to configure the link-relation types that are serialized as an array of links.

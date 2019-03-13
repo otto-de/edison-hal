@@ -32,6 +32,37 @@ public class LinksBuilderTest {
     }
 
     @Test
+    public void shouldAddItemLink() {
+        final Links links = linkingTo()
+                .item("/bar")
+                .build();
+        assertThat(links.getLinkBy("item").isPresent(), is(true));
+        assertThat(links.getLinkBy("item").get().getHref(), is("/bar"));
+    }
+
+    @Test
+    public void shouldAddCollectionLink() {
+        final Links links = linkingTo()
+                .collection("/")
+                .build();
+        assertThat(links.getLinkBy("collection").isPresent(), is(true));
+        assertThat(links.getLinkBy("collection").get().getHref(), is("/"));
+    }
+
+    @Test
+    public void shouldAddTemplatedCollectionLink() {
+        final Links links = linkingTo().self("/foo").build();
+        final Links extendedLinks = copyOf(links)
+                .collection("/{?q}")
+                .array(item("/bar"))
+                .build();
+        assertThat(extendedLinks.getLinkBy("collection").isPresent(), is(true));
+        assertThat(extendedLinks.getLinkBy("collection").get().getHref(), is("/{?q}"));
+        assertThat(extendedLinks.getLinkBy("collection").get().isTemplated(), is(true));
+        assertThat(extendedLinks.getLinkBy("collection").get().getHrefAsTemplate().set("q", "foo").expand(), is("/?q=foo"));
+    }
+
+    @Test
     public void shouldAddLinkToExistingItemRel() {
         final Links links = linkingTo().item("/foo").build();
         final Links extendedLinks = copyOf(links)
