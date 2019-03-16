@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.Optional;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static java.util.Arrays.asList;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * <p>
@@ -44,6 +46,8 @@ import static java.util.Arrays.asList;
  */
 public final class HalParser {
 
+    private static final Logger LOG = getLogger(HalParser.class);
+
     /**
      * The Jackson ObjectMapper that is used to parse application/hal+json documents if not other instance
      * is specified explicitly.
@@ -59,15 +63,15 @@ public final class HalParser {
         DEFAULT_JSON_MAPPER.findAndRegisterModules();
     }
 
-    /** The JSON documents that is going to be parsed. */
-    private final String json;
     /** The ObjectMapper used to parse the JSON documents. */
     private final ObjectMapper objectMapper;
+    /** The JSON documents that is going to be parsed. */
+    private final String json;
 
     /**
      * Creates a HalParser for a given JSON document.
      * <p>
-     *     The mapper will be configured the mapper to
+     *     The mapper should be configured to
      *     {@link com.fasterxml.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
      * </p>
      *
@@ -216,9 +220,9 @@ public final class HalParser {
         parent.withEmbedded(typeInfo.getRel(), embeddedValues);
     }
 
-    public List<? extends HalRepresentation> resolveSingleEmbedded(final EmbeddedTypeInfo typeInfo,
-                                                                   final Curies parentCuries,
-                                                                   final JsonNode embeddedNodeForRel) {
+    private List<? extends HalRepresentation> resolveSingleEmbedded(final EmbeddedTypeInfo typeInfo,
+                                                                    final Curies parentCuries,
+                                                                    final JsonNode embeddedNodeForRel) {
         final List<HalRepresentation> embeddedValues = new ArrayList<>();
         HalRepresentation embedded = objectMapper.convertValue(embeddedNodeForRel, typeInfo.getType())
                 .mergeWithEmbedding(parentCuries);

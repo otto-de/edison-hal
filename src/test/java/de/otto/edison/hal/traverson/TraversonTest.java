@@ -559,6 +559,88 @@ public class TraversonTest {
         assertThat(self.get().getHref(), is("http://example.com/example/foo"));
     }
 
+    ////////////////////////////////////////////////////
+    // Following and getting links in nested objects
+    ////////////////////////////////////////////////////
+
+    static class NestedHalRepresentation extends HalRepresentation {
+        @JsonProperty
+        public NestedHalRepresentation foo;
+        @JsonProperty
+        public List<HalRepresentation> bar;
+    }
+
+    @Test
+    public void shouldProvideCustomNestedObjectAsHalRepresentation() throws IOException {
+        // given
+        @SuppressWarnings("unchecked")
+        final LinkResolver mock = mock(LinkResolver.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                "\"foo\":{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}" +
+                "}");
+        // when
+        final NestedHalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .getResourceAs(NestedHalRepresentation.class)
+                .get();
+        // then
+        final Optional<Link> self = hal.foo.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
+    }
+
+    @Test
+    public void shouldProvideCustomNestedObjectsAsHalRepresentation() throws IOException {
+        // given
+        @SuppressWarnings("unchecked")
+        final LinkResolver mock = mock(LinkResolver.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                "\"bar\":[" +
+                "   {\"_links\":{\"self\":{\"href\":\"http://example.com/example/1\"}}}," +
+                "   {\"_links\":{\"self\":{\"href\":\"http://example.com/example/2\"}}}" +
+                "]" +
+                "}");
+        // when
+        final List<HalRepresentation> hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .getResourceAs(NestedHalRepresentation.class)
+                .get()
+                .bar;
+        // then
+        final Optional<Link> first = hal.get(0).getLinks().getLinkBy("self");
+        assertThat(first.isPresent(), is(true));
+        assertThat(first.get().getHref(), is("http://example.com/example/1"));
+        final Optional<Link> second = hal.get(1).getLinks().getLinkBy("self");
+        assertThat(second.isPresent(), is(true));
+        assertThat(second.get().getHref(), is("http://example.com/example/2"));
+    }
+
+    @Test
+    public void shouldFollowLinkWithEmbeddedObjectAndSelectResource() throws IOException {
+        // given
+        @SuppressWarnings("unchecked")
+        final LinkResolver mock = mock(LinkResolver.class);
+        when(mock.apply(any(Link.class))).thenReturn(
+                "{" +
+                "   \"_embedded\":{\"bar\":" +
+                "       {\"foo\":{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}}" +
+                "   }" +
+                "}");
+        // when
+        final HalRepresentation hal = traverson(mock)
+                .startWith("http://example.com/example")
+                .follow("bar")
+                .getResourceAs(NestedHalRepresentation.class)
+                .get()
+                .foo;
+        // then
+        final Optional<Link> self = hal.getLinks().getLinkBy("self");
+        assertThat(self.isPresent(), is(true));
+        assertThat(self.get().getHref(), is("http://example.com/example/foo"));
+    }
+
     //////////////////////////
     // Streaming
     //////////////////////////
@@ -1128,7 +1210,7 @@ public class TraversonTest {
     @Test
     public void shouldBuildTypeInfoForSingleHopWithoutEmbeddedTypeInfo() {
         final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
-                asList(hop("foo")),
+                Hops.of(hop("foo")),
                 ExtendedHalRepresentation.class, null);
         assertThat(typeInfo.getRel(), is("foo"));
         assertThat(typeInfo.getType().getSimpleName(), is("ExtendedHalRepresentation"));
@@ -1138,7 +1220,7 @@ public class TraversonTest {
     @Test
     public void shouldBuildTypeInfoForSingleHop() {
         final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
-                asList(hop("foo")),
+                Hops.of(hop("foo")),
                 ExtendedHalRepresentation.class,
                 singletonList(
                         withEmbedded("bar", OtherExtendedHalRepresentation.class)
@@ -1152,7 +1234,7 @@ public class TraversonTest {
     @Test
     public void shouldBuildTypeInfoForSingleHopWithMultipleNestedTypeInfos() {
         final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
-                asList(hop("foo")),
+                Hops.of(hop("foo")),
                 ExtendedHalRepresentation.class,
                 asList(
                         withEmbedded("bar", ExtendedHalRepresentation.class),
@@ -1169,7 +1251,7 @@ public class TraversonTest {
     @Test
     public void shouldBuildTypeInfoForMultipleHopsWithoutEmbeddedTypeInfo() {
         final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
-                asList(hop("foo"), hop("bar"), hop("foobar")),
+                Hops.of(hop("foo"), hop("bar"), hop("foobar")),
                 ExtendedHalRepresentation.class, null);
         assertThat(typeInfo.getRel(), is("foo"));
         assertThat(typeInfo.getType().getSimpleName(), is("HalRepresentation"));
@@ -1185,7 +1267,7 @@ public class TraversonTest {
     @Test
     public void shouldBuildTypeInfoForMultipleHops() {
         final EmbeddedTypeInfo typeInfo = embeddedTypeInfoFor(
-                asList(hop("foo"), hop("bar"), hop("foobar")),
+                Hops.of(hop("foo"), hop("bar"), hop("foobar")),
                 ExtendedHalRepresentation.class,
                 singletonList(withEmbedded("barbar", OtherExtendedHalRepresentation.class)));
         assertThat(typeInfo.getRel(), is("foo"));

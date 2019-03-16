@@ -270,6 +270,32 @@ public class HalParserTest {
                                 withEmbedded("bar", EmbeddedHalRepresentation.class)))));
     }
 
+    @Test
+    public void shouldParseEmbeddedObjectWithNestedHalRepresentation() throws IOException {
+        // given
+        final String json = "{" +
+                "   \"_embedded\":{\"bar\":" +
+                "       {\"foo\":{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}}" +
+                "   }" +
+                "}";
+
+        // when
+        final HalRepresentation result = parse(json)
+                .as(HalRepresentation.class, withEmbedded("bar", NestedHalRepresentation.class));
+
+        // then
+        final HalRepresentation nested = result
+                .getEmbedded()
+                .getItemsBy("bar", NestedHalRepresentation.class)
+                .get(0)
+                .foo;
+        assertThat(nested
+                .getLinks()
+                .getLinkBy("self")
+                .get()
+                .getHref(), is("http://example.com/example/foo"));
+    }
+
     static class SimpleHalRepresentation extends HalRepresentation {
         @JsonProperty("first")
         private String first = "foo";
@@ -280,6 +306,11 @@ public class HalParserTest {
     static class EmbeddedHalRepresentation extends HalRepresentation {
         @JsonProperty("value")
         private String value = "foobar";
+    }
+
+    static class NestedHalRepresentation extends HalRepresentation {
+        @JsonProperty("foo")
+        private HalRepresentation foo;
     }
 
 }

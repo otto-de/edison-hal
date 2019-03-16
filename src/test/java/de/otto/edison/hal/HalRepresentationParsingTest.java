@@ -10,9 +10,7 @@ import java.util.List;
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
-import static de.otto.edison.hal.Link.link;
-import static de.otto.edison.hal.Link.linkBuilder;
-import static de.otto.edison.hal.Link.self;
+import static de.otto.edison.hal.Link.*;
 import static de.otto.edison.hal.Links.emptyLinks;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,6 +28,11 @@ public class HalRepresentationParsingTest {
     static class EmbeddedHalRepresentation extends HalRepresentation {
         @JsonProperty
         public String value;
+    }
+
+    static class NestedHalRepresentation extends HalRepresentation {
+        @JsonProperty
+        public List<HalRepresentation> nested;
     }
 
     @Test
@@ -776,5 +779,28 @@ public class HalRepresentationParsingTest {
         assertThat(resource.getAttribute("foo").asText(), is("Hello World"));
         assertThat(resource.getAttribute("bar").at("/0").asText(), is("Hello"));
         assertThat(resource.getAttribute("bar").at("/1").asText(), is("World"));
+    }
+
+    @Test
+    public void shouldParseLinksInNestedResourceObjects() throws IOException {
+        // given
+        final String json = "{\n" +
+                "    \"nested\" : [\n" +
+                "        {\n" +
+                "           \"name\" : \"Some issue\",\n" +
+                "           \"_links\": { \n" +
+                "               \"self\" : {\"href\": \"/audits/1/issues/1\"}\n" +
+                "           }\n" +
+                "        }\n" +
+                "    ],\n" +
+                "    \"_links\": { \n" +
+                "        \"self\" : {\"href\": \"/audits/1\"}\n" +
+                "    }\n" +
+                "}";
+        // when
+        NestedHalRepresentation resource = parse(json).as(NestedHalRepresentation.class);
+        // then
+        assertThat(resource.nested.get(0).getLinks().getRels(), contains("self"));
+        assertThat(resource.nested.get(0).getAttribute("name").textValue(), is("Some issue"));
     }
 }

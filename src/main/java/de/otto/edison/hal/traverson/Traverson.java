@@ -1,6 +1,7 @@
 package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.otto.edison.hal.*;
@@ -61,6 +62,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class Traverson {
 
     static class Hop {
+        private static final JsonPointer EMPTY = JsonPointer.compile("");
+
         /** Link-relation type of the hop. */
         final String rel;
         final Predicate<Link> predicate;
@@ -80,6 +83,50 @@ public class Traverson {
         }
     }
 
+    static class Hops {
+        private static final JsonPointer CURRENT = JsonPointer.compile("");
+        private final List<Hop> hops = new ArrayList<>();
+
+        Hops(final Hop... hops) {
+            if (hops.length > 0) {
+                this.hops.addAll(asList(hops));
+            }
+        }
+
+        public static Hops of() {
+            return new Hops();
+        }
+
+        public static Hops of(final Hop... hops) {
+            return new Hops(hops);
+        }
+
+        void add(final Hop hop) {
+            if (hops.size() > 0) {
+                hops.add(hop);
+            } else {
+                hops.add(hop);
+            }
+        }
+
+        public Hop get(int index) {
+            return hops.get(index);
+        }
+
+        public boolean isEmpty() {
+            return hops.isEmpty();
+        }
+
+        public int size() {
+            return hops.size();
+        }
+
+        public Hop pop() {
+            return hops.remove(0);
+        }
+
+    }
+
     private static final Logger LOG = getLogger(Traverson.class);
 
     public static final ObjectMapper DEFAULT_JSON_MAPPER = new ObjectMapper();
@@ -90,10 +137,11 @@ public class Traverson {
 
     private final ObjectMapper objectMapper;
     private final LinkResolver linkResolver;
-    private final List<Hop> hops = new ArrayList<>();
+
     private URL startWith;
     private URL contextUrl;
     private List<? extends HalRepresentation> lastResult;
+    private Hops hops = Hops.of();
 
     private Traverson(final LinkResolver linkResolver, final ObjectMapper objectMapper) {
         this.linkResolver = linkResolver;
@@ -135,6 +183,7 @@ public class Traverson {
      *     the function should take care of the link's {@link Link#getType() type} and {@link Link#getProfile()},
      *     so the proper HTTP Accept header is used.
      * </p>
+     *
      * @param linkResolver A function that gets a Link of a resource and returns a HAL+JSON document.
      * @param objectMapper The ObjectMapper instance used to parse documents.
      * @return Traverson
@@ -296,6 +345,7 @@ public class Traverson {
      *     Sometimes, only a subset of a linked resource is embedded into the resource. In this case,
      *     embedded items can be ignored by using {@link #followLink(String)} instead of this method.
      * </p>
+     *
      * @param rel the link-relation type of the followed link
      * @return this
      */
@@ -306,9 +356,11 @@ public class Traverson {
     /**
      * Follow the first {@link Link} of the current resource, selected by its link-relation type.
      * <p>
-     *     Other than {@link #follow(String)}, this method will ignore embedded resources, if a link with matching
-     *     link-relation type is present, Only if the link is missing, an optional embedded resource is used.
+     *     Other than {@link #follow(String)}, this method will ignore possibly embedded resources
+     *     with the same link-relation type. Only if the link is missing, the embedded resource is
+     *     used.
      * </p>
+     *
      * @param rel the link-relation type of the followed link
      * @return this
      * @since 2.0.0
@@ -328,6 +380,7 @@ public class Traverson {
      *     Sometimes, only a subset of a linked resource is embedded into the resource. In this case,
      *     embedded items can be ignored by using {@link #followLink(String,Predicate)} instead of this method.
      * </p>
+     *
      * @param rel the link-relation type of the followed link
      * @param predicate the predicate used to select the link to follow
      * @return this
@@ -342,10 +395,11 @@ public class Traverson {
      * Follow the first {@link Link} of the current resource that is matching the link-relation type and
      * the {@link LinkPredicates predicate}.
      * <p>
-     *     Other than {@link #follow(String, Predicate)}, this method will ignore embedded resources, if a link
-     *     with matching link-relation type is present, Only if the link is missing, an optional embedded resource is
+     *     Other than {@link #follow(String, Predicate)}, this method will ignore possibly embedded resources
+     *     with the same link-relation type. Only if the link is missing, the embedded resource is
      *     used.
      * </p>
+     *
      * @param rel the link-relation type of the followed link
      * @param predicate the predicate used to select the link to follow
      * @return this
@@ -447,6 +501,7 @@ public class Traverson {
      *     Sometimes, only a subset of a linked resource is embedded into the resource. In this case,
      *     embedded items can be ignored by using {@link #followLink(String,Map)} instead of this method.
      * </p>
+     *
      * @param rel the link-relation type of the followed link
      * @param vars uri-template variables used to build links.
      * @return this
@@ -463,10 +518,11 @@ public class Traverson {
      *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
-     *     Other than {@link #follow(String, Map)}, this method will ignore embedded resources, if a link
-     *     with matching link-relation type is present, Only if the link is missing, an optional embedded resource is
+     *     Other than {@link #follow(String, Map)}, this method will ignore possibly embedded resources
+     *     with the same link-relation type. Only if the link is missing, the embedded resource is
      *     used.
      * </p>
+     *
      * @param rel the link-relation type of the followed link
      * @param vars uri-template variables used to build links.
      * @return this
@@ -488,6 +544,7 @@ public class Traverson {
      *     If the current node has {@link Embedded embedded} items with the specified {@code rel},
      *     these items are used instead of resolving the associated {@link Link}.
      * </p>
+     *
      * @param rel the link-relation type of the followed link
      * @param predicate the predicate used to select the link to follow.
      * @param vars uri-template variables used to build links.
@@ -510,10 +567,11 @@ public class Traverson {
      *     Templated links are expanded to URIs using the specified template variables.
      * </p>
      * <p>
-     *     Other than {@link #follow(String, Predicate, Map)}, this method will ignore embedded resources, if a link
-     *     with matching link-relation type is present, Only if the link is missing, an optional embedded resource is
+     *     Other than {@link #follow(String, Predicate, Map)}, this method will ignore possibly embedded resources
+     *     with the same link-relation type. Only if the link is missing, the embedded resource is
      *     used.
      * </p>
+     *
      * @param rel the link-relation type of the followed link
      * @param predicate the predicate used to select the link to follow.
      * @param vars uri-template variables used to build links.
@@ -1168,7 +1226,9 @@ public class Traverson {
             0. N=0, M=0:
             getResource(startwith, pageType)
             */
-            return singletonList(getResource(initial, resultType, embeddedTypeInfo));
+            return singletonList(
+                    getResource(initial, resultType, embeddedTypeInfo)
+            );
         } else {
             final HalRepresentation firstHop;
             // Follow startWith URL, but have a look at the next hop, so we can parse the resource
@@ -1178,7 +1238,7 @@ public class Traverson {
                 if (embeddedTypeInfo == null || embeddedTypeInfo.isEmpty()) {
                     /*
                     1. N=1, M=0 (keine TypeInfos):
-                    Die zurückgegebene Representation soll vom Typ pageType sein.
+                    Die zurückgegebene Representation soll vom Typ resultType sein.
 
                     startWith könnte hop 0 embedden, oder es könnten zwei Resourcen angefragt werden.
 
@@ -1236,7 +1296,7 @@ public class Traverson {
                                                               final boolean retrieveAll) throws IOException {
 
         final List<T> response;
-        final Hop currentHop = hops.remove(0);
+        final Hop currentHop = hops.pop();
         LOG.trace("Following {}", currentHop.rel);
         final List<Link> links = current
                 .getLinks()
@@ -1268,11 +1328,7 @@ public class Traverson {
                     this.contextUrl = linkToUrl(expandedLink);
                     response = singletonList(getResource(expandedLink, resultType, embeddedTypeInfo));
                 }
-            } else if (hops.size() == 1) { // one before the last hop:
-                this.contextUrl = linkToUrl(expandedLink);
-                final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
-                response = traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
-            } else { // some more hops
+            } else {
                 this.contextUrl = linkToUrl(expandedLink);
                 final HalRepresentation resource = getResource(expandedLink, HalRepresentation.class, embeddedTypeInfoFor(hops, resultType, embeddedTypeInfo));
                 response = traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
@@ -1327,13 +1383,14 @@ public class Traverson {
      * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
      * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
      */
-    private <T extends HalRepresentation> T getResource(final Link link, 
-                                                        final Class<T> type, 
+    private <T extends HalRepresentation> T getResource(final Link link,
+                                                        final Class<T> type,
                                                         final List<EmbeddedTypeInfo> embeddedType) throws IOException {
         LOG.trace("Fetching resource href={} rel={} as type={} with embeddedType={}", link.getHref(), link.getRel(), type.getSimpleName(), embeddedType);
         final String json;
         try {
             json = linkResolver.apply(link);
+            LOG.trace("Got {}", json);
         } catch (final IOException | RuntimeException e) {
             LOG.error("Failed to fetch resource href={}: {}", link.getHref(), e.getMessage());
             throw e;
@@ -1370,7 +1427,7 @@ public class Traverson {
         }
     }
 
-    static EmbeddedTypeInfo embeddedTypeInfoFor(final List<Hop> hops,
+    static EmbeddedTypeInfo embeddedTypeInfoFor(final Hops hops,
                                                 final Class<? extends HalRepresentation> pageType,
                                                 final List<EmbeddedTypeInfo> embeddedTypeInfo) {
         if (hops.isEmpty()) {

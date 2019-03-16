@@ -7,7 +7,7 @@ import static java.util.Collections.emptyList;
 
 /**
  * Type information for embedded items. This is required if more complex embedded items should be parsed
- * into sub classes of HalRepresentation.
+ * into classes derived from HalRepresentation.
  *
  * @since 0.1.0
  */

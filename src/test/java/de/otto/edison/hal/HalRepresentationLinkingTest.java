@@ -1,8 +1,13 @@
 package de.otto.edison.hal;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Link.*;
@@ -319,4 +324,21 @@ public class HalRepresentationLinkingTest {
         assertThat(representation.getLinks().getLinkBy("foo").isPresent(), is(true));
         assertThat(representation.getLinks().getLinksBy("foo"), contains(link("foo", "/foo/1")));
     }
+
+    static class NestedHalRepresentation extends HalRepresentation {
+        @JsonProperty
+        public List<HalRepresentation> nested = new ArrayList<>();
+    }
+
+    @Test
+    public void shouldRenderLinksInNestedResourceObjects() throws IOException {
+        // given
+        NestedHalRepresentation nestedHalRepresentation = new NestedHalRepresentation();
+        nestedHalRepresentation.nested.add(new HalRepresentation(linkingTo().self("/foo").build()));
+        // when
+        final String json = new ObjectMapper().writeValueAsString(nestedHalRepresentation);
+        // then
+        assertThat(json, is("{\"nested\":[{\"_links\":{\"self\":{\"href\":\"/foo\"}}}]}"));
+    }
+
 }
