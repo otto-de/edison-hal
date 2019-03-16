@@ -25,7 +25,7 @@ import static org.hamcrest.core.Is.is;
 /**
  * Simple Tests to prove that the examples used in the README.md are compiling and working
  */
-public class ReadmeExamples {
+public class UserGuideExamples {
 
     private static final ObjectMapper objectMapper;
     private static final ObjectMapper prettyObjectMapper;
@@ -36,7 +36,7 @@ public class ReadmeExamples {
     }
 
     @Test
-    public void Example_4_2_1() {
+    public void Example_1_1() {
         // snippet
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -50,19 +50,19 @@ public class ReadmeExamples {
                                 new HalRepresentation(linkingTo().self("http://example.org/test/foo/02").build())))
                         .build());
         // /snippet
-        assertThat(jsonOf("Example_4_2_1", representation), is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"},\"item\":[{\"href\":\"http://example.org/test/foo/01\"},{\"href\":\"http://example.org/test/foo/02\"}]},\"_embedded\":{\"item\":[{\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo/01\"}}},{\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo/02\"}}}]}}"));
+        assertThat(jsonOf("Example_1_1", representation), is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"},\"item\":[{\"href\":\"http://example.org/test/foo/01\"},{\"href\":\"http://example.org/test/foo/02\"}]},\"_embedded\":{\"item\":[{\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo/01\"}}},{\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo/02\"}}}]}}"));
     }
 
     @Test
-    public void Example_4_2_2() {
+    public void Example_1_2() {
         // snippet
-        class Example_4_2_2 extends HalRepresentation {
+        class Example_1_2 extends HalRepresentation {
             @JsonProperty("someProperty")
             private String someProperty = "some value";
             @JsonProperty("someOtherProperty")
             private String someOtherProperty = "some other value";
 
-            Example_4_2_2() {
+            Example_1_2() {
                 super(linkingTo()
                         .self("http://example.org/test/bar")
                         .build()
@@ -70,12 +70,12 @@ public class ReadmeExamples {
             }
         }
         // /snippet
-        Example_4_2_2 representation = new Example_4_2_2();
-        assertThat(jsonOf("Example_4_2_2", representation), is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}},\"someProperty\":\"some value\",\"someOtherProperty\":\"some other value\"}"));
+        Example_1_2 representation = new Example_1_2();
+        assertThat(jsonOf("Example_1_2", representation), is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}},\"someProperty\":\"some value\",\"someOtherProperty\":\"some other value\"}"));
     }
 
     @Test
-    public void Example_4_3_1() {
+    public void Example_2_1() {
         // snippet
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -90,11 +90,11 @@ public class ReadmeExamples {
                         .build()
         );
         // /snippet
-        assertThat(jsonOf("Example_4_3_1", representation), is("{\"_links\":{\"self\":{\"href\":\"http://example.com/foo/42\"},\"next\":{\"href\":\"http://example.com/foo/43\"},\"prev\":{\"href\":\"http://example.com/foo/41\"},\"item\":[{\"href\":\"http://example.com/bar/01\"},{\"href\":\"http://example.com/bar/02\"},{\"href\":\"http://example.com/bar/03\"}]}}"));
+        assertThat(jsonOf("Example_2_1", representation), is("{\"_links\":{\"self\":{\"href\":\"http://example.com/foo/42\"},\"next\":{\"href\":\"http://example.com/foo/43\"},\"prev\":{\"href\":\"http://example.com/foo/41\"},\"item\":[{\"href\":\"http://example.com/bar/01\"},{\"href\":\"http://example.com/bar/02\"},{\"href\":\"http://example.com/bar/03\"}]}}"));
     }
 
     @Test
-    public void Example_4_4_1() {
+    public void Example_2_2() {
         // snippet
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -108,11 +108,11 @@ public class ReadmeExamples {
                         .build()
                 );
         // /snippet
-        assertThat(jsonOf("Example_4_4_1", representation), is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},{\"href\":\"http://example.com/rels/{rel}\",\"templated\":true,\"name\":\"y\"}],\"x:foo\":{\"href\":\"http://example.org/test\"},\"y:bar\":[{\"href\":\"http://example.org/test/1\"},{\"href\":\"http://example.org/test/2\"}]}}"));
+        assertThat(jsonOf("Example_2_2", representation), is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},{\"href\":\"http://example.com/rels/{rel}\",\"templated\":true,\"name\":\"y\"}],\"x:foo\":{\"href\":\"http://example.org/test\"},\"y:bar\":[{\"href\":\"http://example.org/test/1\"},{\"href\":\"http://example.org/test/2\"}]}}"));
     }
 
     @Test
-    public void Example_4_6_1() throws IOException {
+    public void Example_4_1() throws IOException {
 
         // given
         final String json =
@@ -145,7 +145,7 @@ public class ReadmeExamples {
     }
 
     @Test
-    public void Example_4_6_2() throws IOException {
+    public void Example_4_2() throws IOException {
         // given
         final String json =
                 "{" +
