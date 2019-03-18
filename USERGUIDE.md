@@ -10,7 +10,7 @@ The versioning scheme is using [Semantic Versioning](https://semver.org).
 ## Contents
 
 - [1. Getting Started](#1-getting-started)
-  * [1.1 Add Edison HAL dependency:](#11-add-edison-hal-dependency)
+  * [1.1 Add Edison HAL dependency](#11-add-edison-hal-dependency)
   * [1.2 Provide a class for the representation of your REST API](#12-provide-a-class-for-the-representation-of-your-rest-api)
   * [1.3 Running the examples](#13-running-the-examples)
   * [1.4 Building edison-hal](#14-building-edison-hal)
