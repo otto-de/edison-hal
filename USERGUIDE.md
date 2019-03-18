@@ -7,6 +7,31 @@ Edison HAL can be considered stable, as it is actively used in production servic
 
 The versioning scheme is using [Semantic Versioning](https://semver.org).
 
+## Contents
+
+- [1. Getting Started](#1-getting-started)
+  * [1.1 Add Edison HAL dependency:](#11-add-edison-hal-dependency)
+  * [1.2 Provide a class for the representation of your REST API](#12-provide-a-class-for-the-representation-of-your-rest-api)
+  * [1.3 Running the examples](#13-running-the-examples)
+  * [1.4 Building edison-hal](#14-building-edison-hal)
+- [2. Hyperlinks](#2-hyperlinks)
+  * [2.1 Single Link Objects vs. Arrays of Link Objects](#21-single-link-objects-vs-arrays-of-link-objects)
+  * [2.2 Curies](#22-curies)
+- [3 Serializing HalRepresentations](#3-serializing-halrepresentations)
+- [4 Parsing HAL representations](#4-parsing-hal-representations)
+  * [4.1 Parsing with Jackson ObjectMapper](#41-parsing-with-jackson-objectmapper)
+  * [4.2 Configuring the ObjectMapper](#42-configuring-the-objectmapper)
+  * [4.3 Using the HalParser](#43-using-the-halparser)
+  * [4.4 Parsing Nested Embedded Resources](#44-parsing-nested-embedded-resources)
+  * [4.5 Parsing Unmapped Attributes](#45-parsing-unmapped-attributes)
+- [5 Using the Traverson](#5-using-the-traverson)
+  * [5.1 Selecting Links](#51-selecting-links)
+  * [5.2 Paging over HAL resources](#52-paging-over-hal-resources)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+
+
 ## 1. Getting Started
 
 Before using this library, you should have a good understanding of the Hypertext Application Language (HAL):
@@ -22,7 +47,7 @@ Edison HAL only has a limited number of dependencies to 3rd party libraries:
 3. For logging purposes, SLF4J is used. There is only a dependency to the SLF4J API, so you are free to choose 
    between whatever implementaion suits to your application.    
 
-### 1.1 Include edison-hal into your project:
+### 1.1 Add Edison HAL dependency
  
 ```gradle
     dependencies {
@@ -163,9 +188,9 @@ If you want to build edison-hal using Gradle, you might want to use
 If you do not want to use the provided gradle wrapper, please make sure 
 that you are using an up-to-date version of Gradle (>= 4.x).  
 
-## 2. Hyperlinks (_links)
+## 2. Hyperlinks
 
-### 2.1 Single Link-Objects vs. Arrays of Link-Objects
+### 2.1 Single Link Objects vs. Arrays of Link Objects
 
 A resource may have multiple links that share the same link relation.
 
@@ -433,7 +458,7 @@ configuration:
     }
 ```
 
-## 4 Parsing application/hal+json documents
+## 4 Parsing HAL representations
 
 A HAL document can be parsed using Jackson, too. 
 
