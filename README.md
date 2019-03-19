@@ -9,9 +9,10 @@ representations of REST resources using Jackson.
 [![codecov](https://codecov.io/gh/otto-de/edison-hal/branch/master/graph/badge.svg)](https://codecov.io/gh/otto-de/edison-hal)
 
 
-
-* [Change Log](./CHANGES.md) for latest changes.
+## 1. Documentation
+* [JavaDoc](https://www.javadoc.io/doc/de.otto.edison/edison-hal)
 * [User Guide](./USERGUIDE.md) explains how to use edison-hal in your projects.
+* [Change Log](./CHANGES.md) for latest changes.
 
 ## 2. About
 
