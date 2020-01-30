@@ -3,21 +3,18 @@ package de.otto.edison.hal;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Optional;
 
 import static de.otto.edison.hal.CuriTemplate.curiTemplateFor;
 import static de.otto.edison.hal.CuriTemplate.matchingCuriTemplateFor;
-import static de.otto.edison.hal.Link.curi;
-import static de.otto.edison.hal.Link.link;
-import static de.otto.edison.hal.Link.linkBuilder;
+import static de.otto.edison.hal.Link.*;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThrows;
 
 public class CuriTemplateTest {
 
@@ -32,28 +29,28 @@ public class CuriTemplateTest {
     private final String nonMatchingRel = "http://example.org/link-relations/product";
     private final String nonMatchingCuriedRel = "z:product";
 
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
-
     @Test
     public void shouldFailToCreateCuriTemplateForWrongRel() {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage(matchesRegex(".*not a CURI link.*"));
-        curiTemplateFor(link("foo", "/bar"));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            curiTemplateFor(link("foo", "/bar"));
+        });
+        assertThat(exception.getMessage(), matchesRegex(".*not a CURI link.*"));
     }
 
     @Test
     public void shouldFailToCreateCuriTemplateForWrongHref() {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage(matchesRegex(".*required.*placeholder.*"));
-        curiTemplateFor(linkBuilder("curies","/bar").withName("x").build());
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            curiTemplateFor(linkBuilder("curies","/bar").withName("x").build());
+        });
+        assertThat(exception.getMessage(), matchesRegex(".*required.*placeholder.*"));
     }
 
     @Test
     public void shouldFailToCreateCuriTemplateWithMissingName() {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Parameter is not a CURI link.");
-        curiTemplateFor(link("curies", "/bar/{rel}"));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            curiTemplateFor(link("curies", "/bar/{rel}"));
+        });
+        assertThat(exception.getMessage(), matchesRegex("Parameter is not a CURI link."));
     }
 
     @Test
@@ -100,9 +97,10 @@ public class CuriTemplateTest {
 
     @Test
     public void shouldFailToExtractCuriedRelForNonMatchingRel() {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Rel does not match the CURI template.");
-        curiTemplateFor(someCuri).curiedRelFrom(nonMatchingRel);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            curiTemplateFor(someCuri).curiedRelFrom(nonMatchingRel);
+        });
+        assertThat(exception.getMessage(), matchesRegex("Rel does not match the CURI template."));
     }
 
     @Test
@@ -113,9 +111,10 @@ public class CuriTemplateTest {
 
     @Test
     public void shouldFailToExpandNonMatchingRel() {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Rel does not match the CURI template.");
-        curiTemplateFor(someCuri).expandedRelFrom(nonMatchingRel);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            curiTemplateFor(someCuri).expandedRelFrom(nonMatchingRel);
+        });
+        assertThat(exception.getMessage(), matchesRegex("Rel does not match the CURI template."));
     }
 
     @Test
@@ -126,9 +125,10 @@ public class CuriTemplateTest {
 
     @Test
     public void shouldFailToExtractPlaceholderRelForNonMatchingRel() {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Rel does not match the CURI template.");
-        curiTemplateFor(someCuri).relPlaceHolderFrom(nonMatchingRel);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            curiTemplateFor(someCuri).relPlaceHolderFrom(nonMatchingRel);
+        });
+        assertThat(exception.getMessage(), matchesRegex("Rel does not match the CURI template."));
     }
 
     private Matcher<String> matchesRegex(final String regex) {

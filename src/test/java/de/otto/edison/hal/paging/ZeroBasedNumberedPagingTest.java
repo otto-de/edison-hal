@@ -11,8 +11,8 @@ import static de.otto.edison.hal.paging.NumberedPaging.zeroBasedNumberedPaging;
 import static de.otto.edison.hal.paging.PagingRel.*;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.EnumSet.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class ZeroBasedNumberedPagingTest {
 

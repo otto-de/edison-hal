@@ -16,8 +16,8 @@ import static de.otto.edison.hal.paging.SkipLimitPaging.skipLimitPage;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.EnumSet.*;
 import static java.util.OptionalInt.empty;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class SkipLimitPagingTest {
 
