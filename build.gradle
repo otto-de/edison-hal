@@ -5,7 +5,7 @@ apply plugin: 'maven'
 apply plugin: 'jacoco'
 apply from: 'dependencies.gradle'
 
-version='2.1.0-SNAPSHOT'
+version='2.1.0'
 group='de.otto.edison'
 
 repositories {
@@ -180,7 +180,3 @@ uploadArchives {
 }
 
 commitNewVersion.shouldRunAfter uploadArchives
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.8'
-}

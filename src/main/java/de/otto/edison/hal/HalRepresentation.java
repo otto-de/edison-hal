@@ -14,6 +14,7 @@ import static de.otto.edison.hal.Embedded.Builder.copyOf;
 import static de.otto.edison.hal.Embedded.emptyEmbedded;
 import static de.otto.edison.hal.Links.copyOf;
 import static de.otto.edison.hal.Links.emptyLinks;
+import static java.util.Collections.reverse;
 
 /**
  * Representation used to parse and create HAL+JSON documents from Java classes.
@@ -24,6 +25,7 @@ import static de.otto.edison.hal.Links.emptyLinks;
  * @since 0.1.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonPropertyOrder(alphabetic = false)
 public class HalRepresentation {
 
     @JsonProperty(value = "_links")
@@ -176,9 +178,19 @@ public class HalRepresentation {
      *
      * @return map containing unmapped attributes
      */
-    @JsonIgnore
+    @JsonAnyGetter
     public Map<String, JsonNode> getAttributes() {
-        return attributes;
+        if (!attributes.isEmpty()) {
+            // For some reason, Jackson is reversing the order of extra attributes.
+            // In order to avoid confusion, the attribute ordering is reversed here:
+            Map<String, JsonNode> orderedMap = new LinkedHashMap<>();
+            List<String> keys = new ArrayList<>(attributes.keySet());
+            reverse(keys);
+            keys.forEach(k -> orderedMap.put(k, attributes.get(k)));
+            return orderedMap;
+        } else {
+            return attributes;
+        }
     }
 
     /**

@@ -6,9 +6,14 @@
 
 * Adds method `Links.Builder#collection(String)` to add a collection link to a HalResource´s `_links` section.
 
+*Bugfixes*
+
+* Fixes issue [#29](https://github.com/otto-de/edison-hal/issues/29): additional attributes contained in 
+`HalRepresentation.attributes` will now be serialized.
+
 *Deprecations*
 
-* Addes deprecation for `HalRepresentation` constructors with `Curies` parameter. No expected usages - but please
+* Adds deprecation for `HalRepresentation` constructors with `Curies` parameter. No expected usages - but please
   contact me, if the removal in some future release 3.0 will break some use-cases for you.
   
 ## 2.0.2

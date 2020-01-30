@@ -766,28 +766,11 @@ public class HalRepresentationParsingTest {
     }
 
     @Test
-    public void shouldParseExtraAttributes() throws IOException {
-        // given
-        final String json = "{" +
-                "\"foo\":\"Hello World\"," +
-                "\"bar\":[\"Hello\", \"World\"]" +
-                "}";
-        // when
-        HalRepresentation resource = parse(json).as(HalRepresentation.class);
-        // then
-        assertThat(resource.getAttributes().keySet(), containsInAnyOrder("foo", "bar"));
-        assertThat(resource.getAttribute("foo").asText(), is("Hello World"));
-        assertThat(resource.getAttribute("bar").at("/0").asText(), is("Hello"));
-        assertThat(resource.getAttribute("bar").at("/1").asText(), is("World"));
-    }
-
-    @Test
     public void shouldParseLinksInNestedResourceObjects() throws IOException {
         // given
         final String json = "{\n" +
                 "    \"nested\" : [\n" +
                 "        {\n" +
-                "           \"name\" : \"Some issue\",\n" +
                 "           \"_links\": { \n" +
                 "               \"self\" : {\"href\": \"/audits/1/issues/1\"}\n" +
                 "           }\n" +
@@ -801,6 +784,6 @@ public class HalRepresentationParsingTest {
         NestedHalRepresentation resource = parse(json).as(NestedHalRepresentation.class);
         // then
         assertThat(resource.nested.get(0).getLinks().getRels(), contains("self"));
-        assertThat(resource.nested.get(0).getAttribute("name").textValue(), is("Some issue"));
+        assertThat(resource.nested.get(0).getLinks().getLinkBy("self").orElse(null).getHref(), is("/audits/1/issues/1"));
     }
 }
