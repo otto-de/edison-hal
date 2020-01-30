@@ -51,7 +51,7 @@ Edison HAL only has a limited number of dependencies to 3rd party libraries:
  
 ```gradle
     dependencies {
-        compile "de.otto.edison:edison-hal:2.0.2",
+        compile "de.otto.edison:edison-hal:2.1.0",
         ...
     }
 ```
