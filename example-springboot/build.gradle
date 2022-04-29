@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        springBootVersion = '1.5.8.RELEASE'
+        springBootVersion = '2.6.7'
     }
     repositories {
         mavenCentral()
@@ -28,8 +28,8 @@ repositories {
 dependencies {
     //compile rootProject
     compile rootProject
-    compile("org.springframework.boot:spring-boot-starter")
-    compile("org.springframework.boot:spring-boot-starter-web")
-    compile("ch.qos.logback:logback-classic:1.2.3")
+    compile("org.springframework.boot:spring-boot-starter:${springBootVersion}")
+    compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+    compile("ch.qos.logback:logback-classic:1.2.11")
 
 }

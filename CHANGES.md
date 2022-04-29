@@ -1,5 +1,9 @@
 # Change Log
 
+## 2.1.1
+
+* Dependency updates
+
 ## 2.1.0
 
 *New Features / API extensions*
