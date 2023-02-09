@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        springBootVersion = '2.6.7'
+        springBootVersion = '2.7.8'
     }
     repositories {
         mavenCentral()
@@ -15,21 +15,29 @@ apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
 
 jar {
-    baseName = 'edison-hal-example-springboot'
+    archiveBaseName = 'edison-hal-example-springboot'
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    //compile rootProject
-    compile rootProject
-    compile("org.springframework.boot:spring-boot-starter:${springBootVersion}")
-    compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
-    compile("ch.qos.logback:logback-classic:1.2.11")
+    implementation rootProject
+    implementation("org.springframework.boot:spring-boot-starter:${springBootVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+    implementation("ch.qos.logback:logback-classic:1.2.11")
 
+}
+
+project.afterEvaluate {
+    tasks.withType(JavaCompile) {
+        def version = compat(sourceCompatibility)
+        project.logger.info("Configuring $name to use --release $version")
+        println("Configuring $name to use --release $version")
+        options.compilerArgs.addAll(['--release', version])
+    }
 }

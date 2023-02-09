@@ -1,24 +1,26 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'idea'
 apply plugin: 'signing'
-apply plugin: 'maven'
 apply plugin: 'jacoco'
+apply plugin: 'maven-publish'
 apply from: 'dependencies.gradle'
 
 version='2.2.0-SNAPSHOT'
 group='de.otto.edison'
+
+project.ext.set("debugUpload", false)
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    compile libraries.jackson
-    compile libraries.uritemplates
-    compile libraries.loggingApi
+    api libraries.jackson
+    implementation libraries.uritemplates
+    implementation libraries.loggingApi
 
-    testCompile libraries.test
-    testCompile libraries.loggingImpl
+    testImplementation libraries.test
+    testImplementation libraries.loggingImpl
 }
 
 compileJava {
@@ -46,19 +48,14 @@ jacocoTestReport {
     }
 }
 
-idea.project {
-    jdkName = "1.8"
-    languageLevel = "1.8"
-}
-
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from 'build/docs/javadoc'
 }
 
 task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
-    classifier = 'sources'
+    archiveClassifier = 'sources'
 }
 
 artifacts {
@@ -128,7 +125,7 @@ task commitNewVersion {
 }
 
 task doRelease {
-    dependsOn askForVersionNumber, uploadArchives, commitNewVersion
+    dependsOn askForVersionNumber, publish, commitNewVersion
 }
 
 doRelease {
@@ -136,50 +133,68 @@ doRelease {
     }
 }
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: sonatypeUsername, password: sonatypePassword)
-            }
-            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: sonatypeUsername, password: sonatypePassword)
-            }
-
-            pom.project {
-                name 'edison-hal'
-                packaging 'jar'
-                description 'A library to parse and render application/hal+json documents in Java.'
-                url 'https://github.com/otto-de/edison-hal'
-
-                scm {
-                    url 'scm:git@github.com:otto-de/edison-hal.git'
-                    connection 'scm:git@github.com:otto-de/edison-hal.git'
-                    developerConnection 'scm:git@github.com:otto-de/edison-hal.git'
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'edison-hal'
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
                 }
-
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                name = 'edison-hal'
+                description = 'A library to parse and render application/hal+json documents in Java.'
+                url = 'https://github.com/otto-de/edison-hal'
                 licenses {
                     license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution 'repo'
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
-
                 developers {
                     developer {
-                        id 'gsteinacker'
-                        name 'Guido Steinacker'
+                        id = 'gsteinacker'
+                        name = 'Guido Steinacker'
                     }
+                }
+                scm {
+                    connection = 'scm:git@github.com:otto-de/edison-hal.git'
+                    developerConnection = 'scm:git@github.com:otto-de/edison-hal.git'
+                    url = 'https://github.com/otto-de/edison-hal'
                 }
             }
         }
     }
+    repositories {
+        maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+            if (project.debugUpload) {
+                releasesRepoUrl = "$buildDir/repos/releases"
+                snapshotsRepoUrl = "$buildDir/repos/snapshots"
+            } else {
+                credentials {
+                    username = sonatypeUsername
+                    password = sonatypePassword
+                }
+            }
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+        }
+    }
 }
 
-commitNewVersion.shouldRunAfter uploadArchives
+signing {
+    sign publishing.publications.mavenJava
+}
+
+commitNewVersion.shouldRunAfter publish
 
 allprojects {
     tasks.withType(Test).configureEach {
@@ -190,4 +205,24 @@ allprojects {
         }
     }
 
+    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_1_8
+}
+
+// This function converts 1.8 -> 8
+static String compat(String src) {
+    if (src.contains('.')) {
+        src.substring(src.lastIndexOf('.')+1)
+    } else {
+        src
+    }
+}
+
+project.afterEvaluate {
+    tasks.withType(JavaCompile) {
+        def version = compat(sourceCompatibility)
+        project.logger.info("Configuring $name to use --release $version")
+        println("Configuring $name to use --release $version")
+        options.compilerArgs.addAll(['--release', version])
+    }
 }

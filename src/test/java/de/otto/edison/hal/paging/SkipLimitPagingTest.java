@@ -2,6 +2,7 @@ package de.otto.edison.hal.paging;
 
 import com.damnhandy.uri.template.UriTemplate;
 import de.otto.edison.hal.Links;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -24,9 +25,6 @@ public class SkipLimitPagingTest {
     public static final UriTemplate URI_TEMPLATE = fromTemplate("/{?skip,limit}");
 
     public static final EnumSet<PagingRel> ALL_RELS = allOf(PagingRel.class);
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailToSkipNegativeNumElements1() {
@@ -91,9 +89,8 @@ public class SkipLimitPagingTest {
         assertThat(hrefFrom(paging, "last"), is("/?skip=0&limit=3"));
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void shouldNotPageAfterLastPage() {
-        expectedException.expect(IllegalArgumentException.class);
         skipLimitPage(1, 3, 0);
     }
 

@@ -1334,7 +1334,7 @@ public class Traverson {
                 response = traverseHop(resource, resultType, embeddedTypeInfo, retrieveAll);
             }
         } else {
-            final String msg = format("Can not follow hop %s: no matching links found in resource %s", currentHop.rel, current);
+            final String msg = format("Can not follow hop %s: no matching links found in resource %s", currentHop.rel, objectMapper.writeValueAsString(current));
             LOG.error(msg);
             response = emptyList();
         }

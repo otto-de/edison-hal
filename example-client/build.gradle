@@ -14,16 +14,24 @@ jar {
     baseName = 'edison-hal-example-client'
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    //compile rootProject
-    compile rootProject
-    compile("ch.qos.logback:logback-classic:1.2.11")
-    compile("org.apache.httpcomponents:httpclient:4.5.13")
+    implementation rootProject
+    implementation("ch.qos.logback:logback-classic:1.2.11")
+    implementation("org.apache.httpcomponents:httpclient:4.5.13")
+}
+
+project.afterEvaluate {
+    tasks.withType(JavaCompile) {
+        def version = compat(sourceCompatibility)
+        project.logger.info("Configuring $name to use --release $version")
+        println("Configuring $name to use --release $version")
+        options.compilerArgs.addAll(['--release', version])
+    }
 }
