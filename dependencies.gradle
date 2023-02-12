@@ -10,5 +10,5 @@ ext.libraries = [
         loggingApi: [
                 "org.slf4j:slf4j-api:1.7.36"],
         loggingImpl: [
-                "ch.qos.logback:logback-classic:1.2.11"]
+                "ch.qos.logback:logback-classic:1.4.5"]
 ]
