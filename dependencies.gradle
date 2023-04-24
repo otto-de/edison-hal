@@ -4,7 +4,7 @@ ext.libraries = [
                 "org.hamcrest:hamcrest:2.2",
                 "org.mockito:mockito-core:5.1.1"],
         jackson: [
-                "com.fasterxml.jackson.core:jackson-databind:2.14.2"],
+                "com.fasterxml.jackson.core:jackson-databind:2.15.0"],
         uritemplates: [
                 "com.damnhandy:handy-uri-templates:2.1.8"],
         loggingApi: [
