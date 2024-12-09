@@ -7,6 +7,7 @@ representations of REST resources using Jackson.
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.otto.edison/edison-hal)
 [![Javadoc](https://www.javadoc.io/badge/de.otto.edison/edison-hal.svg)](https://www.javadoc.io/doc/de.otto.edison/edison-hal)
 [![codecov](https://codecov.io/gh/otto-de/edison-hal/branch/master/graph/badge.svg)](https://codecov.io/gh/otto-de/edison-hal)
+![OSS Lifecycle](https://img.shields.io/osslifecycle?file_url=https%3A%2F%2Fraw.githubusercontent.com%2Fotto-de%2Fedison-hal%2Fmain%2FOSSMETADATA)
 
 
 ## 1. Documentation
