@@ -6,6 +6,7 @@ plugins {
 }
 
 version = '2.2.0-SNAPSHOT'
+group = 'de.otto.edison'
 
 repositories {
     mavenCentral()
@@ -83,7 +84,6 @@ jreleaser {
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            groupId = "de.otto.edison"
             artifactId = 'edison-hal'
             from components.java
 
