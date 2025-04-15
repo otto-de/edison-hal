@@ -1,5 +1,9 @@
 # Change Log
 
+## 2.2.0
+* Dependency updates
+* Published via central.sonatype.com instead of oss.sonatype.org
+
 ## 2.1.1
 
 * Dependency updates
