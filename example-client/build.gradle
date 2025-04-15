@@ -4,18 +4,24 @@ buildscript {
     }
 }
 
-apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: 'application'
+plugins {
+    id 'java'
+    id 'idea'
+    id 'application'
+}
 
-mainClassName = 'de.otto.edison.hal.example.Client'
+application {
+    mainClassName = 'de.otto.edison.hal.example.Client'
+}
 
 jar {
     archiveBaseName = 'edison-hal-example-client'
 }
 
-targetCompatibility = JavaVersion.VERSION_17
-sourceCompatibility = JavaVersion.VERSION_17
+java {
+    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_17
+}
 
 repositories {
     mavenCentral()
@@ -25,13 +31,4 @@ dependencies {
     implementation rootProject
     implementation("ch.qos.logback:logback-classic:1.2.11")
     implementation("org.apache.httpcomponents:httpclient:4.5.14")
-}
-
-project.afterEvaluate {
-    tasks.withType(JavaCompile) {
-        def version = compat(sourceCompatibility)
-        project.logger.info("Configuring $name to use --release $version")
-        println("Configuring $name to use --release $version")
-        options.compilerArgs.addAll(['--release', version])
-    }
 }

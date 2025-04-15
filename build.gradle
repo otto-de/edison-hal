@@ -1,45 +1,26 @@
-apply plugin: 'java-library'
-apply plugin: 'idea'
-apply plugin: 'signing'
-apply plugin: 'jacoco'
-apply plugin: 'maven-publish'
-apply from: 'dependencies.gradle'
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'maven-publish'
+    id 'org.jreleaser' version '1.17.0'
+}
 
-version='2.2.0-SNAPSHOT'
-group='de.otto.edison'
-
-project.ext.set("debugUpload", false)
+version = '2.2.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
-    api libraries.jackson
-    implementation libraries.uritemplates
-    implementation libraries.loggingApi
+    api("com.fasterxml.jackson.core:jackson-databind:2.14.2")
+    implementation("com.damnhandy:handy-uri-templates:2.1.8")
+    implementation("org.slf4j:slf4j-api:1.7.36")
+    implementation("ch.qos.logback:logback-classic:1.2.11")
 
-    testImplementation libraries.test
-    testImplementation libraries.loggingImpl
-}
-
-compileJava {
-    options.encoding = 'UTF-8'
-    options.compilerArgs << "-Xlint:all,-serial"
-}
-
-compileTestJava {
-    options.encoding = 'UTF-8'
-    options.compilerArgs << "-Xlint:all,-serial"
-}
-
-test {
-    println()
-    afterSuite { desc, result ->
-        if (!desc.parent) { // will match the outermost suite
-            println "Test Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
-        }
-    }
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.hamcrest:hamcrest:2.2")
+    testImplementation("org.mockito:mockito-core:5.1.1")
 }
 
 jacocoTestReport {
@@ -48,110 +29,67 @@ jacocoTestReport {
     }
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    archiveClassifier = 'javadoc'
-    from 'build/docs/javadoc'
+java {
+    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_17
+    withJavadocJar()
+    withSourcesJar()
 }
 
-task sourcesJar(type: Jar) {
-    from sourceSets.main.allSource
-    archiveClassifier = 'sources'
-}
-
-artifacts {
-    archives jar
-    archives sourcesJar
-    archives javadocJar
-}
-
-signing {
-    sign configurations.archives
-}
-
-task askForVersionNumber {
-    doLast {
-        def console = System.console()
-        def enteredVersion
-        if (console) {
-            version = trimSnapshot(version)
-            enteredVersion = console.readLine('\n\u001B[92m\u001B[1mWhich version do you want to release?\u001B[0m \u001B[2m[' + version + ']\u001B[0m ')
-            if (!enteredVersion.isEmpty()) {
-                version = enteredVersion
-            }
-            bumpVersionInGradleFile(version)
-        } else {
-            logger.error "Cannot get console."
+jreleaser {
+    project {
+        snapshot {
+            fullChangelog = true
         }
     }
-}
-
-def bumpVersionInGradleFile(String theVersion) {
-    def myFile = new File('build.gradle')
-    def output = ""
-    myFile.eachLine { line ->
-        output += line.replaceAll('^version\\s*=\\s*.*$', "version='" + theVersion + "'")
-        output += "\n"
+    gitRootSearch = true
+    signing {
+        active = 'ALWAYS'
+        armored = true
     }
-    def outFile = new File("build.gradle")
-    outFile.write(output)
-}
+    deploy {
+        maven {
+            github {
+                app {
+                    snapshotSupported = true
+                    active = 'ALWAYS'
+                    url = "https://maven.pkg.github.com/otto-de/edison-hal"
+                    stagingRepository('build/staging-deploy')
+                }
+            }
+            mavenCentral {
+                app {
+                    snapshotSupported = false
+                    active = 'ALWAYS'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository('build/staging-deploy')
 
-def incrementVersion(String theVersion) {
-    def versionArray = theVersion.split("\\.")
-    def major = versionArray[0].toInteger()
-    def minor = versionArray[1].toInteger() + 1
-    def patch = 0
+                    // Time to wait between state transition checks, in seconds.
+                    // Defaults to `10`.
+                    //
+                    retryDelay = 10
 
-    return major + "." + minor + "." + patch;
-}
-
-def trimSnapshot(String theVersion) {
-    if (theVersion.endsWith("-SNAPSHOT")) {
-        return theVersion.substring(0, theVersion.length()-9)
-    } else {
-        return theVersion;
-    }
-}
-
-
-task commitNewVersion {
-    doLast {
-        println(["git", "add", "build.gradle"].execute().text.trim())
-        println(["git", "commit", "-m", "bump version to " + version].execute().text.trim())
-        bumpVersionInGradleFile(incrementVersion(version) + "-SNAPSHOT")
-        println(["git", "add", "build.gradle"].execute().text.trim())
-        println(["git", "commit", "-m", "bump version to next snapshot"].execute().text.trim())
-    }
-}
-
-task doRelease {
-    dependsOn askForVersionNumber, publish, commitNewVersion
-}
-
-doRelease {
-    doLast {
+                    // Maximum number of attempts to verify state transition.
+                    // Defaults to `60`.
+                    // Maven Central release can currently take up to 20 minutes, so we increased this to 120
+                    //
+                    maxRetries = 120
+                }
+            }
+        }
     }
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            groupId = "de.otto.edison"
             artifactId = 'edison-hal'
             from components.java
-            artifact sourcesJar
-            artifact javadocJar
-            versionMapping {
-                usage('java-api') {
-                    fromResolutionOf('runtimeClasspath')
-                }
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
+
             pom {
-                name = 'edison-hal'
-                description = 'A library to parse and render application/hal+json documents in Java.'
                 url = 'https://github.com/otto-de/edison-hal'
+                description = 'A library to parse and render application/hal+json documents in Java.'
                 licenses {
                     license {
                         name = 'The Apache License, Version 2.0'
@@ -165,64 +103,19 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git@github.com:otto-de/edison-hal.git'
-                    developerConnection = 'scm:git@github.com:otto-de/edison-hal.git'
+                    connection = 'scm:git:https://github.com/otto-de/edison-hal.git'
+                    developerConnection = 'scm:git:ssh://github.com/otto-de/edison-hal.git'
                     url = 'https://github.com/otto-de/edison-hal'
                 }
             }
         }
     }
+
     repositories {
         maven {
-            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
-            if (project.debugUpload) {
-                releasesRepoUrl = "$buildDir/repos/releases"
-                snapshotsRepoUrl = "$buildDir/repos/snapshots"
-            } else {
-                credentials {
-                    username = sonatypeUsername
-                    password = sonatypePassword
-                }
-            }
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            // Our settingsDirectory is the project root dir.
+            // We want to 'publish' to the specified dir to have the artifacts uploaded with JReleaser from that location afterwards.
+            url = layout.settingsDirectory.dir('build/staging-deploy')
         }
-    }
-}
-
-signing {
-    sign publishing.publications.mavenJava
-}
-
-commitNewVersion.shouldRunAfter publish
-
-allprojects {
-    tasks.withType(Test).configureEach {
-        maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
-        if (!project.hasProperty("createReports")) {
-            reports.html.required = false
-            reports.junitXml.required = false
-        }
-    }
-
-    targetCompatibility = JavaVersion.VERSION_17
-    sourceCompatibility = JavaVersion.VERSION_17
-}
-
-// This function converts 1.8 -> 8
-static String compat(String src) {
-    if (src.contains('.')) {
-        src.substring(src.lastIndexOf('.')+1)
-    } else {
-        src
-    }
-}
-
-project.afterEvaluate {
-    tasks.withType(JavaCompile) {
-        def version = compat(sourceCompatibility)
-        project.logger.info("Configuring $name to use --release $version")
-        println("Configuring $name to use --release $version")
-        options.compilerArgs.addAll(['--release', version])
     }
 }
