@@ -29,6 +29,6 @@ repositories {
 
 dependencies {
     implementation rootProject
-    implementation("ch.qos.logback:logback-classic:1.2.11")
+    implementation("ch.qos.logback:logback-classic:1.5.18")
     implementation("org.apache.httpcomponents:httpclient:4.5.14")
 }
