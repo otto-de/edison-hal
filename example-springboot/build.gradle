@@ -23,5 +23,4 @@ dependencies {
     implementation rootProject
     implementation("org.springframework.boot:spring-boot-starter:${springBootVersion}")
     implementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
-    implementation("ch.qos.logback:logback-classic:1.2.11")
 }
