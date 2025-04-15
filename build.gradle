@@ -88,6 +88,7 @@ publishing {
             from components.java
 
             pom {
+                name = 'Edison Hal'
                 url = 'https://github.com/otto-de/edison-hal'
                 description = 'A library to parse and render application/hal+json documents in Java.'
                 licenses {
