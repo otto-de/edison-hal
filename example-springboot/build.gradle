@@ -18,7 +18,7 @@ repositories {
 }
 
 dependencies {
-    var springBootVersion = "3.5.7"
+    var springBootVersion = "4.0.4"
 
     implementation rootProject
     implementation("org.springframework.boot:spring-boot-starter:${springBootVersion}")
