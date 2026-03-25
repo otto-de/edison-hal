@@ -1,6 +1,6 @@
 package de.otto.edison.hal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import org.junit.Test;
 
 import static de.otto.edison.hal.Link.*;
@@ -117,7 +117,7 @@ public class LinkTest {
     }
 
     @Test
-    public void shouldBuildCuri() throws JsonProcessingException {
+    public void shouldBuildCuri() throws JacksonException {
         final Link link = curi("t", "http://example.org/{rel}");
         assertThat(link.getName(), is("t"));
         assertThat(link.getRel(), is("curies"));
@@ -125,7 +125,7 @@ public class LinkTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldFailToBuildCuriWithoutRelPlaceholder() throws JsonProcessingException {
+    public void shouldFailToBuildCuriWithoutRelPlaceholder() throws JacksonException {
         curi("t", "http://example.org/rel");
     }
 

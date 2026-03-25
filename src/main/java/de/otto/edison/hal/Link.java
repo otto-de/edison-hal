@@ -3,6 +3,7 @@ package de.otto.edison.hal;
 import com.damnhandy.uri.template.UriTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static com.damnhandy.uri.template.UriTemplate.fromTemplate;
@@ -16,6 +17,7 @@ import static java.lang.Boolean.TRUE;
  * @since 0.1.0
  */
 @JsonInclude(NON_ABSENT)
+@JsonPropertyOrder({"href", "templated", "type", "hreflang", "title", "name", "deprecation", "profile"})
 public class Link {
 
     @JsonIgnore

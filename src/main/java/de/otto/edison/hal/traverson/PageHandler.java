@@ -1,7 +1,7 @@
 package de.otto.edison.hal.traverson;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
 import de.otto.edison.hal.EmbeddedTypeInfo;
 
 import java.io.IOException;
@@ -35,8 +35,8 @@ public interface PageHandler {
      * @return true if traversion should continue, false if it should be aborted.
      *
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
-     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
-     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @throws StreamReadException if the json document can not be parsed by Jackson's JsonMapper
+     * @throws DatabindException if the input JSON structure can not be mapped to the specified HalRepresentation type
      */
     boolean apply(Traverson traverson) throws IOException;
 

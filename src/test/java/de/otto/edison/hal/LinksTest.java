@@ -1,6 +1,6 @@
 package de.otto.edison.hal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import org.junit.Test;
 
 import java.util.List;
@@ -199,7 +199,7 @@ public class LinksTest {
     }
 
     @Test
-    public void shouldGetCuriedLinksFromFullRel() throws JsonProcessingException {
+    public void shouldGetCuriedLinksFromFullRel() throws JacksonException {
         final Links links = linkingTo()
                 .curi("o", "http://spec.otto.de/rels/{rel}")
                 .array(link("o:product", "http://example.org/products/42"),
@@ -212,7 +212,7 @@ public class LinksTest {
     }
 
     @Test
-    public void shouldGetCuriedLinksFromFullRelWithPredicate() throws JsonProcessingException {
+    public void shouldGetCuriedLinksFromFullRelWithPredicate() throws JacksonException {
         final Links links = linkingTo()
                 .curi("o", "http://spec.otto.de/rels/{rel}")
                 .array(
@@ -227,7 +227,7 @@ public class LinksTest {
     }
 
     @Test
-    public void shouldGetCuriedLinksFromCuriedRel() throws JsonProcessingException {
+    public void shouldGetCuriedLinksFromCuriedRel() throws JacksonException {
         final Links links = linkingTo()
                 .curi("o", "http://spec.otto.de/rels/{rel}")
                 .array(link("o:product", "http://example.org/products/42"))
@@ -241,7 +241,7 @@ public class LinksTest {
     }
 
     @Test
-    public void shouldGetCuriedLinksFromCuriedRelWithPredicate() throws JsonProcessingException {
+    public void shouldGetCuriedLinksFromCuriedRelWithPredicate() throws JacksonException {
         final Links links = linkingTo()
                 .curi("o", "http://spec.otto.de/rels/{rel}")
                 .array(
@@ -257,7 +257,7 @@ public class LinksTest {
     }
 
     @Test
-    public void shouldReplaceFullRelsWithCuriedRels() throws JsonProcessingException {
+    public void shouldReplaceFullRelsWithCuriedRels() throws JacksonException {
         final Links links = linkingTo()
                 .curi("o", "http://spec.otto.de/rels/{rel}")
                 .array(
@@ -272,7 +272,7 @@ public class LinksTest {
     }
 
     @Test
-    public void shouldReplaceFullRelsWithCuriedRelsAfterConstruction() throws JsonProcessingException {
+    public void shouldReplaceFullRelsWithCuriedRelsAfterConstruction() throws JacksonException {
         final Links links = linkingTo()
                 .array(
                         link("http://spec.otto.de/rels/product", "http://example.org/products/42"),
@@ -287,7 +287,7 @@ public class LinksTest {
     }
 
     @Test
-    public void shouldIgnoreMissingCuries() throws JsonProcessingException {
+    public void shouldIgnoreMissingCuries() throws JacksonException {
         final Links links = linkingTo().array(
                 link("o:product", "http://example.org/products/42"),
                 link("o:product", "http://example.org/products/44"))

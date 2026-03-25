@@ -1,8 +1,8 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -20,35 +20,35 @@ import static org.hamcrest.Matchers.*;
 public class HalRepresentationLinkingTest {
 
     @Test
-    public void shouldRenderSimpleHalRepresentationWithoutLinks() throws JsonProcessingException {
+    public void shouldRenderSimpleHalRepresentationWithoutLinks() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation() {
             public final String first = "foo";
             public final String second = "bar";
         };
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"first\":\"foo\",\"second\":\"bar\"}"));
 
     }
 
     @Test
-    public void shouldNotRenderEmptyLinks() throws JsonProcessingException {
+    public void shouldNotRenderEmptyLinks() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(emptyLinks()) {
             public final String first = "foo";
             public final String second = "bar";
         };
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"first\":\"foo\",\"second\":\"bar\"}"));
 
     }
 
     @Test
-    public void shouldRenderSelfLinkAndProperty() throws JsonProcessingException {
+    public void shouldRenderSelfLinkAndProperty() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -58,13 +58,13 @@ public class HalRepresentationLinkingTest {
             public final String test = "foo";
         };
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
-        assertThat(json, is("{\"test\":\"foo\",\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}}}"));
+        assertThat(json, is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"}},\"test\":\"foo\"}"));
     }
 
     @Test
-    public void shouldRenderSingleCuriAsArray() throws JsonProcessingException {
+    public void shouldRenderSingleCuriAsArray() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -72,13 +72,13 @@ public class HalRepresentationLinkingTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}}"));
     }
 
     @Test
-    public void shouldRenderSingleItemAsArray() throws JsonProcessingException {
+    public void shouldRenderSingleItemAsArray() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -86,13 +86,13 @@ public class HalRepresentationLinkingTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"item\":[{\"href\":\"http://example.org/items/1\"}]}}"));
     }
 
     @Test
-    public void shouldRenderConfiguredRelAsArray() throws JsonProcessingException {
+    public void shouldRenderConfiguredRelAsArray() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -101,13 +101,13 @@ public class HalRepresentationLinkingTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"foo\":[{\"href\":\"http://example.org/items/1\"}],\"bar\":{\"href\":\"http://example.org/items/2\"}}}"));
     }
 
     @Test
-    public void shouldRenderCuriedRelAsArray() throws JsonProcessingException {
+    public void shouldRenderCuriedRelAsArray() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -118,7 +118,7 @@ public class HalRepresentationLinkingTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{" +
                 "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]," +
@@ -127,7 +127,7 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderCuriedRelAsLinkObject() throws JsonProcessingException {
+    public void shouldRenderCuriedRelAsLinkObject() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -138,7 +138,7 @@ public class HalRepresentationLinkingTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{" +
                 "\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"ex\"}]," +
@@ -147,7 +147,7 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderNestedCuriedRelAsArray() throws JsonProcessingException {
+    public void shouldRenderNestedCuriedRelAsArray() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 emptyLinks(),
@@ -161,7 +161,7 @@ public class HalRepresentationLinkingTest {
                 )))
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{" +
                 "\"_embedded\":{\"http://example.org/rels/nested\":[{\"_links\":{" +
@@ -172,7 +172,7 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderNestedCuriedRelAsLinkObject() throws JsonProcessingException {
+    public void shouldRenderNestedCuriedRelAsLinkObject() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 emptyLinks(),
@@ -185,7 +185,7 @@ public class HalRepresentationLinkingTest {
                 )))
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{" +
                 "\"_embedded\":{\"http://example.org/rels/nested\":[{\"_links\":{" +
@@ -196,7 +196,7 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderNestedCuriedRelAsArrayWithCuriAtTopLevel() throws JsonProcessingException {
+    public void shouldRenderNestedCuriedRelAsArrayWithCuriAtTopLevel() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -211,7 +211,7 @@ public class HalRepresentationLinkingTest {
                 )))
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{" +
                 "\"_links\":{" +
@@ -223,7 +223,7 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderMultipleLinks() throws JsonProcessingException {
+    public void shouldRenderMultipleLinks() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -233,7 +233,7 @@ public class HalRepresentationLinkingTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"},\"collection\":{\"href\":\"http://example.org/test\"}}}"));
     }
@@ -250,7 +250,7 @@ public class HalRepresentationLinkingTest {
     }
 
     @Test
-    public void shouldRenderTemplatedLink() throws JsonProcessingException {
+    public void shouldRenderTemplatedLink() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -258,13 +258,13 @@ public class HalRepresentationLinkingTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"search\":{\"href\":\"/test{?bar}\",\"templated\":true}}}"));
     }
 
     @Test
-    public void shouldRenderEvenMoreComplexLinks() throws JsonProcessingException {
+    public void shouldRenderEvenMoreComplexLinks() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -287,7 +287,7 @@ public class HalRepresentationLinkingTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{" + "" +
                 "\"search\":{\"href\":\"/test{?bar}\",\"templated\":true,\"type\":\"application/hal+json\",\"hreflang\":\"de-DE\",\"title\":\"Some Title\",\"name\":\"Foo\",\"deprecation\":\"http://example.org/deprecations/4711.html\",\"profile\":\"http://example.org/profiles/test-profile\"}," +
@@ -336,7 +336,7 @@ public class HalRepresentationLinkingTest {
         NestedHalRepresentation nestedHalRepresentation = new NestedHalRepresentation();
         nestedHalRepresentation.nested.add(new HalRepresentation(linkingTo().self("/foo").build()));
         // when
-        final String json = new ObjectMapper().writeValueAsString(nestedHalRepresentation);
+        final String json = JsonMapper.builder().build().writeValueAsString(nestedHalRepresentation);
         // then
         assertThat(json, is("{\"nested\":[{\"_links\":{\"self\":{\"href\":\"/foo\"}}}]}"));
     }

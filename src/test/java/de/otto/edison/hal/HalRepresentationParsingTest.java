@@ -1,13 +1,14 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
+import static tools.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;
 import static de.otto.edison.hal.Link.*;
@@ -40,7 +41,7 @@ public class HalRepresentationParsingTest {
         // given
         final String json = "{\"first\":\"foo\",\"second\":\"bar\"}";
         // when
-        final SimpleHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), SimpleHalRepresentation.class);
+        final SimpleHalRepresentation result = JsonMapper.builder().build().readValue(json.getBytes(), SimpleHalRepresentation.class);
         // then
         assertThat(result.getLinks(), is(emptyLinks()));
         assertThat(result.first, is("foo"));
@@ -52,7 +53,7 @@ public class HalRepresentationParsingTest {
         // given
         final String json = "{\"first\":\"foo\",\"second\":\"bar\",\"third\":\"foobar\"}";
         // when
-        final SimpleHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), SimpleHalRepresentation.class);
+        final SimpleHalRepresentation result = JsonMapper.builder().build().readValue(json.getBytes(), SimpleHalRepresentation.class);
         // then
         assertThat(result.getLinks(), is(emptyLinks()));
         assertThat(result.first, is("foo"));
@@ -64,7 +65,7 @@ public class HalRepresentationParsingTest {
         // given
         final String json = "{\"_links\":{\"self\":{\"href\":\"http://example.org/test/foo\"},\"test\":{\"href\":\"http://example.org/test/bar\"}},\"first\":\"foo\"}";
         // when
-        final SimpleHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), SimpleHalRepresentation.class);
+        final SimpleHalRepresentation result = JsonMapper.builder().build().readValue(json.getBytes(), SimpleHalRepresentation.class);
         // then
         Links links = result.getLinks();
         assertThat(links.getLinkBy("self").get(), is(self("http://example.org/test/foo")));
@@ -87,8 +88,7 @@ public class HalRepresentationParsingTest {
                     "}" +
                 "}";
         // and
-        final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        final JsonMapper objectMapper = JsonMapper.builder().enable(ACCEPT_SINGLE_VALUE_AS_ARRAY).build();
         // when
         final SimpleHalRepresentation result = objectMapper.readValue(json.getBytes(), SimpleHalRepresentation.class);
         // then
@@ -116,7 +116,7 @@ public class HalRepresentationParsingTest {
                     "]}" +
                 "}";
         // when
-        final SimpleHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), SimpleHalRepresentation.class);
+        final SimpleHalRepresentation result = JsonMapper.builder().build().readValue(json.getBytes(), SimpleHalRepresentation.class);
         // then
         final Links links = result.getLinks();
         assertThat(links.getLinkBy("self").get(), is(self("http://example.org/test/foo")));
@@ -231,7 +231,6 @@ public class HalRepresentationParsingTest {
                 "\"curies\":{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}," +
                 "\"x:foo\":{\"href\":\"http://example.org/test\"}," +
                 "\"x:bar\":{\"href\":\"http://example.org/test\"}}" +
-                "}" +
                 "}";
         // when
         Links links = parse(json).as(HalRepresentation.class).getLinks();
@@ -252,7 +251,6 @@ public class HalRepresentationParsingTest {
                         "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
                     "}" +
                 "]}" +
-                "}" +
                 "}";
         // when
         Embedded embedded = parse(json).as(HalRepresentation.class).getEmbedded();
@@ -271,7 +269,6 @@ public class HalRepresentationParsingTest {
                     "{" +
                         "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar\"}}" +
                     "}" +
-                "}" +
                 "}" +
                 "}";
         // when
@@ -354,7 +351,6 @@ public class HalRepresentationParsingTest {
                 "\"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
                 "}" +
                 "]}" +
-                "}" +
                 "}";
         // when
         Embedded embedded = parse(json)
@@ -375,8 +371,7 @@ public class HalRepresentationParsingTest {
                 "\"_embedded\":{\"ex:bar\":{" +
                 "   \"value\":\"Hello World\"," +
                 "   \"_links\":{\"self\":[{\"href\":\"http://example.org/test/bar/01\"}]}" +
-                "}}}}";
-        // when
+                "}}}";        // when
         Embedded embedded = parse(json)
                 .as(HalRepresentation.class, withEmbedded("http://example.org/rels/bar", EmbeddedHalRepresentation.class))
                 .getEmbedded();

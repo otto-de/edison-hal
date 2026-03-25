@@ -1,4 +1,5 @@
 build
+**/bin/**
 out
 .gradle
 *.iml
@@ -6,3 +7,7 @@ out
 *.iws
 .shelf
 .idea/*
+**/.settings
+**/.classpath
+**/.project
+.DS_Store

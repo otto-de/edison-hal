@@ -1,9 +1,9 @@
 package de.otto.edison.hal;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
+import static tools.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static java.util.Arrays.asList;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -20,10 +20,10 @@ import static org.slf4j.LoggerFactory.getLogger;
  *     A parser used to parse application/hal+json representations of REST resources into Java objects.
  * </p>
  * <p>
- *     Simple HAL representations can be parsed using Jackson's ObjectMapper like this:
+ *     Simple HAL representations can be parsed using Jackson's JsonMapper like this:
  * </p>
  * <pre><code>
- *     new ObjectMapper().readValue(json.getBytes(), MyHalRepresentation.class)
+ *     JsonMapper.builder().build().readValue(json.getBytes(), MyHalRepresentation.class)
  * </code></pre>
  * <p>
  *     The same can be achieved by using a HalParser:
@@ -49,22 +49,19 @@ public final class HalParser {
     private static final Logger LOG = getLogger(HalParser.class);
 
     /**
-     * The Jackson ObjectMapper that is used to parse application/hal+json documents if not other instance
+     * The Jackson JsonMapper that is used to parse application/hal+json documents if no other instance
      * is specified explicitly.
      * <p>
-     *     The mapper will {@link ObjectMapper#findAndRegisterModules() find and register} all available Jackson
-     *     modules and configure the mapper to
-     *     {@link com.fasterxml.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
+     *     The mapper will configure the mapper to
+     *     {@link tools.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
      * </p>
      */
-    public static final ObjectMapper DEFAULT_JSON_MAPPER = new ObjectMapper();
-    static {
-        DEFAULT_JSON_MAPPER.configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        DEFAULT_JSON_MAPPER.findAndRegisterModules();
-    }
+    public static final JsonMapper DEFAULT_JSON_MAPPER = JsonMapper.builder()
+            .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
+            .build();
 
-    /** The ObjectMapper used to parse the JSON documents. */
-    private final ObjectMapper objectMapper;
+    /** The JsonMapper used to parse the JSON documents. */
+    private final JsonMapper objectMapper;
     /** The JSON documents that is going to be parsed. */
     private final String json;
 
@@ -72,12 +69,12 @@ public final class HalParser {
      * Creates a HalParser for a given JSON document.
      * <p>
      *     The mapper should be configured to
-     *     {@link com.fasterxml.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
+     *     {@link tools.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
      * </p>
      *
      * @since 2.0.0
      */
-    private HalParser(final String json, final ObjectMapper objectMapper) {
+    private HalParser(final String json, final JsonMapper objectMapper) {
         this.json = json;
         this.objectMapper = objectMapper;
     }
@@ -100,22 +97,23 @@ public final class HalParser {
      * Create a new HalParser for a JSON document.
      * <p>
      *     The specified {@code objectMapper} is used to parse documents. If not already configured
-     *     appropriately, the {@code objectMapper} is copied and configured to
-     *     {@link com.fasterxml.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}.
+     *     appropriately, the {@code objectMapper} is rebuilt with
+     *     {@link tools.jackson.databind.DeserializationFeature#ACCEPT_SINGLE_VALUE_AS_ARRAY accept single values as arrays}
+     *     enabled.
      * </p>
      * @param json the application/hal+json document to be parsed.
-     * @param objectMapper the ObjectMapper instance used to parse documents.
+     * @param objectMapper the JsonMapper instance used to parse documents.
      * @return HalParser instance.
      *
      * @since 2.0.0
      */
-    public static HalParser parse(final String json, final ObjectMapper objectMapper) {
+    public static HalParser parse(final String json, final JsonMapper objectMapper) {
         if (objectMapper.isEnabled(ACCEPT_SINGLE_VALUE_AS_ARRAY)) {
             return new HalParser(json, objectMapper);
         } else {
-            return new HalParser(json, objectMapper
-                    .copy()
-                    .configure(ACCEPT_SINGLE_VALUE_AS_ARRAY, true));
+            return new HalParser(json, objectMapper.rebuild()
+                    .enable(ACCEPT_SINGLE_VALUE_AS_ARRAY)
+                    .build());
         }
     }
 
@@ -126,8 +124,8 @@ public final class HalParser {
      * @param <T> the type of the class, extending HalRepresentation
      * @return instance of T, containing the data of the parsed HAL document.
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
-     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
-     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @throws StreamReadException if the json document can not be parsed by Jackson's JsonMapper
+     * @throws DatabindException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type) throws IOException {
@@ -144,8 +142,8 @@ public final class HalParser {
      * @param <T> The type used to parse the HAL document
      * @return T
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
-     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
-     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @throws StreamReadException if the json document can not be parsed by Jackson's JsonMapper
+     * @throws DatabindException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type,
@@ -168,8 +166,8 @@ public final class HalParser {
      * @param <T> The type used to parse the HAL document
      * @return T
      * @throws IOException if a low-level I/O problem (unexpected end-of-input, network error) occurs.
-     * @throws JsonParseException if the json document can not be parsed by Jackson's ObjectMapper
-     * @throws JsonMappingException if the input JSON structure can not be mapped to the specified HalRepresentation type
+     * @throws StreamReadException if the json document can not be parsed by Jackson's JsonMapper
+     * @throws DatabindException if the input JSON structure can not be mapped to the specified HalRepresentation type
      * @since 0.1.0
      */
     public <T extends HalRepresentation> T as(final Class<T> type,

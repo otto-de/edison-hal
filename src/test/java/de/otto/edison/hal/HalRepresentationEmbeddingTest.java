@@ -1,7 +1,7 @@
 package de.otto.edison.hal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.Test;
 
 import java.util.List;
@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.*;
 public class HalRepresentationEmbeddingTest {
 
     @Test
-    public void shouldNotRenderEmptyEmbedded() throws JsonProcessingException {
+    public void shouldNotRenderEmptyEmbedded() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo().self("http://example.org/test/bar").build(),
@@ -27,17 +27,17 @@ public class HalRepresentationEmbeddingTest {
             public String total="4753€";
         };
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
-                        "\"total\":\"4753€\"," +
-                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}" +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
+                        "\"total\":\"4753€\"" +
                         "}"));
     }
 
     @Test
-    public void shouldRenderEmbeddedResourcesWithProperties() throws JsonProcessingException {
+    public void shouldRenderEmbeddedResourcesWithProperties() throws JacksonException {
         // given
         final List<HalRepresentation> items = asList(
                 new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()) {public String amount="42€";},
@@ -47,37 +47,37 @@ public class HalRepresentationEmbeddingTest {
                 linkingTo().self("http://example.org/test/bar").build(),
                 embedded("orders", items)) {public String total="4753€";};
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
-                        "\"total\":\"4753€\"," +
-                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
                         "\"_embedded\":{\"orders\":[" +
                                 "{" +
-                                    "\"amount\":\"42€\"," +
-                                    "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
+                                    "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}," +
+                                    "\"amount\":\"42€\"" +
                                 "}," +
                                 "{" +
-                                    "\"amount\":\"4711€\"," +
-                                    "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/02\"}}" +
+                                    "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/02\"}}," +
+                                    "\"amount\":\"4711€\"" +
                                 "}" +
-                                "]}" +
-                "}"));
+                                "]}," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
+                        "\"total\":\"4753€\"" +
+                        "}"));
     }
 
     @Test
-    public void shouldRenderNestedEmbeddedResourcesWithProperties() throws JsonProcessingException {
+    public void shouldRenderNestedEmbeddedResourcesWithProperties() throws JacksonException {
         // given
-        final List<HalRepresentation> items = asList(
+        final List<HalRepresentation> items = List.of(
                 new HalRepresentation(
                         linkingTo().self("http://example.org/test/bar/01").build(),
                         embedded("foo", singletonList(
                                 new HalRepresentation(linkingTo().self("http://example.org/test/bar/02").build()) {
-                                    public String amount="4711€";
+                                    public String amount = "4711€";
                                 })
                         )) {
-                    public String amount="42€";
+                    public String amount = "42€";
                 }
 
         );
@@ -85,51 +85,53 @@ public class HalRepresentationEmbeddingTest {
                 linkingTo().self("http://example.org/test/bar").build(),
                 embedded("orders", items)) {public String total="4753€";};
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
-                        "\"total\":\"4753€\"," +
-                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
                         "\"_embedded\":{\"orders\":[" +
-                            "{\"amount\":\"42€\"," +
+                            "{\"_embedded\":{\"foo\":[{" +
+                                "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/02\"}}," +
+                                "\"amount\":\"4711€\"}]}," +
                             "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}," +
-                            "\"_embedded\":{\"foo\":[{" +
-                                "\"amount\":\"4711€\"," +
-                                "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/02\"}}}" +
-                            "]}}" +
-                        "]}}"));
+                            "\"amount\":\"42€\"}" +
+                        "]}," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
+                        "\"total\":\"4753€\"" +
+                        "}"));
     }
 
     @Test
-    public void shouldRenderEmbeddedResourcesWithMultipleLinks() throws JsonProcessingException {
+    public void shouldRenderEmbeddedResourcesWithMultipleLinks() throws JacksonException {
         // given
-        final List<HalRepresentation> items = asList(
+        final List<HalRepresentation> items = List.of(
                 new HalRepresentation(linkingTo().array(
                         link("test", "http://example.org/test/bar/01"),
-                        link("test", "http://example.org/test/bar/02")).build()) {public String amount="42€";}
+                        link("test", "http://example.org/test/bar/02")).build()) {
+                    public String amount = "42€";
+                }
         );
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo().self("http://example.org/test/bar").build(),
                 embedded("orders", items)) {public String total="4753€";};
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
-                        "\"total\":\"4753€\"," +
-                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
                         "\"_embedded\":{\"orders\":[" +
                                 "{" +
-                                    "\"amount\":\"42€\"," +
-                                    "\"_links\":{\"test\":[{\"href\":\"http://example.org/test/bar/01\"},{\"href\":\"http://example.org/test/bar/02\"}]}" +
+                                    "\"_links\":{\"test\":[{\"href\":\"http://example.org/test/bar/01\"},{\"href\":\"http://example.org/test/bar/02\"}]}," +
+                                    "\"amount\":\"42€\"" +
                                 "}" +
-                                "]}" +
-                "}"));
+                                "]}," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}}," +
+                        "\"total\":\"4753€\"" +
+                        "}"));
     }
 
     @Test
-    public void shouldRenderMultipleEmbeddedResources() throws JsonProcessingException {
+    public void shouldRenderMultipleEmbeddedResources() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo().self("http://example.org/test/bar").build(),
@@ -145,7 +147,7 @@ public class HalRepresentationEmbeddingTest {
                         .with("foobar", new HalRepresentation(Links.linkingTo().self("http://example.org/test/foobar").build()))
                         .build());
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
@@ -169,7 +171,7 @@ public class HalRepresentationEmbeddingTest {
     }
 
     @Test
-    public void shouldUseCuriesInEmbedded() throws JsonProcessingException {
+    public void shouldUseCuriesInEmbedded() throws JacksonException {
         // given
         final List<HalRepresentation> items = asList(
                 new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()),
@@ -317,7 +319,7 @@ public class HalRepresentationEmbeddingTest {
     }
 
     @Test
-    public void shouldReplaceEmbeddedFullRelWithCuri() throws JsonProcessingException {
+    public void shouldReplaceEmbeddedFullRelWithCuri() throws JacksonException {
         // given
         final List<HalRepresentation> items = asList(
                 new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build()),
@@ -330,11 +332,10 @@ public class HalRepresentationEmbeddingTest {
                         .build(),
                 embedded("http://example.org/rels/orders", items)) {};
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
-                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"},\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}," +
                         "\"_embedded\":{\"x:orders\":[" +
                         "{" +
                         "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
@@ -342,12 +343,13 @@ public class HalRepresentationEmbeddingTest {
                         "{" +
                         "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/02\"}}" +
                         "}" +
-                        "]}" +
+                        "]}," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"},\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}" +
                         "}"));
     }
 
     @Test
-    public void shouldReplaceSingleEmbeddedFullRelWithCuri() throws JsonProcessingException {
+    public void shouldReplaceSingleEmbeddedFullRelWithCuri() throws JacksonException {
         // given
         final HalRepresentation item = new HalRepresentation(linkingTo().self("http://example.org/test/bar/01").build());
         final HalRepresentation representation = new HalRepresentation(
@@ -357,21 +359,21 @@ public class HalRepresentationEmbeddingTest {
                         .build(),
                 embedded("http://example.org/rels/foo", item)) {};
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
-                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"},\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}," +
                         "\"_embedded\":{\"x:foo\":" +
                         "{" +
                         "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar/01\"}}" +
                         "}" +
-                        "}" +
+                        "}," +
+                        "\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"},\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}" +
                         "}"));
     }
 
     @Test
-    public void shouldReplaceNestedEmbeddedFullRelWithCuri() throws JsonProcessingException {
+    public void shouldReplaceNestedEmbeddedFullRelWithCuri() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -386,7 +388,7 @@ public class HalRepresentationEmbeddingTest {
                         )
                 ))));
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
@@ -404,7 +406,7 @@ public class HalRepresentationEmbeddingTest {
     }
 
     @Test
-    public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinks() throws JsonProcessingException {
+    public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinks() throws JacksonException {
         // given
         final List<HalRepresentation> items = asList(
                 new HalRepresentation(linkingTo().single(link("http://example.org/rels/bar", "http://example.org/test/bar/01")).build()),
@@ -415,11 +417,10 @@ public class HalRepresentationEmbeddingTest {
                         .curi("x", "http://example.org/rels/{rel}").build(),
                 embedded("http://example.org/rels/foo", items)) {};
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
-                        "\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}," +
                         "\"_embedded\":{\"x:foo\":[" +
                         "{" +
                         "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
@@ -427,12 +428,13 @@ public class HalRepresentationEmbeddingTest {
                         "{" +
                         "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
                         "}" +
-                        "]}" +
+                        "]}," +
+                        "\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}" +
                         "}"));
     }
 
     @Test
-    public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinksAfterConstruction() throws JsonProcessingException {
+    public void shouldReplaceEmbeddedFullRelWithCuriInNestedLinksAfterConstruction() throws JacksonException {
         // given
         final List<HalRepresentation> items = asList(
                 new HalRepresentation(linkingTo().single(link("http://example.org/rels/bar", "http://example.org/test/bar/01")).build()),
@@ -443,11 +445,10 @@ public class HalRepresentationEmbeddingTest {
                 embedded("http://example.org/rels/foo", items)) {};
         // when
         representation.add(linkingTo().curi("x", "http://example.org/rels/{rel}").build());
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is(
                 "{" +
-                        "\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}," +
                         "\"_embedded\":{\"x:foo\":[" +
                         "{" +
                         "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/01\"}}" +
@@ -455,7 +456,8 @@ public class HalRepresentationEmbeddingTest {
                         "{" +
                         "\"_links\":{\"x:bar\":{\"href\":\"http://example.org/test/bar/02\"}}" +
                         "}" +
-                        "]}" +
+                        "]}," +
+                        "\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}]}" +
                         "}"));
     }
 

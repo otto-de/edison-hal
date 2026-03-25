@@ -1,5 +1,8 @@
 # Change Log
 
+## 3.0.0
+* Migrate jackson to version 3
+
 ## 2.2.0
 * Dependency updates
 * Published via central.sonatype.com instead of oss.sonatype.org

@@ -1,17 +1,16 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -713,24 +712,24 @@ public class Links {
      *
      * @since 0.1.0
      */
-    public static class LinksSerializer extends JsonSerializer<Links> {
+    public static class LinksSerializer extends ValueSerializer<Links> {
 
         /**
          * {@inheritDoc}
          */
         @Override
         @SuppressWarnings("unchecked")
-        public void serialize(final Links links, final JsonGenerator gen, final SerializerProvider serializers) throws IOException {
+        public void serialize(final Links links, final JsonGenerator gen, final SerializationContext serializers) {
             gen.writeStartObject();
             for (final String rel : links.links.keySet()) {
                 if (links.isArray(rel)) {
-                    gen.writeArrayFieldStart(rel);
+                    gen.writeArrayPropertyStart(rel);
                     for (final Link link : links.getLinksBy(rel)) {
-                        gen.writeObject(link);
+                        gen.writePOJO(link);
                     }
                     gen.writeEndArray();
                 } else {
-                    gen.writeObjectField(rel, links.getLinkBy(rel).orElseThrow(IllegalStateException::new));
+                    gen.writePOJOProperty(rel, links.getLinkBy(rel).orElseThrow(IllegalStateException::new));
                 }
             }
             gen.writeEndObject();
@@ -742,7 +741,7 @@ public class Links {
      *
      * @since 0.1.0
      */
-    public static class LinksDeserializer extends JsonDeserializer<Links> {
+    public static class LinksDeserializer extends ValueDeserializer<Links> {
 
 
         private static final TypeReference<Map<String, ?>> TYPE_REF_LINK_MAP = new TypeReference<Map<String, ?>>() {};
@@ -751,7 +750,7 @@ public class Links {
          * {@inheritDoc}
          */
         @Override
-        public Links deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public Links deserialize(JsonParser p, DeserializationContext ctxt) {
             final Map<String,?> linksMap = p.readValueAs(TYPE_REF_LINK_MAP);
             final Map<String, Object> links = linksMap
                     .entrySet()

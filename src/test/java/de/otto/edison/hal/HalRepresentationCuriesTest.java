@@ -1,7 +1,7 @@
 package de.otto.edison.hal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.Test;
 
 import static de.otto.edison.hal.Curies.curies;
@@ -19,7 +19,7 @@ import static org.hamcrest.Matchers.*;
 public class HalRepresentationCuriesTest {
 
     @Test
-    public void shouldRenderSingleCuriAsArray() throws JsonProcessingException {
+    public void shouldRenderSingleCuriAsArray() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -30,13 +30,13 @@ public class HalRepresentationCuriesTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}],\"x:foo\":{\"href\":\"http://example.org/test\"},\"x:bar\":{\"href\":\"http://example.org/test\"}}}"));
     }
 
     @Test
-    public void shouldRenderCuries() throws JsonProcessingException {
+    public void shouldRenderCuries() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -47,13 +47,13 @@ public class HalRepresentationCuriesTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"},{\"href\":\"http://example.com/rels/{rel}\",\"templated\":true,\"name\":\"y\"}],\"x:foo\":{\"href\":\"http://example.org/test\"},\"y:bar\":{\"href\":\"http://example.org/test\"}}}"));
     }
 
     @Test
-    public void shouldReplaceFullRelWithCuri() throws JsonProcessingException {
+    public void shouldReplaceFullRelWithCuri() throws JacksonException {
         // given
         final HalRepresentation representation = new HalRepresentation(
                 linkingTo()
@@ -62,7 +62,7 @@ public class HalRepresentationCuriesTest {
                         .build()
         );
         // when
-        final String json = new ObjectMapper().writeValueAsString(representation);
+        final String json = JsonMapper.builder().build().writeValueAsString(representation);
         // then
         assertThat(json, is("{\"_links\":{\"curies\":[{\"href\":\"http://example.org/rels/{rel}\",\"templated\":true,\"name\":\"x\"}],\"x:foo\":{\"href\":\"http://example.org/test\"}}}"));
     }

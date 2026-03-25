@@ -1,7 +1,7 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -102,7 +102,7 @@ public class HalParserTest {
                 "   ]}" +
                 "}";
         // when
-        final SimpleHalRepresentation result = parse(json, new ObjectMapper()).as(SimpleHalRepresentation.class);
+        final SimpleHalRepresentation result = parse(json, JsonMapper.builder().build()).as(SimpleHalRepresentation.class);
         final SimpleHalRepresentation expectedResult = parse(json).as(SimpleHalRepresentation.class);
         // then
         assertThat(result, is(expectedResult));
@@ -255,7 +255,7 @@ public class HalParserTest {
                 "      }" +
                 "   ]}" +
                 "}";
-        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonMapper objectMapper = JsonMapper.builder().build();
 
         // when
         final SimpleHalRepresentation result = parse(json, objectMapper)

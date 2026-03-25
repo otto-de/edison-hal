@@ -1,14 +1,14 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
-import java.io.IOException;
 import java.util.*;
 
 import static de.otto.edison.hal.Curies.emptyCuries;
@@ -410,11 +410,11 @@ public class Embedded {
      *
      * @since 0.1.0
      */
-    public static class EmbeddedSerializer extends JsonSerializer<Embedded> {
+    public static class EmbeddedSerializer extends ValueSerializer<Embedded> {
 
         @Override
-        public void serialize(Embedded value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeObject(value.items);
+        public void serialize(Embedded value, JsonGenerator gen, SerializationContext serializers) {
+            gen.writePOJO(value.items);
         }
     }
 
@@ -423,18 +423,19 @@ public class Embedded {
      *
      * @since 0.1.0
      */
-    public static class EmbeddedDeserializer extends JsonDeserializer<Embedded> {
+    public static class EmbeddedDeserializer extends ValueDeserializer<Embedded> {
 
-        private static final TypeReference<Map<String, List<HalRepresentation>>> TYPE_REF_LIST_OF_HAL_REPRESENTATIONS = new TypeReference<Map<String, List<HalRepresentation>>>() {};
+        private static final TypeReference<Map<String, List<HalRepresentation>>> TYPE_REF_LIST_OF_HAL_REPRESENTATIONS = new TypeReference<>() {};
 
         @Override
-        public Embedded deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public Embedded deserialize(JsonParser p, DeserializationContext ctxt) {
             try {
-                final Map<String, Object> items = p.readValueAs(TYPE_REF_LIST_OF_HAL_REPRESENTATIONS);
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> items = (Map<String, Object>) (Map<?, ?>) p.readValueAs(TYPE_REF_LIST_OF_HAL_REPRESENTATIONS);
                 return new Embedded(items);
-            } catch (final JsonMappingException e) {
-                if (e.getMessage().contains("Can not deserialize instance of java.util.ArrayList out of START_OBJECT token")) {
-                    throw new JsonMappingException(p, "Can not deserialize single embedded items for a link-relation type. Try using the HalParser, or configure your ObjectMapper: 'objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)'.", e);
+            } catch (final JacksonException e) {
+                if (e.getMessage() != null && e.getMessage().contains("Can not deserialize instance of java.util.ArrayList out of START_OBJECT token")) {
+                    throw DatabindException.from(p, "Can not deserialize single embedded items for a link-relation type. Try using the HalParser, or configure your JsonMapper: 'jsonMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)'.", e);
                 } else {
                     throw e;
                 }

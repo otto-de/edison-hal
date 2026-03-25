@@ -1,14 +1,14 @@
 package de.otto.edison.hal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
+import static tools.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static de.otto.edison.hal.Embedded.embedded;
 import static de.otto.edison.hal.Embedded.embeddedBuilder;
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
@@ -27,12 +27,11 @@ import static org.hamcrest.core.Is.is;
  */
 public class UserGuideExamples {
 
-    private static final ObjectMapper objectMapper;
-    private static final ObjectMapper prettyObjectMapper;
+    private static final JsonMapper objectMapper;
+    private static final JsonMapper prettyObjectMapper;
     static {
-        objectMapper = new ObjectMapper();
-        prettyObjectMapper = new ObjectMapper();
-        prettyObjectMapper.enable(INDENT_OUTPUT);
+        objectMapper = JsonMapper.builder().build();
+        prettyObjectMapper = JsonMapper.builder().enable(INDENT_OUTPUT).build();
     }
 
     @Test
@@ -71,7 +70,7 @@ public class UserGuideExamples {
         }
         // /snippet
         Example_1_2 representation = new Example_1_2();
-        assertThat(jsonOf("Example_1_2", representation), is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}},\"someProperty\":\"some value\",\"someOtherProperty\":\"some other value\"}"));
+        assertThat(jsonOf("Example_1_2", representation), is("{\"_links\":{\"self\":{\"href\":\"http://example.org/test/bar\"}},\"someOtherProperty\":\"some other value\",\"someProperty\":\"some value\"}"));
     }
 
     @Test
@@ -128,7 +127,7 @@ public class UserGuideExamples {
                 "}";
 
         // when
-        final TestHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), TestHalRepresentation.class);
+        final TestHalRepresentation result = JsonMapper.builder().build().readValue(json.getBytes(), TestHalRepresentation.class);
 
         // then
         assertThat(result.someProperty, is("1"));
@@ -210,7 +209,7 @@ public class UserGuideExamples {
                         "}";
 
         // when
-        final TestHalRepresentation result = new ObjectMapper().readValue(json.getBytes(), TestHalRepresentation.class);
+        final TestHalRepresentation result = JsonMapper.builder().build().readValue(json.getBytes(), TestHalRepresentation.class);
 
         // then
         assertThat(result.someProperty, is("1"));
@@ -231,7 +230,7 @@ public class UserGuideExamples {
             System.out.println(method + ":");
             System.out.println(prettyObjectMapper.writeValueAsString(representation));
             return objectMapper.writeValueAsString(representation);
-        } catch (final JsonProcessingException e) {
+        } catch (final JacksonException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }

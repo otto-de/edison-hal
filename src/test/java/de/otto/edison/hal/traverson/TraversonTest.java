@@ -1,9 +1,9 @@
 package de.otto.edison.hal.traverson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.json.JsonMapper;
 import de.otto.edison.hal.EmbeddedTypeInfo;
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
@@ -182,7 +182,7 @@ public class TraversonTest {
         when(mock.apply(link("foo", "http://example.com/example/foo"))).thenReturn(
                 "{\"_links\":{\"self\":{\"href\":\"http://example.com/example/foo\"}}}");
         // when
-        final HalRepresentation hal = traverson(mock, new ObjectMapper())
+        final HalRepresentation hal = traverson(mock, JsonMapper.builder().build())
                 .startWith("http://example.com/example")
                 .follow("foo")
                 .getResource()
@@ -718,7 +718,7 @@ public class TraversonTest {
         }
     }
 
-    @Test(expected = JsonParseException.class)
+    @Test(expected = StreamReadException.class)
     public void shouldReportErrorOnBrokenJsonFormat() throws IOException {
         // given
         @SuppressWarnings("unchecked")
@@ -731,7 +731,7 @@ public class TraversonTest {
                 .getResource();
     }
 
-    @Test(expected = JsonMappingException.class)
+    @Test(expected = DatabindException.class)
     public void shouldReportErrorOnInvalidHalLinkFormat() throws IOException {
         // given
         @SuppressWarnings("unchecked")
@@ -746,7 +746,7 @@ public class TraversonTest {
                     .getResource();
     }
 
-    @Test(expected = JsonMappingException.class)
+    @Test(expected = DatabindException.class)
     public void shouldReportErrorOnBrokenHalEmbeddedFormat() throws IOException {
         // given
         @SuppressWarnings("unchecked")
