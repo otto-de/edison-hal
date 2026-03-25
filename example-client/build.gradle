@@ -11,7 +11,7 @@ plugins {
 }
 
 application {
-    mainClassName = 'de.otto.edison.hal.example.Client'
+    mainClass = 'de.otto.edison.hal.example.Client'
 }
 
 jar {
