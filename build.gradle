@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    api("tools.jackson.core:jackson-databind:3.0.0")
+    api("tools.jackson.core:jackson-databind:3.1.0")
     implementation("com.damnhandy:handy-uri-templates:2.1.8")
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation('ch.qos.logback:logback-classic:1.5.20')
