@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'jacoco'
     id 'maven-publish'
-    id 'org.jreleaser' version '1.23.0'
+    id 'org.jreleaser' version '1.26.0'
 }
 
 version = '3.0.0-SNAPSHOT'
@@ -14,14 +14,14 @@ repositories {
 }
 
 dependencies {
-    api("tools.jackson.core:jackson-databind:3.0.0")
+    api("tools.jackson.core:jackson-databind:3.2.3")
     implementation("com.damnhandy:handy-uri-templates:2.1.8")
-    implementation("org.slf4j:slf4j-api:2.0.17")
-    implementation('ch.qos.logback:logback-classic:1.5.20')
+    implementation("org.slf4j:slf4j-api:2.0.20")
+    implementation('ch.qos.logback:logback-classic:1.6.3')
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:3.0")
-    testImplementation("org.mockito:mockito-core:5.20.0")
+    testImplementation("org.mockito:mockito-core:5.23.0")
 }
 
 jacocoTestReport {

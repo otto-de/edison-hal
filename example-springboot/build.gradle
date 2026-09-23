@@ -1,7 +1,7 @@
 plugins {
     id('java')
     id('idea')
-    id("org.springframework.boot") version "4.0.4"
+    id("org.springframework.boot") version "4.1.1"
 }
 
 jar {
@@ -18,7 +18,7 @@ repositories {
 }
 
 dependencies {
-    var springBootVersion = "4.0.4"
+    var springBootVersion = "4.1.1"
 
     implementation rootProject
     implementation("org.springframework.boot:spring-boot-starter:${springBootVersion}")
